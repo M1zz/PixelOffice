@@ -52,7 +52,11 @@ actor ClaudeCodeService {
         // Claude Code CLI 실행 (--print 옵션으로 결과만 출력)
         let process = Process()
         process.executableURL = URL(fileURLWithPath: claudePath)
-        process.arguments = ["--print", fullPrompt]
+        process.arguments = [
+            "--print",
+            "--allowedTools", "WebSearch,WebFetch,Read,Glob,Grep",
+            fullPrompt
+        ]
 
         let outputPipe = Pipe()
         let errorPipe = Pipe()
