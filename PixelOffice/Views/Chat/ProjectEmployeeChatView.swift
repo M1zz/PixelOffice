@@ -1,0 +1,441 @@
+import SwiftUI
+
+/// 프로젝트 직원과의 대화 화면
+struct ProjectEmployeeChatView: View {
+    let projectId: UUID
+    let employeeId: UUID
+    @EnvironmentObject var companyStore: CompanyStore
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var inputText = ""
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    @State private var messages: [ChatMessage] = []
+    @State private var useClaudeCode = true
+
+    private let claudeService = ClaudeService()
+    private let claudeCodeService = ClaudeCodeService()
+
+    var project: Project? {
+        companyStore.company.projects.first { $0.id == projectId }
+    }
+
+    var employee: ProjectEmployee? {
+        companyStore.getProjectEmployee(byId: employeeId, inProject: projectId)
+    }
+
+    var apiConfig: APIConfiguration? {
+        guard let emp = employee else { return nil }
+        return companyStore.getAPIConfiguration(for: emp.aiType)
+    }
+
+    var canUseClaudeCode: Bool {
+        employee?.aiType == .claude
+    }
+
+    /// 위키 폴더 경로
+    var wikiPath: String {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return documentsPath.appendingPathComponent("PixelOffice-Wiki").path
+    }
+
+    /// 프로젝트 컨텍스트가 포함된 시스템 프롬프트
+    var systemPrompt: String {
+        guard let emp = employee, let proj = project else { return "" }
+
+        return """
+        당신의 이름은 \(emp.name)입니다.
+        당신은 "\(proj.name)" 프로젝트의 \(emp.departmentType.rawValue)팀 소속입니다.
+
+        ## 프로젝트 정보
+        - 프로젝트명: \(proj.name)
+        - 설명: \(proj.description.isEmpty ? "없음" : proj.description)
+        - 상태: \(proj.status.rawValue)
+        - 우선순위: \(proj.priority.rawValue)
+
+        \(emp.departmentType.expertRolePrompt)
+
+        중요한 규칙:
+        - 한국어로 대화합니다
+        - 전문적이지만 친근하게 대화합니다
+        - 질문할 때는 구체적이고 실무적인 질문을 합니다
+        - 답변할 때는 10년 경력의 전문가답게 깊이 있는 인사이트를 제공합니다
+        - 이 프로젝트의 맥락을 항상 고려하여 답변합니다
+
+        📄 문서 작성 기능:
+        문서를 작성해달라는 요청을 받으면, 다음 형식으로 마크다운 문서를 작성하세요:
+
+        <<<FILE:파일명.md>>>
+        (여기에 마크다운 내용)
+        <<<END_FILE>>>
+        """
+    }
+
+    var greetingQuestion: String {
+        guard let emp = employee else { return "무엇을 도와드릴까요?" }
+        let questions = emp.departmentType.onboardingQuestions
+        let index = abs(emp.id.hashValue) % questions.count
+        return questions[index]
+    }
+
+    var body: some View {
+        if let emp = employee {
+            VStack(spacing: 0) {
+                // Header
+                ProjectChatHeader(
+                    employee: emp,
+                    projectName: project?.name ?? "프로젝트",
+                    onClose: { dismiss() },
+                    onClearConversation: { clearConversation() }
+                )
+
+                Divider()
+
+                // Messages
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(messages) { message in
+                                ChatBubble(message: message, aiType: emp.aiType)
+                            }
+
+                            if isLoading {
+                                HStack {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text("생각 중...")
+                                        .font(.body)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal)
+                            }
+                        }
+                        .padding()
+                    }
+                    .onChange(of: messages.count) { _, _ in
+                        if let lastMessage = messages.last {
+                            withAnimation {
+                                proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                            }
+                        }
+                    }
+                }
+
+                // Error message
+                if let error = errorMessage {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text(error)
+                            .font(.body)
+                        Spacer()
+                        Button("닫기") {
+                            errorMessage = nil
+                        }
+                        .font(.body)
+                    }
+                    .padding(10)
+                    .background(Color.orange.opacity(0.1))
+                }
+
+                Divider()
+
+                // Input
+                ChatInputView(
+                    text: $inputText,
+                    isLoading: isLoading,
+                    isConfigured: (canUseClaudeCode && useClaudeCode) || (apiConfig?.isConfigured ?? false),
+                    onSend: sendMessage
+                )
+            }
+            .frame(width: 500, height: 600)
+            .onAppear {
+                loadConversation()
+                if messages.isEmpty {
+                    sendGreeting()
+                }
+            }
+        } else {
+            Text("직원을 찾을 수 없습니다")
+                .frame(width: 400, height: 300)
+        }
+    }
+
+    private func loadConversation() {
+        guard let emp = employee else { return }
+        messages = emp.conversationHistory.map { msg in
+            ChatMessage(
+                role: msg.role == .user ? .user : .assistant,
+                content: msg.content
+            )
+        }
+    }
+
+    private func sendGreeting() {
+        guard let emp = employee else { return }
+        isLoading = true
+        companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .thinking)
+
+        let greetingPrompt = """
+        당신은 방금 "\(project?.name ?? "프로젝트")" 프로젝트에 배정되었고, PM/상사가 대화창을 열었습니다.
+
+        다음 형식으로 인사하세요:
+        1. 짧은 자기소개 (이름, 역할, 1문장)
+        2. 프로젝트에 대한 기대감 표현 (1문장)
+        3. 업무 시작을 위해 꼭 알아야 할 질문 하나
+
+        반드시 다음 질문을 포함하세요:
+        "\(greetingQuestion)"
+
+        전체 4-5문장으로 짧고 전문적으로 작성하세요.
+        """
+
+        Task {
+            do {
+                let response: String
+
+                if canUseClaudeCode && useClaudeCode {
+                    response = try await claudeCodeService.sendMessage(
+                        greetingPrompt,
+                        systemPrompt: systemPrompt
+                    )
+                } else if let config = apiConfig, config.isConfigured {
+                    response = try await claudeService.sendMessage(
+                        greetingPrompt,
+                        employeeId: emp.id,
+                        configuration: config,
+                        systemPrompt: systemPrompt,
+                        isGreeting: true
+                    )
+                } else {
+                    throw ClaudeCodeError.notInstalled
+                }
+
+                await MainActor.run {
+                    let assistantMessage = ChatMessage(role: .assistant, content: response)
+                    messages.append(assistantMessage)
+                    isLoading = false
+                    companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .idle)
+                    saveConversation()
+                }
+            } catch {
+                await MainActor.run {
+                    let greeting = "안녕하세요! \(emp.name)입니다. \(project?.name ?? "프로젝트")에서 함께하게 되어 기쁩니다. 무엇을 도와드릴까요?"
+                    messages.append(ChatMessage(role: .assistant, content: greeting))
+                    errorMessage = error.localizedDescription
+                    isLoading = false
+                    companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .idle)
+                }
+            }
+        }
+    }
+
+    private func sendMessage() {
+        guard let emp = employee else { return }
+        guard !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+
+        let hasClaudeCode = canUseClaudeCode && useClaudeCode
+        let hasAPIConfig = apiConfig?.isConfigured ?? false
+
+        guard hasClaudeCode || hasAPIConfig else {
+            errorMessage = "Claude Code가 설치되어 있지 않거나, API가 설정되지 않았습니다."
+            return
+        }
+
+        let userMessage = ChatMessage(role: .user, content: inputText)
+        messages.append(userMessage)
+        let messageToSend = inputText
+        inputText = ""
+        isLoading = true
+        errorMessage = nil
+        companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .thinking)
+
+        Task {
+            do {
+                let response: String
+
+                if hasClaudeCode {
+                    response = try await claudeCodeService.sendMessage(
+                        messageToSend,
+                        systemPrompt: systemPrompt
+                    )
+                } else if let config = apiConfig, config.isConfigured {
+                    response = try await claudeService.sendMessage(
+                        messageToSend,
+                        employeeId: emp.id,
+                        configuration: config,
+                        systemPrompt: systemPrompt
+                    )
+                } else {
+                    throw ClaudeCodeError.notInstalled
+                }
+
+                await MainActor.run {
+                    let (cleanedResponse, savedFiles) = extractAndSaveFiles(from: response)
+
+                    let assistantMessage = ChatMessage(role: .assistant, content: cleanedResponse)
+                    messages.append(assistantMessage)
+                    isLoading = false
+                    companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .idle)
+
+                    if !savedFiles.isEmpty {
+                        let fileNames = savedFiles.joined(separator: ", ")
+                        let fileMessage = ChatMessage(role: .assistant, content: "📄 문서가 저장되었습니다: \(fileNames)\n위치: ~/Documents/PixelOffice-Wiki/")
+                        messages.append(fileMessage)
+                    }
+
+                    saveConversation()
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isLoading = false
+                    companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .idle)
+                }
+            }
+        }
+    }
+
+    var wikiCategory: WikiCategory {
+        guard let emp = employee else { return .reference }
+        switch emp.departmentType {
+        case .planning:
+            return .projectDocs
+        case .design:
+            return .guidelines
+        case .development:
+            return .guidelines
+        case .qa:
+            return .projectDocs
+        case .marketing:
+            return .companyInfo
+        case .general:
+            return .reference
+        }
+    }
+
+    private func extractAndSaveFiles(from response: String) -> (cleanedResponse: String, savedFiles: [String]) {
+        var cleanedResponse = response
+        var savedFiles: [String] = []
+
+        let pattern = "<<<FILE:([^>]+)>>>([\\s\\S]*?)<<<END_FILE>>>"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return (response, [])
+        }
+
+        let nsString = response as NSString
+        let matches = regex.matches(in: response, options: [], range: NSRange(location: 0, length: nsString.length))
+
+        for match in matches.reversed() {
+            guard match.numberOfRanges >= 3 else { continue }
+
+            let fileNameRange = match.range(at: 1)
+            let contentRange = match.range(at: 2)
+            let fullRange = match.range(at: 0)
+
+            let fileName = nsString.substring(with: fileNameRange).trimmingCharacters(in: .whitespaces)
+            let content = nsString.substring(with: contentRange).trimmingCharacters(in: .whitespacesAndNewlines)
+
+            let document = WikiDocument(
+                title: (fileName as NSString).deletingPathExtension.replacingOccurrences(of: "-", with: " "),
+                content: content,
+                category: wikiCategory,
+                createdBy: employee?.name ?? "Unknown",
+                tags: [employee?.departmentType.rawValue ?? "general", employee?.name ?? "Unknown", project?.name ?? "Project"],
+                fileName: fileName
+            )
+
+            do {
+                try WikiService.shared.saveDocument(document, at: wikiPath)
+                savedFiles.append(fileName)
+                companyStore.addWikiDocument(document)
+            } catch {
+                print("파일 저장 실패: \(error)")
+            }
+
+            cleanedResponse = (cleanedResponse as NSString).replacingCharacters(in: fullRange, with: "")
+        }
+
+        return (cleanedResponse.trimmingCharacters(in: .whitespacesAndNewlines), savedFiles)
+    }
+
+    private func saveConversation() {
+        let newMessages = messages.map { msg in
+            Message(
+                role: msg.role == .user ? .user : .assistant,
+                content: msg.content
+            )
+        }
+        companyStore.updateProjectEmployeeConversation(projectId: projectId, employeeId: employeeId, messages: newMessages)
+    }
+
+    private func clearConversation() {
+        messages.removeAll()
+        companyStore.updateProjectEmployeeConversation(projectId: projectId, employeeId: employeeId, messages: [])
+        sendGreeting()
+    }
+}
+
+struct ProjectChatHeader: View {
+    let employee: ProjectEmployee
+    let projectName: String
+    let onClose: () -> Void
+    let onClearConversation: () -> Void
+
+    var body: some View {
+        HStack {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(employee.aiType.color.opacity(0.2))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: employee.aiType.icon)
+                        .foregroundStyle(employee.aiType.color)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(employee.name)
+                        .font(.headline)
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(employee.status.color)
+                            .frame(width: 8, height: 8)
+                        Text(employee.status.rawValue)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                        Text("•")
+                            .foregroundStyle(.secondary)
+                        Text(projectName)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            Spacer()
+
+            Button(action: onClearConversation) {
+                Image(systemName: "trash")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("대화 초기화")
+
+            Button(action: onClose) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding()
+        .background(Color(NSColor.windowBackgroundColor))
+    }
+}
+
+#Preview {
+    ProjectEmployeeChatView(projectId: UUID(), employeeId: UUID())
+        .environmentObject(CompanyStore())
+}
