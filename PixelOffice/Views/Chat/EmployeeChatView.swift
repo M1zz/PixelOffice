@@ -71,6 +71,18 @@ struct EmployeeChatView: View {
         <<<END_FILE>>>
 
         문서 작성 후에는 간단히 어떤 문서를 만들었는지 설명해주세요.
+
+        📝 업무 결과 문서화:
+        사용자가 "문서화해줘", "정리해줘", "위키에 작성해줘", "결과물 작성" 등을 요청하면:
+        1. 지금까지 대화에서 논의된 핵심 내용을 정리
+        2. 결정된 사항, 액션 아이템, 주요 인사이트 포함
+        3. 부서 특성에 맞는 문서 형식 사용:
+           - 기획팀: PRD, 기획서, 요구사항 정의서
+           - 디자인팀: 디자인 가이드, UI/UX 명세서
+           - 개발팀: 기술 명세서, API 문서, 아키텍처 설계서
+           - QA팀: 테스트 계획서, QA 리포트
+           - 마케팅팀: 마케팅 전략, 캠페인 기획서
+        4. 반드시 <<<FILE:파일명.md>>>...<<<END_FILE>>> 형식으로 작성하여 위키에 자동 저장되도록 함
         """
     }
 
@@ -88,7 +100,8 @@ struct EmployeeChatView: View {
             ChatHeader(
                 employee: employee,
                 onClose: { dismiss() },
-                onClearConversation: { clearConversation() }
+                onClearConversation: { clearConversation() },
+                onDocumentize: { requestDocumentize() }
             )
 
             Divider()
@@ -406,12 +419,26 @@ struct EmployeeChatView: View {
         // 새 인사 시작
         sendGreeting()
     }
+
+    /// 업무 결과 문서화 요청
+    private func requestDocumentize() {
+        // 대화가 충분히 진행되었는지 확인
+        guard messages.count >= 2 else {
+            errorMessage = "문서화할 대화 내용이 충분하지 않습니다."
+            return
+        }
+
+        // 문서화 요청 메시지 전송
+        inputText = "지금까지 논의된 내용을 정리하여 위키 문서로 작성해주세요. 핵심 내용, 결정 사항, 액션 아이템을 포함해주세요."
+        sendMessage()
+    }
 }
 
 struct ChatHeader: View {
     let employee: Employee
     let onClose: () -> Void
     let onClearConversation: () -> Void
+    let onDocumentize: () -> Void
 
     var body: some View {
         HStack {
@@ -440,6 +467,15 @@ struct ChatHeader: View {
             }
 
             Spacer()
+
+            // 문서화 버튼
+            Button(action: onDocumentize) {
+                Image(systemName: "doc.text")
+                    .font(.title3)
+                    .foregroundStyle(.blue)
+            }
+            .buttonStyle(.plain)
+            .help("업무 결과 문서화")
 
             // 대화 초기화 버튼
             Button(action: onClearConversation) {

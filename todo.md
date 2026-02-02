@@ -2,6 +2,11 @@
 
 ## 완료된 작업
 
+- [x] 업무 결과 문서화 기능 강화
+  - 시스템 프롬프트에 부서별 문서 형식 가이드 추가
+  - 대화창 헤더에 "문서화" 버튼 추가 (📄 아이콘)
+  - 버튼 클릭 시 AI가 대화 내용을 정리하여 위키에 자동 저장
+  - EmployeeChatView, ProjectEmployeeChatView 모두 적용
 - [x] Claude Code CLI 통합 (API 키 없이 대화 가능)
   - ClaudeCodeService.swift 추가: Claude Code CLI를 subprocess로 실행
   - EmployeeChatView.swift: Claude 타입 직원은 Claude Code CLI 우선 사용
