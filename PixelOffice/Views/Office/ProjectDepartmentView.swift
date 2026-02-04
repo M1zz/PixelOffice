@@ -49,7 +49,7 @@ struct ProjectDepartmentView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(department.type.color.opacity(0.15))
+            .background(Color.red.opacity(0.3))
 
             // Desk Area
             VStack(spacing: 12) {
@@ -72,11 +72,11 @@ struct ProjectDepartmentView: View {
             .padding(16)
         }
         .frame(width: 360, height: 380)
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(Color.red.opacity(0.2))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(isSelected ? department.type.color : Color.clear, lineWidth: 3)
+                .stroke(isSelected ? Color.red : Color.red.opacity(0.5), lineWidth: 5)
         )
         .shadow(color: isHovering ? department.type.color.opacity(0.3) : .clear, radius: 10)
         .scaleEffect(isHovering ? 1.02 : 1.0)
@@ -98,52 +98,45 @@ struct ProjectDeskView: View {
     @State private var isHovering = false
 
     var body: some View {
-        VStack {
-            ZStack {
-                // Desk
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color(white: 0.85))
-                    .frame(width: 100, height: 50)
+        Rectangle()
+            .fill(Color.blue)
+            .frame(width: 120, height: 120)
+            .overlay(
+                VStack(spacing: 8) {
+                    Rectangle()
+                        .fill(Color.red)
+                        .frame(width: 80, height: 30)
+                        .overlay(
+                            Text("컴퓨터")
+                                .font(.headline.bold())
+                                .foregroundStyle(.white)
+                        )
 
-                // Computer monitor
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(employee.status == .working ? Color.blue.opacity(0.3) : Color(white: 0.75))
-                    .frame(width: 30, height: 20)
-                    .offset(y: -5)
+                    Rectangle()
+                        .fill(Color.yellow)
+                        .frame(width: 80, height: 30)
+                        .overlay(
+                            Text("책상")
+                                .font(.headline.bold())
+                                .foregroundStyle(.black)
+                        )
 
-                // Character (휴식 중일 때는 걸어다니므로 숨김)
-                if employee.status != .idle {
-                    PixelCharacter(
-                        appearance: employee.characterAppearance,
-                        status: employee.status,
-                        aiType: employee.aiType
-                    )
-                    .offset(y: 25)
+                    Text(employee.name)
+                        .font(.headline.bold())
+                        .foregroundStyle(.white)
+                        .padding(6)
+                        .background(Color.black)
+                }
+            )
+            .border(Color.purple, width: 5)
+            .fixedSize()
+            .scaleEffect(isHovering ? 1.05 : 1.0)
+            .onTapGesture(perform: onSelect)
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    isHovering = hovering
                 }
             }
-
-            // Name tag
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(employee.status.color)
-                    .frame(width: 6, height: 6)
-                Text(employee.name)
-                    .font(.body)
-                    .lineLimit(1)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Color(NSColor.controlBackgroundColor))
-            .clipShape(Capsule())
-        }
-        .frame(width: 120, height: 120)
-        .scaleEffect(isHovering ? 1.05 : 1.0)
-        .onTapGesture(perform: onSelect)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovering = hovering
-            }
-        }
     }
 }
 
