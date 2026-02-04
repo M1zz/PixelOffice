@@ -10,66 +10,71 @@ struct DeskView: View {
     @State private var questionBounce = false
 
     var body: some View {
-        VStack(spacing: 6) {
-            // 책상 영역
-            VStack(spacing: 3) {
-                // 컴퓨터 (파란 테두리)
-                RoundedRectangle(cornerRadius: 3)
-                    .strokeBorder(Color.blue, lineWidth: 2)
-                    .background(RoundedRectangle(cornerRadius: 3).fill(Color.cyan.opacity(0.3)))
-                    .frame(width: 50, height: 30)
+        VStack(spacing: 4) {
+            // 컴퓨터 - 파란색
+            ZStack {
+                Rectangle()
+                    .fill(Color.blue)
+                    .frame(width: 80, height: 40)
 
-                // 책상 (갈색, 진하게)
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(Color.brown)
-                    .frame(width: 70, height: 15)
-
-                // 캐릭터 표시
-                if employee.status != .idle {
-                    Circle()
-                        .fill(employee.aiType.color)
-                        .frame(width: 30, height: 30)
-                        .overlay(
-                            Circle()
-                                .strokeBorder(Color.black, lineWidth: 1)
-                        )
-                } else {
-                    Text("💤")
-                        .font(.title2)
-                }
+                Text("컴퓨터")
+                    .font(.caption.bold())
+                    .foregroundStyle(.white)
             }
-            .frame(height: 80)
-            .frame(maxWidth: .infinity)
-            .background(Color.white.opacity(0.5))
 
-            Divider()
+            // 책상 - 빨간색
+            ZStack {
+                Rectangle()
+                    .fill(Color.red)
+                    .frame(width: 90, height: 30)
 
-            // 이름과 상태
-            VStack(spacing: 3) {
+                Text("책상")
+                    .font(.caption.bold())
+                    .foregroundStyle(.white)
+            }
+
+            // 캐릭터 - 노란색 또는 이모지
+            if employee.status != .idle {
+                ZStack {
+                    Circle()
+                        .fill(Color.yellow)
+                        .frame(width: 35, height: 35)
+
+                    Text("AI")
+                        .font(.caption.bold())
+                        .foregroundStyle(.black)
+                }
+            } else {
+                Text("💤💤💤")
+                    .font(.title)
+            }
+
+            // 이름 - 검은 배경에 흰 글씨
+            ZStack {
+                Rectangle()
+                    .fill(Color.black)
+                    .frame(height: 25)
+
                 Text(employee.name)
                     .font(.caption.bold())
+                    .foregroundStyle(.white)
                     .lineLimit(1)
-                    .foregroundStyle(.primary)
-
-                HStack(spacing: 3) {
-                    Circle()
-                        .fill(employee.status.color)
-                        .frame(width: 8, height: 8)
-                    Text(employee.status.rawValue)
-                        .font(.caption2)
-                        .foregroundStyle(.primary)
-                }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.bottom, 4)
+
+            // 상태 - 초록 배경
+            ZStack {
+                Rectangle()
+                    .fill(Color.green)
+                    .frame(height: 20)
+
+                Text(employee.status.rawValue)
+                    .font(.caption2.bold())
+                    .foregroundStyle(.white)
+            }
         }
-        .frame(width: 110, height: 140)
-        .background(Color(NSColor.controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(isHovering ? Color.accentColor : Color.gray.opacity(0.3), lineWidth: isHovering ? 2 : 1)
-        )
+        .frame(width: 100, height: 160)
+        .background(Color.white)
+        .border(Color.black, width: 3)
         .onTapGesture(perform: onSelect)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
