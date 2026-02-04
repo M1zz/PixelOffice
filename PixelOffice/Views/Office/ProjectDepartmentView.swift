@@ -11,6 +11,73 @@ struct ProjectDepartmentView: View {
     @EnvironmentObject var companyStore: CompanyStore
     @State private var isHovering = false
 
+    /// 부서별 인테리어 장식
+    @ViewBuilder
+    var decorationsForDepartment: some View {
+        Group {
+            switch department.type {
+            case .planning:
+                // 기획팀: 왼쪽에 화분, 오른쪽 상단에 시계
+                PixelPlant()
+                    .offset(x: 20, y: 35)
+                PixelClock()
+                    .offset(x: 310, y: 25)
+                PixelLaptop()
+                    .offset(x: 150, y: 250)
+                PixelWaterBottle()
+                    .offset(x: 280, y: 260)
+
+            case .design:
+                // 디자인팀: 화분 여러개, 포스터
+                PixelPlant()
+                    .offset(x: 25, y: 35)
+                PixelPoster()
+                    .offset(x: 300, y: 25)
+                PixelPlant()
+                    .offset(x: 150, y: 250)
+                PixelWaterBottle()
+                    .offset(x: 280, y: 260)
+
+            case .development:
+                // 개발팀: 커피머신, 물병
+                PixelCoffeeMachine()
+                    .offset(x: 20, y: 30)
+                PixelWaterBottle()
+                    .offset(x: 310, y: 40)
+                PixelWaterBottle()
+                    .offset(x: 150, y: 250)
+                PixelLaptop()
+                    .offset(x: 280, y: 250)
+
+            case .qa:
+                // QA팀: 시계, 책장
+                PixelClock()
+                    .offset(x: 300, y: 25)
+                PixelBookshelf()
+                    .offset(x: 15, y: 20)
+                PixelLaptop()
+                    .offset(x: 150, y: 250)
+                PixelWaterBottle()
+                    .offset(x: 280, y: 260)
+
+            case .marketing:
+                // 마케팅팀: 포스터, 책장, 화분
+                PixelPoster()
+                    .offset(x: 300, y: 25)
+                PixelBookshelf()
+                    .offset(x: 15, y: 20)
+                PixelPlant()
+                    .offset(x: 150, y: 250)
+                PixelWaterBottle()
+                    .offset(x: 280, y: 260)
+
+            case .general:
+                PixelPlant()
+                    .offset(x: 25, y: 35)
+            }
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Department Header
@@ -51,25 +118,30 @@ struct ProjectDepartmentView: View {
             .padding(.vertical, 8)
             .background(department.type.color.opacity(0.15))
 
-            // Desk Area
-            VStack(spacing: 12) {
-                // Desks Grid (2x2)
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    ForEach(0..<department.maxCapacity, id: \.self) { index in
-                        if index < department.employees.count {
-                            let employee = department.employees[index]
-                            ProjectDeskView(
-                                employee: employee,
-                                deskIndex: index,
-                                onSelect: { onEmployeeSelect(employee) }
-                            )
-                        } else {
-                            EmptyDeskView(deskIndex: index)
+            // Desk Area with Decorations
+            ZStack(alignment: .topLeading) {
+                VStack(spacing: 12) {
+                    // Desks Grid (2x2)
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        ForEach(0..<department.maxCapacity, id: \.self) { index in
+                            if index < department.employees.count {
+                                let employee = department.employees[index]
+                                ProjectDeskView(
+                                    employee: employee,
+                                    deskIndex: index,
+                                    onSelect: { onEmployeeSelect(employee) }
+                                )
+                            } else {
+                                EmptyDeskView(deskIndex: index)
+                            }
                         }
                     }
                 }
+                .padding(16)
+
+                // Department-specific decorations
+                decorationsForDepartment
             }
-            .padding(16)
         }
         .frame(width: 360, height: 380)
         .background(Color(NSColor.controlBackgroundColor))
@@ -107,30 +179,45 @@ struct ProjectDeskView: View {
                     .frame(width: 90, height: 45)
                     .shadow(color: .black.opacity(0.2), radius: 2, y: 2)
 
-                VStack(spacing: 4) {
-                    // 컴퓨터 모니터
-                    ZStack {
-                        // 모니터 프레임
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color(white: 0.25))
-                            .frame(width: 50, height: 35)
+                VStack(spacing: 2) {
+                    // 와이드 모니터
+                    VStack(spacing: 1) {
+                        // 모니터 화면과 프레임
+                        ZStack {
+                            // 화면
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(employee.status == .working ?
+                                      LinearGradient(colors: [Color.cyan.opacity(0.7), Color.blue.opacity(0.5)],
+                                                   startPoint: .top, endPoint: .bottom) :
+                                      LinearGradient(colors: [Color(white: 0.45), Color(white: 0.35)],
+                                                   startPoint: .top, endPoint: .bottom))
+                                .frame(width: 55, height: 32)
 
-                        // 화면
-                        RoundedRectangle(cornerRadius: 1)
-                            .fill(employee.status == .working ?
-                                  Color.cyan.opacity(0.6) :
-                                  Color(white: 0.4))
-                            .frame(width: 44, height: 30)
+                            // 베젤
+                            RoundedRectangle(cornerRadius: 2)
+                                .stroke(Color(white: 0.2), lineWidth: 2)
+                                .frame(width: 55, height: 32)
 
-                        // 화면 글로우 (작업 중일 때)
-                        if employee.status == .working {
-                            RoundedRectangle(cornerRadius: 1)
-                                .fill(Color.cyan.opacity(0.3))
-                                .frame(width: 44, height: 30)
-                                .blur(radius: 4)
+                            // 화면 글로우
+                            if employee.status == .working {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(Color.cyan.opacity(0.4))
+                                    .frame(width: 55, height: 32)
+                                    .blur(radius: 3)
+                            }
+                        }
+
+                        // 모니터 스탠드
+                        VStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color(white: 0.3))
+                                .frame(width: 4, height: 6)
+                            Rectangle()
+                                .fill(Color(white: 0.25))
+                                .frame(width: 20, height: 3)
                         }
                     }
-                    .offset(y: -8)
+                    .offset(y: -10)
 
                     // 캐릭터 (작업 중일 때만)
                     if employee.status != .idle {
@@ -139,14 +226,15 @@ struct ProjectDeskView: View {
                             status: employee.status,
                             aiType: employee.aiType
                         )
-                        .scaleEffect(0.8)
-                        .offset(y: -5)
-                    } else {
-                        // 휴식 중일 때는 빈 공간 + 작은 표시
-                        Text("💤")
-                            .font(.caption)
-                            .opacity(0.5)
-                            .offset(y: -5)
+                        .scaleEffect(0.75)
+                        .offset(y: -8)
+                    }
+
+                    // 커피 (휴식 중일 때)
+                    if employee.status == .idle {
+                        Text("☕️")
+                            .font(.title3)
+                            .offset(x: 20, y: -15)
                     }
                 }
             }
