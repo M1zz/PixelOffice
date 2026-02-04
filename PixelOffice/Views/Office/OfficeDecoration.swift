@@ -2,6 +2,146 @@ import SwiftUI
 
 // MARK: - Pixel Art Decorations
 
+/// 오피스 바닥 타일
+struct OfficeFloor: View {
+    var body: some View {
+        Canvas { context, size in
+            let tileSize: CGFloat = 20
+            let lightGray = Color(white: 0.9)
+            let darkGray = Color(white: 0.85)
+
+            let rows = Int(size.height / tileSize) + 1
+            let cols = Int(size.width / tileSize) + 1
+
+            for row in 0..<rows {
+                for col in 0..<cols {
+                    let color = (row + col) % 2 == 0 ? lightGray : darkGray
+                    let rect = CGRect(
+                        x: CGFloat(col) * tileSize,
+                        y: CGFloat(row) * tileSize,
+                        width: tileSize,
+                        height: tileSize
+                    )
+                    context.fill(Path(rect), with: .color(color))
+                }
+            }
+        }
+    }
+}
+
+/// 오피스 벽
+struct OfficeWall: View {
+    var body: some View {
+        Canvas { context, size in
+            // 벽 색상
+            let wallColor = Color(red: 0.95, green: 0.94, blue: 0.92)
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(wallColor))
+
+            // 벽 패턴 (가로선)
+            let lineColor = Color(red: 0.90, green: 0.89, blue: 0.87)
+            for y in stride(from: 0, to: size.height, by: 40) {
+                var path = Path()
+                path.move(to: CGPoint(x: 0, y: y))
+                path.addLine(to: CGPoint(x: size.width, y: y))
+                context.stroke(path, with: .color(lineColor), lineWidth: 1)
+            }
+        }
+    }
+}
+
+/// 픽셀 아트 의자
+struct PixelChair: View {
+    var body: some View {
+        Canvas { context, size in
+            let pixelSize: CGFloat = 3
+            let chairColor = Color(red: 0.3, green: 0.2, blue: 0.1)
+            let cushionColor = Color(red: 0.8, green: 0.3, blue: 0.3)
+
+            // 등받이
+            for y in 0...4 {
+                drawPixel(context, x: 2, y: y, pixelSize: pixelSize, color: chairColor)
+                drawPixel(context, x: 7, y: y, pixelSize: pixelSize, color: chairColor)
+            }
+            for x in 2...7 {
+                drawPixel(context, x: x, y: 0, pixelSize: pixelSize, color: chairColor)
+            }
+            // 등받이 쿠션
+            for y in 1...4 {
+                for x in 3...6 {
+                    drawPixel(context, x: x, y: y, pixelSize: pixelSize, color: cushionColor)
+                }
+            }
+
+            // 좌석
+            for y in 5...7 {
+                for x in 1...8 {
+                    drawPixel(context, x: x, y: y, pixelSize: pixelSize, color: cushionColor)
+                }
+            }
+
+            // 다리
+            drawPixel(context, x: 1, y: 8, pixelSize: pixelSize, color: chairColor)
+            drawPixel(context, x: 1, y: 9, pixelSize: pixelSize, color: chairColor)
+            drawPixel(context, x: 8, y: 8, pixelSize: pixelSize, color: chairColor)
+            drawPixel(context, x: 8, y: 9, pixelSize: pixelSize, color: chairColor)
+
+            // 바퀴
+            drawPixel(context, x: 0, y: 10, pixelSize: pixelSize, color: Color(white: 0.3))
+            drawPixel(context, x: 9, y: 10, pixelSize: pixelSize, color: Color(white: 0.3))
+        }
+        .frame(width: 30, height: 33)
+    }
+}
+
+/// 개선된 픽셀 아트 책상
+struct PixelDesk: View {
+    var body: some View {
+        Canvas { context, size in
+            let pixelSize: CGFloat = 3
+            let deskColor = Color(red: 0.4, green: 0.25, blue: 0.15)
+            let darkWood = Color(red: 0.3, green: 0.18, blue: 0.12)
+
+            // 책상 상판
+            for y in 0...2 {
+                for x in 0...14 {
+                    let shade = y == 0 ? deskColor : (y == 1 ? deskColor.opacity(0.9) : darkWood)
+                    drawPixel(context, x: x, y: y, pixelSize: pixelSize, color: shade)
+                }
+            }
+
+            // 좌측 서랍
+            for y in 3...8 {
+                for x in 0...4 {
+                    drawPixel(context, x: x, y: y, pixelSize: pixelSize, color: deskColor)
+                }
+            }
+            // 서랍 손잡이
+            drawPixel(context, x: 2, y: 5, pixelSize: pixelSize, color: Color(white: 0.6))
+            drawPixel(context, x: 2, y: 7, pixelSize: pixelSize, color: Color(white: 0.6))
+
+            // 우측 서랍
+            for y in 3...8 {
+                for x in 10...14 {
+                    drawPixel(context, x: x, y: y, pixelSize: pixelSize, color: deskColor)
+                }
+            }
+            // 서랍 손잡이
+            drawPixel(context, x: 12, y: 5, pixelSize: pixelSize, color: Color(white: 0.6))
+            drawPixel(context, x: 12, y: 7, pixelSize: pixelSize, color: Color(white: 0.6))
+
+            // 다리 (좌측)
+            for y in 9...11 {
+                drawPixel(context, x: 1, y: y, pixelSize: pixelSize, color: darkWood)
+            }
+            // 다리 (우측)
+            for y in 9...11 {
+                drawPixel(context, x: 13, y: y, pixelSize: pixelSize, color: darkWood)
+            }
+        }
+        .frame(width: 45, height: 36)
+    }
+}
+
 /// 픽셀 아트 컴퓨터 (책상 위)
 struct PixelComputer: View {
     var body: some View {

@@ -12,44 +12,35 @@ struct DeskView: View {
     var body: some View {
         VStack(spacing: 4) {
             ZStack {
-                // Desk
-                DeskShape()
-                    .fill(Color(red: 0.4, green: 0.25, blue: 0.15))
-                    .frame(width: 100, height: 50)
-                    .offset(y: 20)
+                // 픽셀아트 의자 (캐릭터 뒤)
+                if employee.status != .idle {
+                    PixelChair()
+                        .offset(y: 5)
+                        .opacity(0.7)
+                }
 
-                // Pixel Computer on desk
+                // 픽셀아트 책상
+                PixelDesk()
+                    .offset(y: 10)
+
+                // 컴퓨터
                 PixelComputer()
-                    .offset(y: 0)
+                    .offset(y: -5)
 
                 // Screen glow when working
                 if employee.isWorking {
                     Rectangle()
                         .fill(
                             LinearGradient(
-                                colors: [.cyan.opacity(0.4), .blue.opacity(0.2)],
+                                colors: [.cyan.opacity(0.5), .blue.opacity(0.3)],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
                         )
-                        .frame(width: 24, height: 20)
-                        .offset(y: 3)
-                        .blur(radius: 3)
+                        .frame(width: 30, height: 25)
+                        .offset(y: -8)
+                        .blur(radius: 4)
                 }
-
-                // Keyboard and mouse (pixel art)
-                HStack(spacing: 6) {
-                    // Keyboard
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(Color(white: 0.6))
-                        .frame(width: 20, height: 6)
-
-                    // Mouse
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color(white: 0.65))
-                        .frame(width: 6, height: 8)
-                }
-                .offset(y: 18)
 
                 // Character (휴식 중일 때는 걸어다니므로 숨김)
                 if employee.status != .idle {
@@ -58,7 +49,7 @@ struct DeskView: View {
                         status: employee.status,
                         aiType: employee.aiType
                     )
-                    .offset(y: -20)
+                    .offset(y: -15)
                 }
 
                 // 물음표 표시 (온보딩 질문이 있을 때)
