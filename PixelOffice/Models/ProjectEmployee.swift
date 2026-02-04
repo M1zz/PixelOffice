@@ -8,6 +8,7 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
     var sourceEmployeeId: UUID?  // 회사 직원에서 복제한 경우 원본 참조
     var name: String
     var aiType: AIType
+    var jobRole: JobRole  // 직군
     var status: EmployeeStatus
     var currentTaskId: UUID?
     var conversationHistory: [Message]  // 프로젝트별 독립 대화 히스토리
@@ -16,25 +17,35 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
     var characterAppearance: CharacterAppearance
     var departmentType: DepartmentType
 
+    // 직원 특성 정보
+    var personality: String  // 성격: 꼼꼼함, 창의적, 분석적 등
+    var strengths: [String]  // 강점 리스트
+    var workStyle: String    // 업무 스타일
+
     init(
         id: UUID = UUID(),
         employeeNumber: String? = nil,
         sourceEmployeeId: UUID? = nil,
         name: String,
         aiType: AIType = .claude,
+        jobRole: JobRole = .general,
         status: EmployeeStatus = .idle,
         currentTaskId: UUID? = nil,
         conversationHistory: [Message] = [],
         createdAt: Date = Date(),
         totalTasksCompleted: Int = 0,
         characterAppearance: CharacterAppearance = CharacterAppearance(),
-        departmentType: DepartmentType = .general
+        departmentType: DepartmentType = .general,
+        personality: String? = nil,
+        strengths: [String]? = nil,
+        workStyle: String? = nil
     ) {
         self.id = id
         self.employeeNumber = employeeNumber ?? Self.generateEmployeeNumber(from: id)
         self.sourceEmployeeId = sourceEmployeeId
         self.name = name
         self.aiType = aiType
+        self.jobRole = jobRole
         self.status = status
         self.currentTaskId = currentTaskId
         self.conversationHistory = conversationHistory
@@ -42,6 +53,9 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
         self.totalTasksCompleted = totalTasksCompleted
         self.characterAppearance = characterAppearance
         self.departmentType = departmentType
+        self.personality = personality ?? Employee.generatePersonality(from: id, jobRole: jobRole)
+        self.strengths = strengths ?? Employee.generateStrengths(from: id, jobRole: jobRole)
+        self.workStyle = workStyle ?? Employee.generateWorkStyle(from: id, jobRole: jobRole)
     }
 
     /// UUID 기반 사원번호 생성
@@ -53,8 +67,9 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
 
     // MARK: - Codable (기존 데이터 호환)
     enum CodingKeys: String, CodingKey {
-        case id, employeeNumber, sourceEmployeeId, name, aiType, status, currentTaskId
+        case id, employeeNumber, sourceEmployeeId, name, aiType, jobRole, status, currentTaskId
         case conversationHistory, createdAt, totalTasksCompleted, characterAppearance, departmentType
+        case personality, strengths, workStyle
     }
 
     init(from decoder: Decoder) throws {
@@ -63,6 +78,7 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
         sourceEmployeeId = try container.decodeIfPresent(UUID.self, forKey: .sourceEmployeeId)
         name = try container.decode(String.self, forKey: .name)
         aiType = try container.decode(AIType.self, forKey: .aiType)
+        jobRole = try container.decodeIfPresent(JobRole.self, forKey: .jobRole) ?? .general
         status = try container.decode(EmployeeStatus.self, forKey: .status)
         currentTaskId = try container.decodeIfPresent(UUID.self, forKey: .currentTaskId)
         conversationHistory = try container.decode([Message].self, forKey: .conversationHistory)
@@ -72,6 +88,10 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
         departmentType = try container.decode(DepartmentType.self, forKey: .departmentType)
         // 기존 데이터에 employeeNumber가 없으면 자동 생성
         employeeNumber = try container.decodeIfPresent(String.self, forKey: .employeeNumber) ?? Self.generateEmployeeNumber(from: id)
+        // 기존 데이터에 특성 정보가 없으면 자동 생성
+        personality = try container.decodeIfPresent(String.self, forKey: .personality) ?? Employee.generatePersonality(from: id, jobRole: jobRole)
+        strengths = try container.decodeIfPresent([String].self, forKey: .strengths) ?? Employee.generateStrengths(from: id, jobRole: jobRole)
+        workStyle = try container.decodeIfPresent(String.self, forKey: .workStyle) ?? Employee.generateWorkStyle(from: id, jobRole: jobRole)
     }
 
     /// 회사 직원으로부터 프로젝트 직원 생성 (대화 히스토리는 초기화)
@@ -85,7 +105,10 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
             createdAt: Date(),
             totalTasksCompleted: 0,
             characterAppearance: employee.characterAppearance,
-            departmentType: departmentType
+            departmentType: departmentType,
+            personality: employee.personality,
+            strengths: employee.strengths,
+            workStyle: employee.workStyle
         )
     }
 

@@ -7,7 +7,20 @@ class DataPathService {
 
     /// 기본 데이터 저장 경로 (프로젝트 디렉토리 내)
     var basePath: String {
-        "/Users/leeo/Documents/code/PixelOffice/datas"
+        let fileManager = FileManager.default
+        let homePath = NSHomeDirectory()
+
+        // 프로젝트의 예상 경로 (사용자 홈 기준)
+        let projectPath = "\(homePath)/Documents/workspace/code/PixelOffice/datas"
+
+        // 경로가 존재하면 사용
+        if fileManager.fileExists(atPath: projectPath) {
+            return projectPath
+        }
+
+        // 경로가 없으면 생성 시도
+        try? fileManager.createDirectory(atPath: projectPath, withIntermediateDirectories: true)
+        return projectPath
     }
 
     private init() {

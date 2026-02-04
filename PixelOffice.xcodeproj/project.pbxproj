@@ -42,6 +42,10 @@
 		033 /* WikiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 134 /* WikiView.swift */; };
 		034 /* EmployeeChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 135 /* EmployeeChatView.swift */; };
 		035 /* ClaudeCodeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 136 /* ClaudeCodeService.swift */; };
+		036 /* EmployeeBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 151 /* EmployeeBadgeView.swift */; };
+		037 /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 152 /* CommunityView.swift */; };
+		038 /* ProjectWikiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 153 /* ProjectWikiView.swift */; };
+		039 /* EmployeeThinking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 154 /* EmployeeThinking.swift */; };
 		137 /* DepartmentSkills.swift in Sources */ = {isa = PBXBuildFile; fileRef = 138 /* DepartmentSkills.swift */; };
 		139 /* EmployeeWorkLogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 140 /* EmployeeWorkLogService.swift */; };
 		141 /* DepartmentSkillsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142 /* DepartmentSkillsView.swift */; };
@@ -49,6 +53,7 @@
 		145 /* DataPathService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 146 /* DataPathService.swift */; };
 		147 /* WalkingCharacter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149 /* WalkingCharacter.swift */; };
 		148 /* WalkingEmployeesLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 150 /* WalkingEmployeesLayer.swift */; };
+		581566062F33844B00B03B5A /* ProjectRecoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 581566052F33844B00B03B5A /* ProjectRecoveryService.swift */; };
 		9C615BAE2F30862A00A5BC73 /* ProjectEmployee.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615BAD2F30862A00A5BC73 /* ProjectEmployee.swift */; };
 		9C615BAF2F30862A00A5BC73 /* ProjectDepartment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615BAC2F30862A00A5BC73 /* ProjectDepartment.swift */; };
 		9C615BB22F30864D00A5BC73 /* ProjectDepartmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615BB02F30864D00A5BC73 /* ProjectDepartmentView.swift */; };
@@ -59,10 +64,6 @@
 		9C615C322F31BF6E00A5BC73 /* CollaborationRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615C312F31BF6E00A5BC73 /* CollaborationRecord.swift */; };
 		9C615C342F31BF8600A5BC73 /* CollaborationHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615C332F31BF8600A5BC73 /* CollaborationHistoryView.swift */; };
 		9C615C382F31C04400A5BC73 /* KanbanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615C372F31C04400A5BC73 /* KanbanView.swift */; };
-		036 /* EmployeeBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 151 /* EmployeeBadgeView.swift */; };
-		037 /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 152 /* CommunityView.swift */; };
-		038 /* ProjectWikiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 153 /* ProjectWikiView.swift */; };
-		039 /* EmployeeThinking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 154 /* EmployeeThinking.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -110,6 +111,11 @@
 		146 /* DataPathService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataPathService.swift; sourceTree = "<group>"; };
 		149 /* WalkingCharacter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkingCharacter.swift; sourceTree = "<group>"; };
 		150 /* WalkingEmployeesLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkingEmployeesLayer.swift; sourceTree = "<group>"; };
+		151 /* EmployeeBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeBadgeView.swift; sourceTree = "<group>"; };
+		152 /* CommunityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
+		153 /* ProjectWikiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWikiView.swift; sourceTree = "<group>"; };
+		154 /* EmployeeThinking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeThinking.swift; sourceTree = "<group>"; };
+		581566052F33844B00B03B5A /* ProjectRecoveryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectRecoveryService.swift; sourceTree = "<group>"; };
 		9C615BAC2F30862A00A5BC73 /* ProjectDepartment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDepartment.swift; sourceTree = "<group>"; };
 		9C615BAD2F30862A00A5BC73 /* ProjectEmployee.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectEmployee.swift; sourceTree = "<group>"; };
 		9C615BB02F30864D00A5BC73 /* ProjectDepartmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDepartmentView.swift; sourceTree = "<group>"; };
@@ -120,10 +126,6 @@
 		9C615C312F31BF6E00A5BC73 /* CollaborationRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollaborationRecord.swift; sourceTree = "<group>"; };
 		9C615C332F31BF8600A5BC73 /* CollaborationHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollaborationHistoryView.swift; sourceTree = "<group>"; };
 		9C615C372F31C04400A5BC73 /* KanbanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KanbanView.swift; sourceTree = "<group>"; };
-		151 /* EmployeeBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeBadgeView.swift; sourceTree = "<group>"; };
-		152 /* CommunityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
-		153 /* ProjectWikiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWikiView.swift; sourceTree = "<group>"; };
-		154 /* EmployeeThinking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeThinking.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -148,6 +150,7 @@
 		301 /* PixelOffice */ = {
 			isa = PBXGroup;
 			children = (
+				581566052F33844B00B03B5A /* ProjectRecoveryService.swift */,
 				101 /* PixelOfficeApp.swift */,
 				102 /* ContentView.swift */,
 				303 /* Models */,
@@ -444,6 +447,7 @@
 				035 /* ClaudeCodeService.swift in Sources */,
 				137 /* DepartmentSkills.swift in Sources */,
 				139 /* EmployeeWorkLogService.swift in Sources */,
+				581566062F33844B00B03B5A /* ProjectRecoveryService.swift in Sources */,
 				141 /* DepartmentSkillsView.swift in Sources */,
 				143 /* EmployeeWorkLogView.swift in Sources */,
 				145 /* DataPathService.swift in Sources */,
@@ -585,6 +589,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = QGAQ3AY3R3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -610,6 +615,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = QGAQ3AY3R3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

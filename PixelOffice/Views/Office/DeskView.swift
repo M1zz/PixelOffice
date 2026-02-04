@@ -18,26 +18,38 @@ struct DeskView: View {
                     .frame(width: 100, height: 50)
                     .offset(y: 20)
 
-                // Monitor on desk
-                MonitorShape()
-                    .fill(Color(white: 0.25))
-                    .frame(width: 40, height: 30)
+                // Pixel Computer on desk
+                PixelComputer()
                     .offset(y: 5)
 
-                // Monitor screen glow when working
+                // Screen glow when working
                 if employee.isWorking {
-                    MonitorShape()
+                    Rectangle()
                         .fill(
                             LinearGradient(
-                                colors: [.blue.opacity(0.3), .cyan.opacity(0.2)],
+                                colors: [.cyan.opacity(0.4), .blue.opacity(0.2)],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
                         )
-                        .frame(width: 36, height: 26)
-                        .offset(y: 5)
-                        .blur(radius: 2)
+                        .frame(width: 24, height: 20)
+                        .offset(y: 3)
+                        .blur(radius: 3)
                 }
+
+                // Keyboard and mouse (pixel art)
+                HStack(spacing: 6) {
+                    // Keyboard
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Color(white: 0.6))
+                        .frame(width: 20, height: 6)
+
+                    // Mouse
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color(white: 0.65))
+                        .frame(width: 6, height: 8)
+                }
+                .offset(y: 18)
 
                 // Character (휴식 중일 때는 걸어다니므로 숨김)
                 if employee.status != .idle {

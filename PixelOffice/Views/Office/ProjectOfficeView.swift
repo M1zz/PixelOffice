@@ -422,7 +422,11 @@ struct ProjectEmployeeActionsCard: View {
                         departmentType: employee.departmentType,
                         aiType: employee.aiType,
                         appearance: employee.characterAppearance,
-                        hireDate: employee.createdAt
+                        hireDate: employee.createdAt,
+                        jobRole: employee.jobRole,
+                        personality: employee.personality,
+                        strengths: employee.strengths,
+                        workStyle: employee.workStyle
                     )
 
                     Button("닫기") {

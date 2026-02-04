@@ -65,6 +65,9 @@ struct OfficeView: View {
                         }
                     )
 
+                    // 오피스 공용 인테리어
+                    OfficeCommonDecorations()
+
                     // 걸어다니는 휴식 중인 직원들 (회사 직원만)
                     WalkingEmployeesLayer(floorBounds: walkingBounds, projectId: nil) { employeeId in
                         // 직원과 부서를 찾아서 선택
@@ -405,7 +408,11 @@ struct ActionsCard: View {
                         departmentType: employeeDepartment,
                         aiType: employee.aiType,
                         appearance: employee.characterAppearance,
-                        hireDate: employee.createdAt
+                        hireDate: employee.createdAt,
+                        jobRole: employee.jobRole,
+                        personality: employee.personality,
+                        strengths: employee.strengths,
+                        workStyle: employee.workStyle
                     )
 
                     Button("닫기") {
@@ -426,6 +433,53 @@ struct ActionsCard: View {
                 break
             }
         }
+    }
+}
+
+/// 오피스 공용 인테리어 (복도, 공용 공간)
+struct OfficeCommonDecorations: View {
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            // 상단 왼쪽 공용 공간
+            VStack(spacing: 16) {
+                HStack(spacing: 16) {
+                    PixelCoffeeMachine()
+                    PixelWaterBottle()
+                }
+                PixelPlant()
+            }
+            .offset(x: 50, y: 100)
+
+            // 상단 오른쪽
+            VStack(spacing: 20) {
+                PixelClock()
+                PixelPlant()
+            }
+            .offset(x: 750, y: 100)
+
+            // 하단 중앙
+            HStack(spacing: 30) {
+                PixelBookshelf()
+                PixelPlant()
+                PixelCoffeeMachine()
+            }
+            .offset(x: 350, y: 500)
+
+            // 하단 왼쪽
+            VStack(spacing: 16) {
+                PixelPoster()
+                PixelPlant()
+            }
+            .offset(x: 50, y: 450)
+
+            // 하단 오른쪽
+            VStack(spacing: 16) {
+                PixelBookshelf()
+                PixelWaterBottle()
+            }
+            .offset(x: 750, y: 450)
+        }
+        .allowsHitTesting(false)
     }
 }
 

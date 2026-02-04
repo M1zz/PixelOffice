@@ -210,33 +210,100 @@ struct CommunityEmployeeGrid: View {
 
 struct CommunityEmployeeCard: View {
     let employee: Employee
+    @State private var showingDetail = false
 
     var body: some View {
-        VStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .fill(employee.aiType.color.opacity(0.2))
-                    .frame(width: 60, height: 60)
-                Image(systemName: employee.aiType.icon)
-                    .font(.title)
-                    .foregroundColor(employee.aiType.color)
+        Button {
+            showingDetail = true
+        } label: {
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(employee.jobRole.department.color.opacity(0.2))
+                        .frame(width: 60, height: 60)
+                    PixelCharacter(
+                        appearance: employee.characterAppearance,
+                        status: employee.status,
+                        aiType: employee.aiType
+                    )
+                    .scaleEffect(0.7)
+                }
+
+                HStack(spacing: 4) {
+                    Text(employee.name)
+                        .font(.headline)
+                    Image(systemName: employee.jobRole.department.icon)
+                        .font(.caption)
+                        .foregroundColor(employee.jobRole.department.color)
+                }
+
+                Text(employee.jobRole.rawValue)
+                    .font(.caption.bold())
+                    .foregroundColor(employee.jobRole.department.color)
+
+                Text(employee.employeeNumber)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Text("입사: \(employee.createdAt.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
             }
+            .padding()
+            .frame(width: 180)
+            .background(Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showingDetail) {
+            CommunityEmployeeDetailView(employee: employee)
+        }
+    }
+}
 
-            Text(employee.name)
-                .font(.headline)
+// MARK: - Employee Detail Popover
 
-            Text(employee.employeeNumber)
-                .font(.caption)
-                .foregroundColor(.secondary)
+struct CommunityEmployeeDetailView: View {
+    let employee: Employee
 
-            Text("입사: \(employee.createdAt.formatted(date: .abbreviated, time: .omitted))")
-                .font(.caption2)
-                .foregroundColor(.secondary)
+    var body: some View {
+        VStack(spacing: 16) {
+            // 사원증
+            EmployeeBadgeView(
+                name: employee.name,
+                employeeNumber: employee.employeeNumber,
+                departmentType: employee.jobRole.department,
+                aiType: employee.aiType,
+                appearance: employee.characterAppearance,
+                hireDate: employee.createdAt,
+                jobRole: employee.jobRole,
+                personality: employee.personality,
+                strengths: employee.strengths,
+                workStyle: employee.workStyle
+            )
+
+            // 추가 정보
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                    Text("완료한 작업: \(employee.totalTasksCompleted)개")
+                        .font(.caption)
+                }
+
+                HStack {
+                    Circle()
+                        .fill(employee.status.color)
+                        .frame(width: 8, height: 8)
+                    Text("상태: \(employee.status.rawValue)")
+                        .font(.caption)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal)
         }
         .padding()
-        .frame(width: 180)
-        .background(Color(nsColor: .controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(width: 250)
     }
 }
 
@@ -326,9 +393,11 @@ struct CommunityPostCard: View {
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(post.employeeName)
-                            .font(.headline)
-                            .foregroundColor(.primary)
+                        HStack(spacing: 4) {
+                            Text(post.employeeName)
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                        }
                         Text("\(post.departmentType.rawValue)팀 · \(post.formattedDate)")
                             .font(.caption)
                             .foregroundColor(.secondary)

@@ -1,7 +1,61 @@
 import SwiftUI
 
-/// 사원증 뷰 - 직원의 신분증 카드
+/// 사원증 뷰 - 직원의 신분증 카드 (탭하면 앞/뒤 전환)
 struct EmployeeBadgeView: View {
+    let name: String
+    let employeeNumber: String
+    let departmentType: DepartmentType
+    let aiType: AIType
+    let appearance: CharacterAppearance
+    let hireDate: Date
+    let jobRole: JobRole
+    let personality: String
+    let strengths: [String]
+    let workStyle: String
+
+    @State private var isFlipped = false
+
+    var body: some View {
+        ZStack {
+            // 앞면 (기본 정보)
+            EmployeeBadgeFrontView(
+                name: name,
+                employeeNumber: employeeNumber,
+                departmentType: departmentType,
+                aiType: aiType,
+                appearance: appearance,
+                hireDate: hireDate
+            )
+            .opacity(isFlipped ? 0 : 1)
+            .rotation3DEffect(
+                .degrees(isFlipped ? 180 : 0),
+                axis: (x: 0, y: 1, z: 0)
+            )
+
+            // 뒷면 (상세 정보)
+            EmployeeBadgeBackView(
+                jobRole: jobRole,
+                personality: personality,
+                strengths: strengths,
+                workStyle: workStyle,
+                departmentColor: departmentType.color
+            )
+            .opacity(isFlipped ? 1 : 0)
+            .rotation3DEffect(
+                .degrees(isFlipped ? 0 : -180),
+                axis: (x: 0, y: 1, z: 0)
+            )
+        }
+        .onTapGesture {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                isFlipped.toggle()
+            }
+        }
+    }
+}
+
+/// 사원증 앞면 - 기존 정보
+struct EmployeeBadgeFrontView: View {
     let name: String
     let employeeNumber: String
     let departmentType: DepartmentType
@@ -93,6 +147,138 @@ struct EmployeeBadgeView: View {
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
             .background(Color.white)
+        }
+        .frame(width: 180)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
+    }
+}
+
+/// 사원증 뒷면 - 직원 특성 및 상세 정보
+struct EmployeeBadgeBackView: View {
+    let jobRole: JobRole
+    let personality: String
+    let strengths: [String]
+    let workStyle: String
+    let departmentColor: Color
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // 상단 헤더
+            HStack {
+                Image(systemName: "person.text.rectangle")
+                    .font(.caption)
+                Text("직원 정보")
+                    .font(.caption.bold())
+                    .tracking(1)
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(
+                LinearGradient(
+                    colors: [departmentColor, departmentColor.opacity(0.7)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+
+            // 본문 영역
+            VStack(alignment: .leading, spacing: 12) {
+                // 직군
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "briefcase.fill")
+                            .font(.caption2)
+                            .foregroundColor(departmentColor)
+                        Text("직군")
+                            .font(.caption2.bold())
+                            .foregroundColor(.secondary)
+                    }
+                    Text(jobRole.rawValue)
+                        .font(.callout.bold())
+                        .foregroundColor(.primary)
+                }
+
+                Divider()
+
+                // 성격
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles")
+                            .font(.caption2)
+                            .foregroundColor(departmentColor)
+                        Text("성격")
+                            .font(.caption2.bold())
+                            .foregroundColor(.secondary)
+                    }
+                    Text(personality)
+                        .font(.callout)
+                        .foregroundColor(.primary)
+                }
+
+                Divider()
+
+                // 강점
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.fill")
+                            .font(.caption2)
+                            .foregroundColor(departmentColor)
+                        Text("강점")
+                            .font(.caption2.bold())
+                            .foregroundColor(.secondary)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(strengths, id: \.self) { strength in
+                            HStack(spacing: 4) {
+                                Text("•")
+                                    .font(.caption2)
+                                    .foregroundColor(departmentColor)
+                                Text(strength)
+                                    .font(.caption)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                    }
+                }
+
+                Divider()
+
+                // 업무 스타일
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.caption2)
+                            .foregroundColor(departmentColor)
+                        Text("업무 스타일")
+                            .font(.caption2.bold())
+                            .foregroundColor(.secondary)
+                    }
+                    Text(workStyle)
+                        .font(.caption)
+                        .foregroundColor(.primary)
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white)
+
+            // 하단 안내
+            HStack {
+                Image(systemName: "hand.tap.fill")
+                    .font(.caption2)
+                Text("탭하여 앞면 보기")
+                    .font(.caption2)
+            }
+            .foregroundColor(.white.opacity(0.8))
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity)
+            .background(departmentColor.opacity(0.8))
         }
         .frame(width: 180)
         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -231,7 +417,11 @@ struct PixelCharacterLarge: View {
             departmentType: .planning,
             aiType: .claude,
             appearance: CharacterAppearance(skinTone: 1, hairStyle: 1, hairColor: 2, shirtColor: 1, accessory: 0),
-            hireDate: Date()
+            hireDate: Date(),
+            jobRole: .productManager,
+            personality: "체계적이고 계획적인",
+            strengths: ["전략적 사고", "프로젝트 관리", "커뮤니케이션"],
+            workStyle: "체계적으로 계획하고 단계별로 실행"
         )
 
         EmployeeBadgeView(
@@ -240,7 +430,11 @@ struct PixelCharacterLarge: View {
             departmentType: .design,
             aiType: .gpt,
             appearance: CharacterAppearance(skinTone: 0, hairStyle: 2, hairColor: 3, shirtColor: 5, accessory: 1),
-            hireDate: Date().addingTimeInterval(-86400 * 30)
+            hireDate: Date().addingTimeInterval(-86400 * 30),
+            jobRole: .uiDesigner,
+            personality: "창의적이고 혁신적인",
+            strengths: ["디자인 시스템", "사용자 경험", "비주얼 감각"],
+            workStyle: "빠르게 프로토타입을 만들고 개선"
         )
     }
     .padding(40)

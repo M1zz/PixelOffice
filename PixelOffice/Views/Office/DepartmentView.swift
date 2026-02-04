@@ -16,6 +16,64 @@ struct DepartmentView: View {
         }
         return !onboarding.isCompleted
     }
+
+    /// 부서별 인테리어 장식
+    @ViewBuilder
+    var decorationsForDepartment: some View {
+        Group {
+            switch department.type {
+            case .planning:
+                // 기획팀: 왼쪽 상단에 포스터, 오른쪽에 물병
+                PixelPoster()
+                    .offset(x: 20, y: 30)
+                PixelWaterBottle()
+                    .offset(x: 300, y: 50)
+                PixelLaptop()
+                    .offset(x: 150, y: 230)
+
+            case .design:
+                // 디자인팀: 화분, 포스터
+                PixelPlant()
+                    .offset(x: 30, y: 40)
+                PixelPoster()
+                    .offset(x: 280, y: 30)
+                PixelWaterBottle()
+                    .offset(x: 150, y: 240)
+
+            case .development:
+                // 개발팀: 커피머신, 물병 여러개
+                PixelCoffeeMachine()
+                    .offset(x: 25, y: 35)
+                PixelWaterBottle()
+                    .offset(x: 300, y: 50)
+                PixelWaterBottle()
+                    .offset(x: 150, y: 235)
+
+            case .qa:
+                // QA팀: 시계, 책장
+                PixelClock()
+                    .offset(x: 280, y: 30)
+                PixelBookshelf()
+                    .offset(x: 20, y: 25)
+                PixelLaptop()
+                    .offset(x: 150, y: 230)
+
+            case .marketing:
+                // 마케팅팀: 포스터, 책장, 화분
+                PixelPoster()
+                    .offset(x: 280, y: 30)
+                PixelBookshelf()
+                    .offset(x: 20, y: 25)
+                PixelPlant()
+                    .offset(x: 150, y: 235)
+
+            case .general:
+                // 일반: 기본 화분
+                PixelPlant()
+                    .offset(x: 30, y: 40)
+            }
+        }
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -57,26 +115,31 @@ struct DepartmentView: View {
             .padding(.vertical, 8)
             .background(department.type.color.opacity(0.15))
             
-            // Desk Area
-            VStack(spacing: 12) {
-                // Desks Grid (2x2)
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    ForEach(0..<department.maxCapacity, id: \.self) { index in
-                        if index < department.employees.count {
-                            let employee = department.employees[index]
-                            DeskView(
-                                employee: employee,
-                                deskIndex: index,
-                                onSelect: { onEmployeeSelect(employee) },
-                                hasPendingQuestions: hasPendingQuestions(for: employee)
-                            )
-                        } else {
-                            EmptyDeskView(deskIndex: index)
+            // Desk Area with Decorations
+            ZStack(alignment: .topLeading) {
+                VStack(spacing: 12) {
+                    // Desks Grid (2x2)
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        ForEach(0..<department.maxCapacity, id: \.self) { index in
+                            if index < department.employees.count {
+                                let employee = department.employees[index]
+                                DeskView(
+                                    employee: employee,
+                                    deskIndex: index,
+                                    onSelect: { onEmployeeSelect(employee) },
+                                    hasPendingQuestions: hasPendingQuestions(for: employee)
+                                )
+                            } else {
+                                EmptyDeskView(deskIndex: index)
+                            }
                         }
                     }
                 }
+                .padding(16)
+
+                // Department-specific decorations
+                decorationsForDepartment
             }
-            .padding(16)
         }
         .frame(width: 360, height: 380)
         .background(Color(NSColor.windowBackgroundColor))

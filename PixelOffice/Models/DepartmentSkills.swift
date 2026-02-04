@@ -46,6 +46,8 @@ struct DepartmentSkillSet: Codable {
     var expertise: [String]        // 전문 분야 목록
     var workStyle: String          // 작업 스타일/방식
     var customPrompt: String       // 추가 커스텀 프롬프트
+    var role: String               // 역할 설명 (JobRole 호환용)
+    var skills: [String]           // 스킬 목록 (JobRole 호환용)
 
     /// 전체 시스템 프롬프트 생성
     var fullPrompt: String {
@@ -88,7 +90,9 @@ struct DepartmentSkillSet: Codable {
                 - 타겟 사용자와 핵심 가치를 파악하려 합니다
                 - 실현 가능성과 리소스를 고려한 현실적인 조언을 합니다
                 """,
-                customPrompt: ""
+                customPrompt: "",
+                role: "10년차 시니어 기획자",
+                skills: []
             )
         case .design:
             return DepartmentSkillSet(
@@ -105,7 +109,9 @@ struct DepartmentSkillSet: Codable {
                 - 심미성과 사용성의 균형을 중시합니다
                 - 구체적인 디자인 방향과 레퍼런스를 제시합니다
                 """,
-                customPrompt: ""
+                customPrompt: "",
+                role: "10년차 시니어 디자이너 (UI/UX 전문가)",
+                skills: []
             )
         case .development:
             return DepartmentSkillSet(
@@ -122,7 +128,9 @@ struct DepartmentSkillSet: Codable {
                 - 확장성과 유지보수성을 고려합니다
                 - 구체적인 기술 스택과 구현 방안을 제안합니다
                 """,
-                customPrompt: ""
+                customPrompt: "",
+                role: "10년차 시니어 개발자 (풀스택 + 아키텍트)",
+                skills: []
             )
         case .qa:
             return DepartmentSkillSet(
@@ -139,7 +147,9 @@ struct DepartmentSkillSet: Codable {
                 - 품질 기준과 테스트 범위를 명확히 합니다
                 - 리스크 기반 테스트 우선순위를 제안합니다
                 """,
-                customPrompt: ""
+                customPrompt: "",
+                role: "10년차 시니어 QA 엔지니어",
+                skills: []
             )
         case .marketing:
             return DepartmentSkillSet(
@@ -156,7 +166,9 @@ struct DepartmentSkillSet: Codable {
                 - 데이터 기반 의사결정을 중시합니다
                 - 측정 가능한 마케팅 목표를 설정합니다
                 """,
-                customPrompt: ""
+                customPrompt: "",
+                role: "10년차 시니어 마케터 (디지털 마케팅 + 그로스 해킹)",
+                skills: []
             )
         case .general:
             return DepartmentSkillSet(
@@ -166,7 +178,9 @@ struct DepartmentSkillSet: Codable {
                     "회사 전반 이해"
                 ],
                 workStyle: "다방면에서 도움을 줄 수 있습니다",
-                customPrompt: ""
+                customPrompt: "",
+                role: "10년차 베테랑 직원",
+                skills: []
             )
         }
     }

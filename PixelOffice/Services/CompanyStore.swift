@@ -19,6 +19,10 @@ class CompanyStore: ObservableObject {
         self.company = dataManager.loadCompany() ?? Company()
         setupAutoSave()
         loadEmployeeStatuses()
+
+        // _projects 폴더에서 자동 복구
+        ProjectRecoveryService.shared.recoverProjectsIfNeeded(company: &company)
+
         ensureProjectDirectoriesExist()
         ensureEmployeeProfilesExist()
         syncWikiDocumentsToFiles()
