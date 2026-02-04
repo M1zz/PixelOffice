@@ -16,9 +16,19 @@ class CompanyStore: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     init() {
-        self.company = dataManager.loadCompany() ?? Company()
+        print("🏢 CompanyStore init started")
+        let loadedCompany = dataManager.loadCompany()
+        if let loaded = loadedCompany {
+            self.company = loaded
+            print("✅ Loaded existing company with \(loaded.allEmployees.count) employees")
+        } else {
+            self.company = Company()
+            print("⚠️ No saved company found, created new empty company")
+        }
+
         setupAutoSave()
         loadEmployeeStatuses()
+        print("👥 Employee statuses loaded: \(employeeStatuses.count) entries")
 
         // _projects 폴더에서 자동 복구
         ProjectRecoveryService.shared.recoverProjectsIfNeeded(company: &company)
@@ -26,6 +36,9 @@ class CompanyStore: ObservableObject {
         ensureProjectDirectoriesExist()
         ensureEmployeeProfilesExist()
         syncWikiDocumentsToFiles()
+
+        print("✅ CompanyStore init completed")
+        print("👥 Final employee count: \(company.allEmployees.count)")
     }
 
     /// 기존 프로젝트들의 디렉토리 구조 생성 (README 포함)
@@ -107,6 +120,7 @@ class CompanyStore: ObservableObject {
     }
     
     func saveCompany() {
+        print("💾 Saving company... (\(company.allEmployees.count) employees)")
         dataManager.saveCompany(company)
     }
     

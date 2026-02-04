@@ -239,7 +239,7 @@ struct CommunityEmployeeCard: View {
                 // 캐릭터와 상태
                 ZStack(alignment: .topTrailing) {
                     Circle()
-                        .fill(employee.jobRole.department.color.opacity(0.2))
+                        .fill(employee.department.color.opacity(0.2))
                         .frame(width: 70, height: 70)
                     PixelCharacter(
                         appearance: employee.characterAppearance,
@@ -263,19 +263,20 @@ struct CommunityEmployeeCard: View {
                     HStack(spacing: 4) {
                         Text(employee.name)
                             .font(.headline)
-                        Image(systemName: employee.jobRole.department.icon)
+                        Image(systemName: employee.department.icon)
                             .font(.caption)
-                            .foregroundColor(employee.jobRole.department.color)
+                            .foregroundColor(employee.department.color)
                     }
 
                     // 직무
-                    Text(employee.jobRole.rawValue)
+                    Text(employee.jobRoles.map { $0.rawValue }.joined(separator: ", "))
                         .font(.caption.bold())
-                        .foregroundColor(employee.jobRole.department.color)
+                        .foregroundColor(employee.department.color)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 2)
-                        .background(employee.jobRole.department.color.opacity(0.15))
+                        .background(employee.department.color.opacity(0.15))
                         .clipShape(Capsule())
+                        .lineLimit(2)
 
                     // 사원번호
                     Text(employee.employeeNumber)
@@ -326,7 +327,7 @@ struct CommunityEmployeeCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(employee.jobRole.department.color.opacity(0.3), lineWidth: 1)
+                    .strokeBorder(employee.department.color.opacity(0.3), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -348,14 +349,15 @@ struct CommunityEmployeeDetailView: View {
                 EmployeeBadgeView(
                     name: employee.name,
                     employeeNumber: employee.employeeNumber,
-                    departmentType: employee.jobRole.department,
+                    departmentType: employee.department,
                     aiType: employee.aiType,
                     appearance: employee.characterAppearance,
                     hireDate: employee.createdAt,
-                    jobRole: employee.jobRole,
+                    jobRoles: employee.jobRoles,
                     personality: employee.personality,
                     strengths: employee.strengths,
-                    workStyle: employee.workStyle
+                    workStyle: employee.workStyle,
+                    statistics: employee.statistics
                 )
 
                 Divider()

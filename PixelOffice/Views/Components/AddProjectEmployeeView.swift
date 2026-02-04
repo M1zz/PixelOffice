@@ -11,6 +11,7 @@ struct AddProjectEmployeeView: View {
     @State private var name = ""
     @State private var aiType: AIType = .claude
     @State private var selectedDepartmentType: DepartmentType?
+    @State private var selectedJobRoles: Set<JobRole> = []
     @State private var appearance = CharacterAppearance.random()
     @State private var sourceMode: SourceMode = .new
     @State private var selectedSourceEmployee: Employee?
@@ -29,12 +30,18 @@ struct AddProjectEmployeeView: View {
             return selectedSourceEmployee != nil && selectedDepartmentType != nil
         }
         return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            selectedDepartmentType != nil
+            selectedDepartmentType != nil &&
+            !selectedJobRoles.isEmpty
     }
 
     var selectedDepartment: ProjectDepartment? {
         guard let type = selectedDepartmentType, let project = project else { return nil }
         return project.getDepartment(byType: type)
+    }
+
+    var availableJobRoles: [JobRole] {
+        guard let type = selectedDepartmentType else { return [.general] }
+        return JobRole.roles(for: type)
     }
 
     var body: some View {
@@ -149,6 +156,10 @@ struct AddProjectEmployeeView: View {
                                     .tag(dept.type as DepartmentType?)
                                 }
                             }
+                            .onChange(of: selectedDepartmentType) { oldValue, newValue in
+                                // 부서가 변경되면 직군 선택 초기화
+                                selectedJobRoles.removeAll()
+                            }
 
                             if let dept = selectedDepartment {
                                 if dept.isFull {
@@ -160,6 +171,50 @@ struct AddProjectEmployeeView: View {
                                         .font(.callout)
                                         .foregroundStyle(.secondary)
                                 }
+                            }
+                        }
+                    }
+
+                    if sourceMode == .new && selectedDepartmentType != nil && !availableJobRoles.isEmpty {
+                        Section("직군 선택 (복수 선택 가능)") {
+                            VStack(alignment: .leading, spacing: 8) {
+                                ForEach(availableJobRoles, id: \.self) { role in
+                                    Button {
+                                        if selectedJobRoles.contains(role) {
+                                            selectedJobRoles.remove(role)
+                                        } else {
+                                            selectedJobRoles.insert(role)
+                                        }
+                                    } label: {
+                                        HStack(spacing: 12) {
+                                            Image(systemName: selectedJobRoles.contains(role) ? "checkmark.square.fill" : "square")
+                                                .foregroundStyle(selectedJobRoles.contains(role) ? .blue : .secondary)
+                                                .font(.title3)
+
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(role.rawValue)
+                                                    .font(.body)
+                                                    .foregroundStyle(.primary)
+                                                Text(role.description)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.secondary)
+                                                    .lineLimit(2)
+                                            }
+
+                                            Spacer()
+                                        }
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(.vertical, 4)
+                                }
+                            }
+
+                            if !selectedJobRoles.isEmpty {
+                                Divider()
+                                Text("선택한 직군: \(selectedJobRoles.map { $0.rawValue }.joined(separator: ", "))")
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -195,37 +250,55 @@ struct AddProjectEmployeeView: View {
                                     title: "피부색",
                                     value: $appearance.skinTone,
                                     max: 3,
-                                    getName: { CharacterAppearance.skinToneName($0) }
+                                    getName: { CharacterAppearance.skinToneName($0) },
+                                    appearance: appearance,
+                                    aiType: aiType,
+                                    attributeType: .skinTone
                                 )
                                 ProjectAppearancePicker(
                                     title: "헤어 스타일",
                                     value: $appearance.hairStyle,
                                     max: 11,
-                                    getName: { CharacterAppearance.hairStyleName($0) }
+                                    getName: { CharacterAppearance.hairStyleName($0) },
+                                    appearance: appearance,
+                                    aiType: aiType,
+                                    attributeType: .hairStyle
                                 )
                                 ProjectAppearancePicker(
                                     title: "헤어 색상",
                                     value: $appearance.hairColor,
                                     max: 8,
-                                    getName: { CharacterAppearance.hairColorName($0) }
+                                    getName: { CharacterAppearance.hairColorName($0) },
+                                    appearance: appearance,
+                                    aiType: aiType,
+                                    attributeType: .hairColor
                                 )
                                 ProjectAppearancePicker(
                                     title: "셔츠 색상",
                                     value: $appearance.shirtColor,
                                     max: 11,
-                                    getName: { CharacterAppearance.shirtColorName($0) }
+                                    getName: { CharacterAppearance.shirtColorName($0) },
+                                    appearance: appearance,
+                                    aiType: aiType,
+                                    attributeType: .shirtColor
                                 )
                                 ProjectAppearancePicker(
                                     title: "악세서리",
                                     value: $appearance.accessory,
                                     max: 9,
-                                    getName: { CharacterAppearance.accessoryName($0) }
+                                    getName: { CharacterAppearance.accessoryName($0) },
+                                    appearance: appearance,
+                                    aiType: aiType,
+                                    attributeType: .accessory
                                 )
                                 ProjectAppearancePicker(
                                     title: "표정",
                                     value: $appearance.expression,
                                     max: 4,
-                                    getName: { CharacterAppearance.expressionName($0) }
+                                    getName: { CharacterAppearance.expressionName($0) },
+                                    appearance: appearance,
+                                    aiType: aiType,
+                                    attributeType: .expression
                                 )
                             }
                             .padding()
@@ -287,6 +360,7 @@ struct AddProjectEmployeeView: View {
             employee = ProjectEmployee(
                 name: name.trimmingCharacters(in: .whitespacesAndNewlines),
                 aiType: aiType,
+                jobRoles: Array(selectedJobRoles),
                 status: .idle,
                 characterAppearance: appearance,
                 departmentType: deptType
@@ -303,6 +377,13 @@ private struct ProjectAppearancePicker: View {
     @Binding var value: Int
     let max: Int
     let getName: (Int) -> String
+    var appearance: CharacterAppearance
+    var aiType: AIType
+    var attributeType: ProjectAppearanceAttributeType
+
+    enum ProjectAppearanceAttributeType {
+        case skinTone, hairStyle, hairColor, shirtColor, accessory, expression
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -324,16 +405,26 @@ private struct ProjectAppearancePicker: View {
                             }
                         } label: {
                             VStack(spacing: 4) {
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(value == i ? Color.accentColor : Color.gray.opacity(0.2))
-                                    .frame(width: 32, height: 32)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 6)
-                                            .strokeBorder(
-                                                value == i ? Color.accentColor : Color.clear,
-                                                lineWidth: 2
-                                            )
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.gray.opacity(0.1))
+                                        .frame(width: 40, height: 40)
+
+                                    // 미니 캐릭터 썸네일
+                                    PixelCharacter(
+                                        appearance: previewAppearance(for: i),
+                                        status: .idle,
+                                        aiType: aiType
                                     )
+                                    .scaleEffect(0.6)
+                                }
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .strokeBorder(
+                                            value == i ? Color.accentColor : Color.clear,
+                                            lineWidth: 2
+                                        )
+                                )
 
                                 Text("\(i)")
                                     .font(.caption2)
@@ -347,6 +438,25 @@ private struct ProjectAppearancePicker: View {
                 .padding(.vertical, 4)
             }
         }
+    }
+
+    private func previewAppearance(for index: Int) -> CharacterAppearance {
+        var preview = appearance
+        switch attributeType {
+        case .skinTone:
+            preview.skinTone = index
+        case .hairStyle:
+            preview.hairStyle = index
+        case .hairColor:
+            preview.hairColor = index
+        case .shirtColor:
+            preview.shirtColor = index
+        case .accessory:
+            preview.accessory = index
+        case .expression:
+            preview.expression = index
+        }
+        return preview
     }
 }
 

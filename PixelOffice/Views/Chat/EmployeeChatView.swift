@@ -98,6 +98,8 @@ struct EmployeeChatView: View {
         - 질문할 때는 구체적이고 실무적인 질문을 합니다
         - 답변할 때는 10년 경력의 전문가답게 깊이 있는 인사이트를 제공합니다
 
+        \(AIActionGuide.guide)
+
         \(workLogSummary)
 
         📄 문서 작성 기능:
@@ -380,7 +382,34 @@ struct EmployeeChatView: View {
                     throw ClaudeCodeError.notInstalled
                 }
 
-                // 응답에서 파일 추출 및 저장
+                // ✨ AI 액션 파싱 및 실행
+                let actions = await AIActionParser.shared.parseActions(from: response)
+                var actionResults: [String] = []
+
+                if !actions.isEmpty {
+                    await AIActionParser.shared.executeActions(
+                        actions,
+                        projectId: nil,  // 회사 직원은 프로젝트 ID 없음
+                        employeeId: employee.id,
+                        companyStore: companyStore
+                    )
+
+                    // 실행된 액션 요약
+                    for action in actions {
+                        switch action {
+                        case .createWiki(let title, _, _):
+                            actionResults.append("📄 위키 문서 생성: \(title)")
+                        case .createTask(let title, _, _, _, _):
+                            actionResults.append("✅ 태스크 추가: \(title)")
+                        case .mention(_, let targetName, _):
+                            actionResults.append("🔔 멘션: @\(targetName)")
+                        case .createCollaboration(let title, _, _, _):
+                            actionResults.append("🤝 협업 기록: \(title)")
+                        }
+                    }
+                }
+
+                // 응답에서 파일 추출 및 저장 (기존 로직)
                 let (fileCleanedResponse, savedFiles) = await MainActor.run {
                     extractAndSaveFiles(from: response)
                 }
@@ -396,6 +425,15 @@ struct EmployeeChatView: View {
                 await MainActor.run {
                     let assistantMessage = ChatMessage(role: .assistant, content: cleanedResponse)
                     messages.append(assistantMessage)
+
+                    // 액션 실행 결과 표시
+                    if !actionResults.isEmpty {
+                        let actionMessage = ChatMessage(
+                            role: .system,
+                            content: "🛠️ 실행된 작업:\n" + actionResults.map { "  • \($0)" }.joined(separator: "\n")
+                        )
+                        messages.append(actionMessage)
+                    }
 
                     // 저장된 파일이 있으면 알림
                     if !savedFiles.isEmpty {
@@ -1207,6 +1245,7 @@ struct ChatMessage: Identifiable {
 enum ChatRole {
     case user
     case assistant
+    case system
 }
 
 #Preview {

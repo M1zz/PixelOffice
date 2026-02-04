@@ -108,6 +108,8 @@ struct ProjectEmployeeChatView: View {
         - 이 프로젝트의 맥락을 항상 고려하여 답변합니다
         - 다른 부서의 문서를 참고하여 협업에 활용합니다
 
+        \(AIActionGuide.guide)
+
         📄 문서 작성 기능:
         문서를 작성해달라는 요청을 받으면, 다음 형식으로 마크다운 문서를 작성하세요:
 
@@ -348,17 +350,53 @@ struct ProjectEmployeeChatView: View {
                     throw ClaudeCodeError.notInstalled
                 }
 
-                // 응답에서 파일 추출 및 저장
+                // ✨ AI 액션 파싱 및 실행
+                let actions = await AIActionParser.shared.parseActions(from: response)
+                var actionResults: [String] = []
+
+                if !actions.isEmpty {
+                    await AIActionParser.shared.executeActions(
+                        actions,
+                        projectId: projectId,
+                        employeeId: emp.id,
+                        companyStore: companyStore
+                    )
+
+                    // 실행된 액션 요약
+                    for action in actions {
+                        switch action {
+                        case .createWiki(let title, _, _):
+                            actionResults.append("📄 위키 문서 생성: \(title)")
+                        case .createTask(let title, _, _, _, _):
+                            actionResults.append("✅ 태스크 추가: \(title)")
+                        case .mention(_, let targetName, _):
+                            actionResults.append("🔔 멘션: @\(targetName)")
+                        case .createCollaboration(let title, _, _, _):
+                            actionResults.append("🤝 협업 기록: \(title)")
+                        }
+                    }
+                }
+
+                // 응답에서 파일 추출 및 저장 (기존 로직)
                 let (fileCleanedResponse, savedFiles) = await MainActor.run {
                     extractAndSaveFiles(from: response)
                 }
 
-                // 응답에서 멘션 추출 및 처리
+                // 응답에서 멘션 추출 및 처리 (기존 로직)
                 let (cleanedResponse, mentionResponses) = await extractAndProcessMentions(from: fileCleanedResponse)
 
                 await MainActor.run {
                     let assistantMessage = ChatMessage(role: .assistant, content: cleanedResponse)
                     messages.append(assistantMessage)
+
+                    // 액션 실행 결과 표시
+                    if !actionResults.isEmpty {
+                        let actionMessage = ChatMessage(
+                            role: .system,
+                            content: "🛠️ 실행된 작업:\n" + actionResults.map { "  • \($0)" }.joined(separator: "\n")
+                        )
+                        messages.append(actionMessage)
+                    }
 
                     if !savedFiles.isEmpty {
                         let fileNames = savedFiles.joined(separator: ", ")

@@ -127,17 +127,26 @@ class DataManager {
     
     func loadCompany() -> Company? {
         // 1. 프로젝트 디렉토리에서 로드 시도
+        print("🔍 Loading company from: \(companyFileURL.path)")
         if fileManager.fileExists(atPath: companyFileURL.path) {
             do {
                 let data = try Data(contentsOf: companyFileURL)
+                print("📊 File size: \(data.count) bytes")
                 let decoder = JSONDecoder()
                 decoder.dateDecodingStrategy = .iso8601
                 let company = try decoder.decode(Company.self, from: data)
                 print("✅ Company loaded from project directory")
+                print("👥 Departments: \(company.departments.count)")
+                print("👥 Total employees: \(company.allEmployees.count)")
+                for dept in company.departments {
+                    print("   - \(dept.name): \(dept.employees.count)명")
+                }
                 return company
             } catch {
                 print("⚠️ Failed to load from project directory: \(error)")
             }
+        } else {
+            print("⚠️ Company file does not exist at path")
         }
 
         // 2. iCloud에서 전체 복원 시도
