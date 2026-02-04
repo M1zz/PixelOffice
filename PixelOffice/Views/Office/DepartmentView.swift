@@ -76,12 +76,8 @@ struct DepartmentView: View {
     }
     
     var body: some View {
-        ZStack {
-            // 오피스 바닥
-            OfficeFloor()
-
-            VStack(spacing: 0) {
-                // Department Header
+        VStack(spacing: 0) {
+            // Department Header
             VStack(spacing: 6) {
                 HStack {
                     Image(systemName: department.type.icon)
@@ -118,9 +114,12 @@ struct DepartmentView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(department.type.color.opacity(0.15))
-            
+
             // Desk Area with Decorations
             ZStack(alignment: .topLeading) {
+                // 오피스 바닥 배경
+                OfficeFloor()
+
                 VStack(spacing: 12) {
                     // Desks Grid (2x2)
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -147,14 +146,13 @@ struct DepartmentView: View {
         }
         .frame(width: 360, height: 380)
         .background(Color(NSColor.windowBackgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? department.type.color : Color.clear, lineWidth: 3)
-            )
-            .shadow(color: isHovering ? department.type.color.opacity(0.3) : .clear, radius: 10)
-            .scaleEffect(isHovering ? 1.02 : 1.0)
-        }
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isSelected ? department.type.color : Color.clear, lineWidth: 3)
+        )
+        .shadow(color: isHovering ? department.type.color.opacity(0.3) : .clear, radius: 10)
+        .scaleEffect(isHovering ? 1.02 : 1.0)
         .onTapGesture(perform: onSelect)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.2)) {
