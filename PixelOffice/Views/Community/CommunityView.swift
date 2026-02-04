@@ -151,7 +151,26 @@ struct CommunityView: View {
 
     @ViewBuilder
     private var employeesSection: some View {
-        CommunityEmployeeGrid(employees: companyStore.company.allEmployees)
+        if companyStore.company.allEmployees.isEmpty {
+            VStack(spacing: 16) {
+                Image(systemName: "person.2.slash")
+                    .font(.system(size: 48))
+                    .foregroundColor(.secondary.opacity(0.5))
+                Text("지금은 보여줄 사원이 없습니다")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                Text("회사 부서: \(companyStore.company.departments.count)개")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary.opacity(0.8))
+                Text("전체 직원 수: \(companyStore.company.allEmployees.count)명")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary.opacity(0.8))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 60)
+        } else {
+            CommunityEmployeeGrid(employees: companyStore.company.allEmployees)
+        }
     }
 
     // MARK: - Guides Section
