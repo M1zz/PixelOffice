@@ -139,6 +139,7 @@ struct PixelDesk: View {
             }
         }
         .frame(width: 45, height: 36)
+        .background(Color.red.opacity(0.3))  // DEBUG: 임시 배경
     }
 }
 
@@ -185,6 +186,7 @@ struct PixelComputer: View {
             }
         }
         .frame(width: 60, height: 51)
+        .background(Color.blue.opacity(0.3))  // DEBUG: 임시 배경
     }
 }
 

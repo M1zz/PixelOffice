@@ -169,81 +169,83 @@ struct AddProjectEmployeeView: View {
 
                 Divider()
 
-                // Character Preview
-                VStack(spacing: 20) {
-                    Text("캐릭터 미리보기")
-                        .font(.headline)
+                // Character Preview (with scroll)
+                ScrollView {
+                    VStack(spacing: 20) {
+                        Text("캐릭터 미리보기")
+                            .font(.headline)
 
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.secondary.opacity(0.1))
-                            .frame(width: 150, height: 150)
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.secondary.opacity(0.1))
+                                .frame(width: 150, height: 150)
 
-                        PixelCharacter(
-                            appearance: sourceMode == .copy ? (selectedSourceEmployee?.characterAppearance ?? appearance) : appearance,
-                            status: .idle,
-                            aiType: sourceMode == .copy ? (selectedSourceEmployee?.aiType ?? aiType) : aiType
-                        )
-                        .scaleEffect(2)
-                    }
-
-                    if sourceMode == .new {
-                        // Appearance customization
-                        VStack(alignment: .leading, spacing: 12) {
-                            ProjectAppearancePicker(
-                                title: "피부색",
-                                value: $appearance.skinTone,
-                                max: 3,
-                                getName: { CharacterAppearance.skinToneName($0) }
+                            PixelCharacter(
+                                appearance: sourceMode == .copy ? (selectedSourceEmployee?.characterAppearance ?? appearance) : appearance,
+                                status: .idle,
+                                aiType: sourceMode == .copy ? (selectedSourceEmployee?.aiType ?? aiType) : aiType
                             )
-                            ProjectAppearancePicker(
-                                title: "헤어 스타일",
-                                value: $appearance.hairStyle,
-                                max: 11,
-                                getName: { CharacterAppearance.hairStyleName($0) }
-                            )
-                            ProjectAppearancePicker(
-                                title: "헤어 색상",
-                                value: $appearance.hairColor,
-                                max: 8,
-                                getName: { CharacterAppearance.hairColorName($0) }
-                            )
-                            ProjectAppearancePicker(
-                                title: "셔츠 색상",
-                                value: $appearance.shirtColor,
-                                max: 11,
-                                getName: { CharacterAppearance.shirtColorName($0) }
-                            )
-                            ProjectAppearancePicker(
-                                title: "악세서리",
-                                value: $appearance.accessory,
-                                max: 9,
-                                getName: { CharacterAppearance.accessoryName($0) }
-                            )
-                            ProjectAppearancePicker(
-                                title: "표정",
-                                value: $appearance.expression,
-                                max: 4,
-                                getName: { CharacterAppearance.expressionName($0) }
-                            )
+                            .scaleEffect(2)
                         }
-                        .padding()
 
-                        Button("랜덤 생성") {
-                            withAnimation {
-                                appearance = CharacterAppearance.random()
+                        if sourceMode == .new {
+                            // Appearance customization
+                            VStack(alignment: .leading, spacing: 12) {
+                                ProjectAppearancePicker(
+                                    title: "피부색",
+                                    value: $appearance.skinTone,
+                                    max: 3,
+                                    getName: { CharacterAppearance.skinToneName($0) }
+                                )
+                                ProjectAppearancePicker(
+                                    title: "헤어 스타일",
+                                    value: $appearance.hairStyle,
+                                    max: 11,
+                                    getName: { CharacterAppearance.hairStyleName($0) }
+                                )
+                                ProjectAppearancePicker(
+                                    title: "헤어 색상",
+                                    value: $appearance.hairColor,
+                                    max: 8,
+                                    getName: { CharacterAppearance.hairColorName($0) }
+                                )
+                                ProjectAppearancePicker(
+                                    title: "셔츠 색상",
+                                    value: $appearance.shirtColor,
+                                    max: 11,
+                                    getName: { CharacterAppearance.shirtColorName($0) }
+                                )
+                                ProjectAppearancePicker(
+                                    title: "악세서리",
+                                    value: $appearance.accessory,
+                                    max: 9,
+                                    getName: { CharacterAppearance.accessoryName($0) }
+                                )
+                                ProjectAppearancePicker(
+                                    title: "표정",
+                                    value: $appearance.expression,
+                                    max: 4,
+                                    getName: { CharacterAppearance.expressionName($0) }
+                                )
                             }
-                        }
-                        .buttonStyle(.bordered)
-                    } else {
-                        Text("외형은 원본 직원과 동일합니다")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
                             .padding()
+
+                            Button("랜덤 생성") {
+                                withAnimation {
+                                    appearance = CharacterAppearance.random()
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                        } else {
+                            Text("외형은 원본 직원과 동일합니다")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .padding()
+                        }
                     }
+                    .padding()
                 }
                 .frame(width: 250)
-                .padding()
             }
 
             Divider()

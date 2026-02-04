@@ -10,82 +10,51 @@ struct DeskView: View {
     @State private var questionBounce = false
 
     var body: some View {
-        VStack(spacing: 4) {
-            ZStack {
-                // 픽셀아트 의자 (캐릭터 뒤)
+        VStack(spacing: 8) {
+            // 책상 영역
+            VStack(spacing: 4) {
+                // 컴퓨터 (회색 사각형)
+                Rectangle()
+                    .fill(Color.gray)
+                    .frame(width: 50, height: 30)
+
+                // 책상 (갈색 사각형)
+                Rectangle()
+                    .fill(Color(red: 0.4, green: 0.25, blue: 0.15))
+                    .frame(width: 80, height: 20)
+
+                // 캐릭터 표시 (원)
                 if employee.status != .idle {
-                    PixelChair()
-                        .offset(y: 5)
-                        .opacity(0.7)
-                }
-
-                // 픽셀아트 책상
-                PixelDesk()
-                    .offset(y: 10)
-
-                // 컴퓨터
-                PixelComputer()
-                    .offset(y: -5)
-
-                // Screen glow when working
-                if employee.isWorking {
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.cyan.opacity(0.5), .blue.opacity(0.3)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .frame(width: 30, height: 25)
-                        .offset(y: -8)
-                        .blur(radius: 4)
-                }
-
-                // Character (휴식 중일 때는 걸어다니므로 숨김)
-                if employee.status != .idle {
-                    PixelCharacter(
-                        appearance: employee.characterAppearance,
-                        status: employee.status,
-                        aiType: employee.aiType
-                    )
-                    .offset(y: -15)
-                }
-
-                // 물음표 표시 (온보딩 질문이 있을 때)
-                if hasPendingQuestions {
-                    QuestionMarkBubble()
-                        .offset(x: 25, y: -45)
-                        .offset(y: questionBounce ? -3 : 0)
-                        .onAppear {
-                            withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
-                                questionBounce = true
-                            }
-                        }
+                    Circle()
+                        .fill(employee.aiType.color)
+                        .frame(width: 25, height: 25)
+                } else {
+                    Text("💤")
+                        .font(.title3)
                 }
             }
-            
-            // Name and status
-            VStack(spacing: 4) {
+
+            // 이름과 상태
+            VStack(spacing: 2) {
                 Text(employee.name)
-                    .font(.body.bold())
+                    .font(.caption.bold())
                     .lineLimit(1)
 
-                HStack(spacing: 4) {
+                HStack(spacing: 3) {
                     Circle()
                         .fill(employee.status.color)
-                        .frame(width: 8, height: 8)
+                        .frame(width: 6, height: 6)
                     Text(employee.status.rawValue)
-                        .font(.body)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
         }
-        .frame(width: 120, height: 120)
-        .padding(4)
+        .frame(width: 110, height: 140)
+        .padding(5)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isHovering ? Color.black.opacity(0.05) : Color.clear)
+                .fill(isHovering ? Color.black.opacity(0.08) : Color.gray.opacity(0.05))
         )
         .onTapGesture(perform: onSelect)
         .onHover { hovering in
