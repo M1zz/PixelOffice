@@ -55,6 +55,58 @@
             "커뮤니케이션"
           ],
           "workStyle": "체계적으로 계획하고 실행"
+        },
+        {
+          "id": "a319ab29-3036-4254-bca5-5bf80188509f",
+          "employeeNumber": "EMP-8230",
+          "name": "마이클",
+          "aiType": "Claude",
+          "jobRole": "general",
+          "status": "휴식 중",
+          "conversationHistory": [],
+          "createdAt": "2026-02-04T15:50:28Z",
+          "totalTasksCompleted": 0,
+          "characterAppearance": {
+            "skinTone": 2,
+            "hairStyle": 3,
+            "hairColor": 1,
+            "shirtColor": 0,
+            "accessory": 3,
+            "expression": 0
+          },
+          "personality": "열정적이고 창의적인",
+          "strengths": [
+            "빠른 학습",
+            "문제 해결",
+            "커뮤니케이션"
+          ],
+          "workStyle": "체계적으로 계획하고 실행"
+        },
+        {
+          "id": "2c167120-8ca5-4a99-9eb0-d8639970eb81",
+          "employeeNumber": "EMP-3451",
+          "name": "리이오",
+          "aiType": "Claude",
+          "jobRole": "general",
+          "status": "휴식 중",
+          "conversationHistory": [],
+          "createdAt": "2026-02-04T15:50:28Z",
+          "totalTasksCompleted": 0,
+          "characterAppearance": {
+            "skinTone": 1,
+            "hairStyle": 2,
+            "hairColor": 4,
+            "shirtColor": 7,
+            "accessory": 1,
+            "expression": 0
+          },
+          "personality": "열정적이고 창의적인",
+          "strengths": [
+            "빠른 학습",
+            "문제 해결",
+            "커뮤니케이션"
+          ],
+          "workStyle": "체계적으로 계획하고 실행"
         }
       ],
       "position": {
@@ -93,6 +145,32 @@
             "커뮤니케이션"
           ],
           "workStyle": "체계적으로 계획하고 실행"
+        },
+        {
+          "id": "2f7b8689-6e0c-4dca-be2f-7f8abb997302",
+          "employeeNumber": "EMP-3721",
+          "name": "제니",
+          "aiType": "Claude",
+          "jobRole": "general",
+          "status": "휴식 중",
+          "conversationHistory": [],
+          "createdAt": "2026-02-04T15:50:28Z",
+          "totalTasksCompleted": 0,
+          "characterAppearance": {
+            "skinTone": 2,
+            "hairStyle": 6,
+            "hairColor": 2,
+            "shirtColor": 6,
+            "accessory": 0,
+            "expression": 0
+          },
+          "personality": "열정적이고 창의적인",
+          "strengths": [
+            "빠른 학습",
+            "문제 해결",
+            "커뮤니케이션"
+          ],
+          "workStyle": "체계적으로 계획하고 실행"
         }
       ],
       "position": {
@@ -115,6 +193,32 @@
           "status": "휴식 중",
           "conversationHistory": [],
           "createdAt": "2026-02-04T15:45:43Z",
+          "totalTasksCompleted": 0,
+          "characterAppearance": {
+            "skinTone": 2,
+            "hairStyle": 1,
+            "hairColor": 4,
+            "shirtColor": 1,
+            "accessory": 1,
+            "expression": 0
+          },
+          "personality": "열정적이고 창의적인",
+          "strengths": [
+            "빠른 학습",
+            "문제 해결",
+            "커뮤니케이션"
+          ],
+          "workStyle": "체계적으로 계획하고 실행"
+        },
+        {
+          "id": "0ec0c758-0f4f-41a9-8df0-5703f96ed1f1",
+          "employeeNumber": "EMP-7473",
+          "name": "켄트백",
+          "aiType": "Claude",
+          "jobRole": "general",
+          "status": "휴식 중",
+          "conversationHistory": [],
+          "createdAt": "2026-02-04T15:50:28Z",
           "totalTasksCompleted": 0,
           "characterAppearance": {
             "skinTone": 2,
