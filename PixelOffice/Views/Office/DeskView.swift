@@ -10,77 +10,39 @@ struct DeskView: View {
     @State private var questionBounce = false
 
     var body: some View {
-        VStack(spacing: 4) {
-            // 컴퓨터 - 파란색
-            ZStack {
-                Rectangle()
-                    .fill(Color.blue)
-                    .frame(width: 80, height: 40)
+        Rectangle()
+            .fill(Color.blue)
+            .frame(width: 120, height: 120)
+            .overlay(
+                VStack(spacing: 8) {
+                    Rectangle()
+                        .fill(Color.red)
+                        .frame(width: 80, height: 30)
+                        .overlay(
+                            Text("컴퓨터")
+                                .font(.headline.bold())
+                                .foregroundStyle(.white)
+                        )
 
-                Text("컴퓨터")
-                    .font(.caption.bold())
-                    .foregroundStyle(.white)
-            }
-
-            // 책상 - 빨간색
-            ZStack {
-                Rectangle()
-                    .fill(Color.red)
-                    .frame(width: 90, height: 30)
-
-                Text("책상")
-                    .font(.caption.bold())
-                    .foregroundStyle(.white)
-            }
-
-            // 캐릭터 - 노란색 또는 이모지
-            if employee.status != .idle {
-                ZStack {
-                    Circle()
+                    Rectangle()
                         .fill(Color.yellow)
-                        .frame(width: 35, height: 35)
+                        .frame(width: 80, height: 30)
+                        .overlay(
+                            Text("책상")
+                                .font(.headline.bold())
+                                .foregroundStyle(.black)
+                        )
 
-                    Text("AI")
-                        .font(.caption.bold())
-                        .foregroundStyle(.black)
+                    Text(employee.name)
+                        .font(.headline.bold())
+                        .foregroundStyle(.white)
+                        .padding(6)
+                        .background(Color.black)
                 }
-            } else {
-                Text("💤💤💤")
-                    .font(.title)
-            }
-
-            // 이름 - 검은 배경에 흰 글씨
-            ZStack {
-                Rectangle()
-                    .fill(Color.black)
-                    .frame(height: 25)
-
-                Text(employee.name)
-                    .font(.caption.bold())
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-            }
-
-            // 상태 - 초록 배경
-            ZStack {
-                Rectangle()
-                    .fill(Color.green)
-                    .frame(height: 20)
-
-                Text(employee.status.rawValue)
-                    .font(.caption2.bold())
-                    .foregroundStyle(.white)
-            }
-        }
-        .frame(width: 100, height: 160)
-        .background(Color.white)
-        .border(Color.black, width: 3)
-        .onTapGesture(perform: onSelect)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovering = hovering
-            }
-        }
+            )
+            .border(Color.purple, width: 5)
+            .fixedSize()
+            .onTapGesture(perform: onSelect)
     }
 }
 
