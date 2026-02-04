@@ -64,6 +64,8 @@
 		9C615C322F31BF6E00A5BC73 /* CollaborationRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615C312F31BF6E00A5BC73 /* CollaborationRecord.swift */; };
 		9C615C342F31BF8600A5BC73 /* CollaborationHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615C332F31BF8600A5BC73 /* CollaborationHistoryView.swift */; };
 		9C615C382F31C04400A5BC73 /* KanbanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615C372F31C04400A5BC73 /* KanbanView.swift */; };
+		040 /* JobRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 155 /* JobRole.swift */; };
+		041 /* OfficeDecoration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 156 /* OfficeDecoration.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -126,6 +128,8 @@
 		9C615C312F31BF6E00A5BC73 /* CollaborationRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollaborationRecord.swift; sourceTree = "<group>"; };
 		9C615C332F31BF8600A5BC73 /* CollaborationHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollaborationHistoryView.swift; sourceTree = "<group>"; };
 		9C615C372F31C04400A5BC73 /* KanbanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KanbanView.swift; sourceTree = "<group>"; };
+		155 /* JobRole.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobRole.swift; sourceTree = "<group>"; };
+		156 /* OfficeDecoration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeDecoration.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -178,6 +182,7 @@
 				105 /* Department.swift */,
 				138 /* DepartmentSkills.swift */,
 				106 /* Employee.swift */,
+				155 /* JobRole.swift */,
 				107 /* Project.swift */,
 				9C615BAD2F30862A00A5BC73 /* ProjectEmployee.swift */,
 				9C615BAC2F30862A00A5BC73 /* ProjectDepartment.swift */,
@@ -241,6 +246,7 @@
 				111 /* EmployeeView.swift */,
 				144 /* EmployeeWorkLogView.swift */,
 				126 /* DeskView.swift */,
+				156 /* OfficeDecoration.swift */,
 				150 /* WalkingEmployeesLayer.swift */,
 				9C615BB12F30864D00A5BC73 /* ProjectOfficeView.swift */,
 				9C615BB02F30864D00A5BC73 /* ProjectDepartmentView.swift */,
@@ -457,6 +463,8 @@
 				037 /* CommunityView.swift in Sources */,
 				038 /* ProjectWikiView.swift in Sources */,
 				039 /* EmployeeThinking.swift in Sources */,
+				040 /* JobRole.swift in Sources */,
+				041 /* OfficeDecoration.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

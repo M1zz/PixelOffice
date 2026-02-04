@@ -118,45 +118,40 @@ struct PixelBookshelf: View {
     var body: some View {
         Canvas { context, size in
             let pixelSize: CGFloat = 2
+            let shelfColor = Color(red: 0.4, green: 0.25, blue: 0.15)
 
             // Shelf frame (갈색)
             for y in 0...15 {
-                drawPixel(context, x: 0, y: y, pixelSize: pixelSize, color: Color(red: 0.4, green: 0.25, blue: 0.15))
-                drawPixel(context, x: 9, y: y, pixelSize: pixelSize, color: Color(red: 0.4, green: 0.25, blue: 0.15))
+                drawPixel(context, x: 0, y: y, pixelSize: pixelSize, color: shelfColor)
+                drawPixel(context, x: 9, y: y, pixelSize: pixelSize, color: shelfColor)
             }
 
             // Shelves
             for x in 0...9 {
-                drawPixel(context, x: x, y: 5, pixelSize: pixelSize, color: Color(red: 0.4, green: 0.25, blue: 0.15))
-                drawPixel(context, x: x, y: 10, pixelSize: pixelSize, color: Color(red: 0.4, green: 0.25, blue: 0.15))
-                drawPixel(context, x: x, y: 15, pixelSize: pixelSize, color: Color(red: 0.4, green: 0.25, blue: 0.15))
+                drawPixel(context, x: x, y: 5, pixelSize: pixelSize, color: shelfColor)
+                drawPixel(context, x: x, y: 10, pixelSize: pixelSize, color: shelfColor)
+                drawPixel(context, x: x, y: 15, pixelSize: pixelSize, color: shelfColor)
             }
 
-            // Books (다양한 색상)
-            let books = [
-                // Top shelf
-                (1, 1, 2, Color.red),
-                (3, 2, 1, Color.blue),
-                (4, 1, 2, Color.green),
-                (6, 3, 1, Color.yellow),
-                (7, 2, 2, Color.purple),
-                // Middle shelf
-                (1, 7, 3, Color.orange),
-                (4, 6, 2, Color.cyan),
-                (6, 8, 2, Color.pink),
-                // Bottom shelf
-                (1, 11, 2, Color.mint),
-                (3, 12, 3, Color.indigo),
-                (6, 11, 2, Color.teal)
-            ]
-
-            for (x, yStart, height, color) in books {
-                for y in yStart..<(yStart + height) {
-                    drawPixel(context, x: x, y: y, pixelSize: pixelSize, color: color)
-                }
-            }
+            // Books (다양한 색상) - simplified to help compiler
+            self.drawBooks(context: context, pixelSize: pixelSize)
         }
         .frame(width: 24, height: 36)
+    }
+
+    private func drawBooks(context: GraphicsContext, pixelSize: CGFloat) {
+        let books: [(Int, Int, Int, Color)] = [
+            (1, 1, 2, .red), (3, 2, 1, .blue), (4, 1, 2, .green),
+            (6, 3, 1, .yellow), (7, 2, 2, .purple), (1, 7, 3, .orange),
+            (4, 6, 2, .cyan), (6, 8, 2, .pink), (1, 11, 2, .mint),
+            (3, 12, 3, .indigo), (6, 11, 2, .teal)
+        ]
+
+        for book in books {
+            for y in book.1..<(book.1 + book.2) {
+                drawPixel(context, x: book.0, y: y, pixelSize: pixelSize, color: book.3)
+            }
+        }
     }
 }
 

@@ -250,6 +250,16 @@ struct CharacterAppearance: Codable, Hashable {
     }
 
     // MARK: - 옵션 이름
+    static func skinToneName(_ tone: Int) -> String {
+        switch tone {
+        case 0: return "밝은 톤"
+        case 1: return "중간 톤"
+        case 2: return "황갈색 톤"
+        case 3: return "어두운 톤"
+        default: return "밝은 톤"
+        }
+    }
+
     static func hairStyleName(_ style: Int) -> String {
         switch style {
         case 0: return "숏컷"

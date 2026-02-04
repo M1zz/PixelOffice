@@ -190,11 +190,42 @@ struct AddProjectEmployeeView: View {
                     if sourceMode == .new {
                         // Appearance customization
                         VStack(alignment: .leading, spacing: 12) {
-                            AppearancePicker(title: "피부색", value: $appearance.skinTone, max: 3)
-                            AppearancePicker(title: "헤어 스타일", value: $appearance.hairStyle, max: 4)
-                            AppearancePicker(title: "헤어 색상", value: $appearance.hairColor, max: 5)
-                            AppearancePicker(title: "셔츠 색상", value: $appearance.shirtColor, max: 7)
-                            AppearancePicker(title: "악세서리", value: $appearance.accessory, max: 3)
+                            ProjectAppearancePicker(
+                                title: "피부색",
+                                value: $appearance.skinTone,
+                                max: 3,
+                                getName: { CharacterAppearance.skinToneName($0) }
+                            )
+                            ProjectAppearancePicker(
+                                title: "헤어 스타일",
+                                value: $appearance.hairStyle,
+                                max: 11,
+                                getName: { CharacterAppearance.hairStyleName($0) }
+                            )
+                            ProjectAppearancePicker(
+                                title: "헤어 색상",
+                                value: $appearance.hairColor,
+                                max: 8,
+                                getName: { CharacterAppearance.hairColorName($0) }
+                            )
+                            ProjectAppearancePicker(
+                                title: "셔츠 색상",
+                                value: $appearance.shirtColor,
+                                max: 11,
+                                getName: { CharacterAppearance.shirtColorName($0) }
+                            )
+                            ProjectAppearancePicker(
+                                title: "악세서리",
+                                value: $appearance.accessory,
+                                max: 9,
+                                getName: { CharacterAppearance.accessoryName($0) }
+                            )
+                            ProjectAppearancePicker(
+                                title: "표정",
+                                value: $appearance.expression,
+                                max: 4,
+                                getName: { CharacterAppearance.expressionName($0) }
+                            )
                         }
                         .padding()
 
@@ -262,6 +293,58 @@ struct AddProjectEmployeeView: View {
 
         companyStore.addProjectEmployee(employee, toProject: projectId, department: deptType)
         dismiss()
+    }
+}
+
+private struct ProjectAppearancePicker: View {
+    let title: String
+    @Binding var value: Int
+    let max: Int
+    let getName: (Int) -> String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(title)
+                    .font(.callout.bold())
+                Spacer()
+                Text(getName(value))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(0...max, id: \.self) { i in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                value = i
+                            }
+                        } label: {
+                            VStack(spacing: 4) {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(value == i ? Color.accentColor : Color.gray.opacity(0.2))
+                                    .frame(width: 32, height: 32)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .strokeBorder(
+                                                value == i ? Color.accentColor : Color.clear,
+                                                lineWidth: 2
+                                            )
+                                    )
+
+                                Text("\(i)")
+                                    .font(.caption2)
+                                    .foregroundStyle(value == i ? .primary : .secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .help(getName(i))
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
     }
 }
 
