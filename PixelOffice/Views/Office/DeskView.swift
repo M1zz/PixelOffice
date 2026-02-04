@@ -10,51 +10,65 @@ struct DeskView: View {
     @State private var questionBounce = false
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             // 책상 영역
-            VStack(spacing: 4) {
-                // 컴퓨터 (회색 사각형)
-                Rectangle()
-                    .fill(Color.gray)
+            VStack(spacing: 3) {
+                // 컴퓨터 (파란 테두리)
+                RoundedRectangle(cornerRadius: 3)
+                    .strokeBorder(Color.blue, lineWidth: 2)
+                    .background(RoundedRectangle(cornerRadius: 3).fill(Color.cyan.opacity(0.3)))
                     .frame(width: 50, height: 30)
 
-                // 책상 (갈색 사각형)
-                Rectangle()
-                    .fill(Color(red: 0.4, green: 0.25, blue: 0.15))
-                    .frame(width: 80, height: 20)
+                // 책상 (갈색, 진하게)
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color.brown)
+                    .frame(width: 70, height: 15)
 
-                // 캐릭터 표시 (원)
+                // 캐릭터 표시
                 if employee.status != .idle {
                     Circle()
                         .fill(employee.aiType.color)
-                        .frame(width: 25, height: 25)
+                        .frame(width: 30, height: 30)
+                        .overlay(
+                            Circle()
+                                .strokeBorder(Color.black, lineWidth: 1)
+                        )
                 } else {
                     Text("💤")
-                        .font(.title3)
+                        .font(.title2)
                 }
             }
+            .frame(height: 80)
+            .frame(maxWidth: .infinity)
+            .background(Color.white.opacity(0.5))
+
+            Divider()
 
             // 이름과 상태
-            VStack(spacing: 2) {
+            VStack(spacing: 3) {
                 Text(employee.name)
                     .font(.caption.bold())
                     .lineLimit(1)
+                    .foregroundStyle(.primary)
 
                 HStack(spacing: 3) {
                     Circle()
                         .fill(employee.status.color)
-                        .frame(width: 6, height: 6)
+                        .frame(width: 8, height: 8)
                     Text(employee.status.rawValue)
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.primary)
                 }
             }
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 4)
         }
         .frame(width: 110, height: 140)
-        .padding(5)
-        .background(
+        .background(Color(NSColor.controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isHovering ? Color.black.opacity(0.08) : Color.gray.opacity(0.05))
+                .strokeBorder(isHovering ? Color.accentColor : Color.gray.opacity(0.3), lineWidth: isHovering ? 2 : 1)
         )
         .onTapGesture(perform: onSelect)
         .onHover { hovering in
