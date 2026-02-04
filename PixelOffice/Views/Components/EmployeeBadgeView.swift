@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 사원증 뷰 - 직원의 신분증 카드 (탭하면 앞/뒤/통계 전환)
+/// 사원증 뷰 - 직원의 신분증 카드 (탭하면 앞/뒤 전환)
 struct EmployeeBadgeView: View {
     let name: String
     let employeeNumber: String
@@ -14,11 +14,7 @@ struct EmployeeBadgeView: View {
     let workStyle: String
     let statistics: EmployeeStatistics
 
-    @State private var currentSide: BadgeSide = .front
-
-    enum BadgeSide {
-        case front, back, statistics
-    }
+    @State private var isFlipped = false
 
     var body: some View {
         ZStack {
@@ -31,7 +27,11 @@ struct EmployeeBadgeView: View {
                 appearance: appearance,
                 hireDate: hireDate
             )
-            .opacity(currentSide == .front ? 1 : 0)
+            .opacity(isFlipped ? 0 : 1)
+            .rotation3DEffect(
+                .degrees(isFlipped ? 180 : 0),
+                axis: (x: 0, y: 1, z: 0)
+            )
 
             // 뒷면 (상세 정보)
             EmployeeBadgeBackView(
@@ -41,26 +41,15 @@ struct EmployeeBadgeView: View {
                 workStyle: workStyle,
                 departmentColor: departmentType.color
             )
-            .opacity(currentSide == .back ? 1 : 0)
-
-            // 통계 면
-            EmployeeBadgeStatisticsView(
-                statistics: statistics,
-                departmentColor: departmentType.color,
-                name: name
+            .opacity(isFlipped ? 1 : 0)
+            .rotation3DEffect(
+                .degrees(isFlipped ? 0 : -180),
+                axis: (x: 0, y: 1, z: 0)
             )
-            .opacity(currentSide == .statistics ? 1 : 0)
         }
         .onTapGesture {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                switch currentSide {
-                case .front:
-                    currentSide = .back
-                case .back:
-                    currentSide = .statistics
-                case .statistics:
-                    currentSide = .front
-                }
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                isFlipped.toggle()
             }
         }
     }

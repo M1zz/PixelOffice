@@ -341,6 +341,7 @@ struct CommunityEmployeeCard: View {
 
 struct CommunityEmployeeDetailView: View {
     let employee: Employee
+    @State private var showStatistics = false
 
     var body: some View {
         ScrollView {
@@ -413,41 +414,83 @@ struct CommunityEmployeeDetailView: View {
                             .font(.body)
                     }
 
-                    // 통계
-                    InfoSection(
-                        title: "업무 통계",
-                        icon: "chart.bar.fill",
-                        iconColor: .green
-                    ) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("완료한 작업:")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                                Text("\(employee.totalTasksCompleted)개")
-                                    .font(.caption.bold())
+                    // 업무 기록 (통계 버튼 포함)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            HStack(spacing: 8) {
+                                Image(systemName: "doc.text.fill")
+                                    .foregroundColor(.green)
+                                Text("업무 기록")
+                                    .font(.headline)
                             }
 
-                            HStack {
-                                Text("대화 기록:")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                                Text("\(employee.conversationHistory.count)개")
-                                    .font(.caption.bold())
-                            }
+                            Spacer()
 
-                            HStack {
-                                Text("입사일:")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                                Text(employee.createdAt.formatted(date: .long, time: .omitted))
-                                    .font(.caption.bold())
+                            Button(action: {
+                                withAnimation {
+                                    showStatistics.toggle()
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "chart.bar.fill")
+                                    Text(showStatistics ? "간단히 보기" : "상세 통계")
+                                }
+                                .font(.caption)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(employee.department.color.opacity(0.2))
+                                .foregroundColor(employee.department.color)
+                                .clipShape(Capsule())
                             }
+                            .buttonStyle(.plain)
+                        }
+
+                        if showStatistics {
+                            // 상세 통계 표시
+                            EmployeeStatisticsDetailView(
+                                statistics: employee.statistics,
+                                departmentColor: employee.department.color
+                            )
+                        } else {
+                            // 간단한 통계
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("완료한 작업:")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("\(employee.totalTasksCompleted)개")
+                                        .font(.caption.bold())
+                                }
+
+                                HStack {
+                                    Text("대화 기록:")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("\(employee.conversationHistory.count)개")
+                                        .font(.caption.bold())
+                                }
+
+                                HStack {
+                                    Text("입사일:")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text(employee.createdAt.formatted(date: .long, time: .omitted))
+                                        .font(.caption.bold())
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color(NSColor.controlBackgroundColor))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color(NSColor.windowBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
             .padding()
@@ -830,6 +873,179 @@ struct GuideCard: View {
     private func openFile() {
         let url = URL(fileURLWithPath: filePath)
         NSWorkspace.shared.open(url)
+    }
+}
+
+// MARK: - Employee Statistics Detail View
+
+struct EmployeeStatisticsDetailView: View {
+    let statistics: EmployeeStatistics
+    let departmentColor: Color
+
+    var body: some View {
+        VStack(spacing: 16) {
+            // 토큰 사용량
+            VStack(alignment: .leading, spacing: 8) {
+                Text("토큰 사용량")
+                    .font(.caption.bold())
+                    .foregroundColor(.secondary)
+
+                VStack(spacing: 6) {
+                    StatRowCompact(
+                        icon: "cpu",
+                        label: "총 사용",
+                        value: formatNumber(statistics.totalTokensUsed),
+                        color: .blue
+                    )
+
+                    StatRowCompact(
+                        icon: "arrow.down.circle",
+                        label: "입력",
+                        value: formatNumber(statistics.inputTokens),
+                        color: .green
+                    )
+
+                    StatRowCompact(
+                        icon: "arrow.up.circle",
+                        label: "출력",
+                        value: formatNumber(statistics.outputTokens),
+                        color: .orange
+                    )
+
+                    StatRowCompact(
+                        icon: "speedometer",
+                        label: "소비 속도",
+                        value: String(format: "%.0f/시간", statistics.tokensPerHour),
+                        color: .purple
+                    )
+
+                    if statistics.tokensLast24Hours > 0 {
+                        StatRowCompact(
+                            icon: "clock",
+                            label: "최근 24시간",
+                            value: formatNumber(statistics.tokensLast24Hours),
+                            color: .red
+                        )
+                    }
+                }
+            }
+
+            Divider()
+
+            // 생산성
+            VStack(alignment: .leading, spacing: 8) {
+                Text("생산성")
+                    .font(.caption.bold())
+                    .foregroundColor(.secondary)
+
+                VStack(spacing: 6) {
+                    StatRowCompact(
+                        icon: "doc.text",
+                        label: "작성 문서",
+                        value: "\(statistics.documentsCreated)개",
+                        color: .indigo
+                    )
+
+                    StatRowCompact(
+                        icon: "checkmark.circle",
+                        label: "완료 태스크",
+                        value: "\(statistics.tasksCompleted)개",
+                        color: .teal
+                    )
+
+                    StatRowCompact(
+                        icon: "bubble.left.and.bubble.right",
+                        label: "대화 횟수",
+                        value: "\(statistics.conversationCount)회",
+                        color: .cyan
+                    )
+
+                    StatRowCompact(
+                        icon: "person.2",
+                        label: "협업 횟수",
+                        value: "\(statistics.collaborationCount)회",
+                        color: .pink
+                    )
+                }
+            }
+
+            if statistics.totalActiveTime > 0 {
+                Divider()
+
+                // 활동 시간
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("활동 시간")
+                        .font(.caption.bold())
+                        .foregroundColor(.secondary)
+
+                    StatRowCompact(
+                        icon: "timer",
+                        label: "총 활동",
+                        value: formatDuration(statistics.totalActiveTime),
+                        color: departmentColor
+                    )
+
+                    if let lastActive = statistics.lastActiveDate {
+                        StatRowCompact(
+                            icon: "clock.arrow.circlepath",
+                            label: "마지막 활동",
+                            value: lastActive.formatted(date: .omitted, time: .shortened),
+                            color: .secondary
+                        )
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(Color(NSColor.controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func formatNumber(_ number: Int) -> String {
+        if number >= 1_000_000 {
+            return String(format: "%.1fM", Double(number) / 1_000_000)
+        } else if number >= 1_000 {
+            return String(format: "%.1fK", Double(number) / 1_000)
+        } else {
+            return "\(number)"
+        }
+    }
+
+    private func formatDuration(_ seconds: TimeInterval) -> String {
+        let hours = Int(seconds) / 3600
+        let minutes = (Int(seconds) % 3600) / 60
+        if hours > 0 {
+            return "\(hours)시간 \(minutes)분"
+        } else {
+            return "\(minutes)분"
+        }
+    }
+}
+
+/// 컴팩트한 통계 행
+struct StatRowCompact: View {
+    let icon: String
+    let label: String
+    let value: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.caption2)
+                .foregroundColor(color)
+                .frame(width: 16)
+
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+
+            Spacer()
+
+            Text(value)
+                .font(.caption.bold())
+                .foregroundColor(.primary)
+        }
     }
 }
 

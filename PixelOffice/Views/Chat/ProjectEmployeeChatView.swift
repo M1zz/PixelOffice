@@ -12,6 +12,7 @@ struct ProjectEmployeeChatView: View {
     @State private var errorMessage: String?
     @State private var messages: [ChatMessage] = []
     @State private var useClaudeCode = true
+    @State private var loadingStartTime: Date?
 
     private let claudeService = ClaudeService()
     private let claudeCodeService = ClaudeCodeService()
@@ -117,6 +118,10 @@ struct ProjectEmployeeChatView: View {
         (여기에 마크다운 내용)
         <<<END_FILE>>>
 
+        ⚠️ 중요: 파일이나 문서를 작성할 때 사용자에게 미리 물어보지 말고 바로 작성하세요.
+        권한은 이미 승인되어 있으므로, 필요한 파일은 즉시 생성하면 됩니다.
+        "권한이 필요합니다" 같은 메시지 없이 바로 작업을 진행하세요.
+
         📝 업무 결과 문서화:
         사용자가 "문서화해줘", "정리해줘", "위키에 작성해줘", "결과물 작성" 등을 요청하면:
         1. 지금까지 대화에서 논의된 핵심 내용을 정리
@@ -177,13 +182,12 @@ struct ProjectEmployeeChatView: View {
                             }
 
                             if isLoading {
-                                HStack {
-                                    ProgressView()
-                                        .scaleEffect(0.8)
-                                    Text("생각 중...")
-                                        .font(.body)
-                                        .foregroundStyle(.secondary)
-                                }
+                                AIThinkingIndicator(
+                                    departmentType: emp.departmentType,
+                                    employeeName: emp.name,
+                                    startTime: loadingStartTime ?? Date(),
+                                    userMessage: messages.last(where: { $0.role == .user })?.content
+                                )
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal)
                             }
@@ -253,6 +257,7 @@ struct ProjectEmployeeChatView: View {
     private func sendGreeting() {
         guard let emp = employee else { return }
         isLoading = true
+        loadingStartTime = Date()
         companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .thinking)
 
         let greetingPrompt = """
@@ -294,6 +299,7 @@ struct ProjectEmployeeChatView: View {
                     let assistantMessage = ChatMessage(role: .assistant, content: response)
                     messages.append(assistantMessage)
                     isLoading = false
+                    loadingStartTime = nil
                     companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .idle)
                     saveConversation()
                 }
@@ -303,6 +309,7 @@ struct ProjectEmployeeChatView: View {
                     messages.append(ChatMessage(role: .assistant, content: greeting))
                     errorMessage = error.localizedDescription
                     isLoading = false
+                    loadingStartTime = nil
                     companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .idle)
                 }
             }
@@ -326,6 +333,7 @@ struct ProjectEmployeeChatView: View {
         let messageToSend = inputText
         inputText = ""
         isLoading = true
+        loadingStartTime = Date()
         errorMessage = nil
         companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .thinking)
 
@@ -411,6 +419,7 @@ struct ProjectEmployeeChatView: View {
                     }
 
                     isLoading = false
+                    loadingStartTime = nil
                     companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .idle)
 
                     saveConversation()
@@ -419,6 +428,7 @@ struct ProjectEmployeeChatView: View {
                 await MainActor.run {
                     errorMessage = error.localizedDescription
                     isLoading = false
+                    loadingStartTime = nil
                     companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .idle)
                 }
             }

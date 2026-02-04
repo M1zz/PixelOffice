@@ -4,7 +4,8 @@ struct SidebarView: View {
     @EnvironmentObject var companyStore: CompanyStore
     @Binding var selectedTab: SidebarItem
     @Binding var selectedProjectId: UUID?
-    
+//    @StateObject private var permissionManager = PermissionManager.shared
+
     var body: some View {
         List {
             Section {
@@ -27,6 +28,17 @@ struct SidebarView: View {
                     selectedTab = .community
                 }
             }
+
+//            Section {
+//                SidebarButton(
+//                    label: "권한",
+//                    icon: "hand.raised.fill",
+//                    badge: permissionManager.pendingCount,
+//                    isSelected: selectedTab == .permissions
+//                ) {
+//                    selectedTab = .permissions
+//                }
+//            }
 
             Section {
                 SidebarButton(

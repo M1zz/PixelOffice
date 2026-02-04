@@ -12,6 +12,7 @@ struct EmployeeChatView: View {
     @State private var messages: [ChatMessage] = []
     @State private var useClaudeCode = true  // Claude Code CLI 사용 여부
     @State private var currentThinking: EmployeeThinking?  // 현재 사고 과정
+    @State private var loadingStartTime: Date?  // 로딩 시작 시간
 
     private let claudeService = ClaudeService()
     private let claudeCodeService = ClaudeCodeService()
@@ -118,6 +119,10 @@ struct EmployeeChatView: View {
 
         문서 작성 후에는 간단히 어떤 문서를 만들었는지 설명해주세요.
 
+        ⚠️ 중요: 파일이나 문서를 작성할 때 사용자에게 미리 물어보지 말고 바로 작성하세요.
+        권한은 이미 승인되어 있으므로, 필요한 파일은 즉시 생성하면 됩니다.
+        "권한이 필요합니다" 같은 메시지 없이 바로 작업을 진행하세요.
+
         📝 업무 결과 문서화:
         사용자가 "문서화해줘", "정리해줘", "위키에 작성해줘", "결과물 작성" 등을 요청하면:
         1. 지금까지 대화에서 논의된 핵심 내용을 정리
@@ -208,13 +213,12 @@ struct EmployeeChatView: View {
                         }
 
                         if isLoading {
-                            HStack {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                Text("생각 중...")
-                                    .font(.body)
-                                    .foregroundStyle(.secondary)
-                            }
+                            AIThinkingIndicator(
+                                departmentType: departmentType,
+                                employeeName: employee.name,
+                                startTime: loadingStartTime ?? Date(),
+                                userMessage: messages.last(where: { $0.role == .user })?.content
+                            )
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal)
                         }
@@ -281,6 +285,7 @@ struct EmployeeChatView: View {
     /// AI 직원이 먼저 인사하는 함수
     private func sendGreeting() {
         isLoading = true
+        loadingStartTime = Date()
         companyStore.updateEmployeeStatus(employee.id, status: .thinking)  // 생각중으로 변경
 
         let greetingPrompt = """
@@ -356,6 +361,7 @@ struct EmployeeChatView: View {
         let messageToSend = inputText
         inputText = ""
         isLoading = true
+        loadingStartTime = Date()
         errorMessage = nil
         companyStore.updateEmployeeStatus(employee.id, status: .thinking)  // 생각중으로 변경
 
@@ -1246,6 +1252,199 @@ enum ChatRole {
     case user
     case assistant
     case system
+}
+
+// MARK: - AI Thinking Indicator
+
+/// AI가 생각하는 동안 표시되는 인디케이터 (최근 업무 주제 기반 메시지 + 경과 시간)
+struct AIThinkingIndicator: View {
+    let departmentType: DepartmentType
+    let employeeName: String
+    let startTime: Date
+    let userMessage: String?  // 사용자의 최근 메시지
+
+    @State private var currentMessageIndex = 0
+    @State private var elapsedTime: TimeInterval = 0
+
+    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    let messageTimer = Timer.publish(every: 3, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // 애니메이션 프로그레스
+            ProgressView()
+                .scaleEffect(0.8)
+
+            VStack(alignment: .leading, spacing: 2) {
+                // 메인 메시지 (컨텍스트 기반 + 로테이션)
+                Text(currentMessage)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                    .animation(.easeInOut, value: currentMessageIndex)
+
+                // 경과 시간
+                Text(elapsedTimeText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .onReceive(timer) { _ in
+            elapsedTime = Date().timeIntervalSince(startTime)
+        }
+        .onReceive(messageTimer) { _ in
+            withAnimation {
+                currentMessageIndex = (currentMessageIndex + 1) % thinkingMessages.count
+            }
+        }
+    }
+
+    /// 최근 업무 주제에 따른 동적 메시지 생성
+    private var thinkingMessages: [String] {
+        // 사용자 메시지가 있으면 키워드 기반 컨텍스트 메시지 생성
+        if let message = userMessage?.lowercased() {
+            var contextualMessages: [String] = []
+
+            // 로그인/인증 관련
+            if message.contains("로그인") || message.contains("인증") || message.contains("회원가입") || message.contains("authentication") {
+                contextualMessages.append("\(employeeName)이(가) 인증 시스템을 설계하고 있습니다...")
+                contextualMessages.append("로그인 플로우를 구상하고 있습니다...")
+                contextualMessages.append("보안 요구사항을 검토하고 있습니다...")
+            }
+
+            // 데이터/DB 관련
+            if message.contains("데이터") || message.contains("데이터베이스") || message.contains("db") || message.contains("저장") || message.contains("조회") {
+                contextualMessages.append("\(employeeName)이(가) 데이터 구조를 설계하고 있습니다...")
+                contextualMessages.append("데이터베이스 스키마를 검토하고 있습니다...")
+                contextualMessages.append("데이터 흐름을 분석하고 있습니다...")
+            }
+
+            // UI/디자인 관련
+            if message.contains("디자인") || message.contains("ui") || message.contains("화면") || message.contains("레이아웃") || message.contains("스타일") {
+                contextualMessages.append("\(employeeName)이(가) 화면 레이아웃을 구상하고 있습니다...")
+                contextualMessages.append("디자인 컨셉을 고민하고 있습니다...")
+                contextualMessages.append("사용자 인터페이스를 설계하고 있습니다...")
+            }
+
+            // API/통신 관련
+            if message.contains("api") || message.contains("통신") || message.contains("요청") || message.contains("응답") || message.contains("서버") {
+                contextualMessages.append("\(employeeName)이(가) API 명세를 작성하고 있습니다...")
+                contextualMessages.append("서버 통신 로직을 설계하고 있습니다...")
+                contextualMessages.append("엔드포인트를 정의하고 있습니다...")
+            }
+
+            // 테스트/버그 관련
+            if message.contains("테스트") || message.contains("버그") || message.contains("오류") || message.contains("에러") || message.contains("디버깅") {
+                contextualMessages.append("\(employeeName)이(가) 테스트 시나리오를 구상하고 있습니다...")
+                contextualMessages.append("버그 원인을 분석하고 있습니다...")
+                contextualMessages.append("품질 검증 방법을 고민하고 있습니다...")
+            }
+
+            // 문서/정리 관련
+            if message.contains("문서") || message.contains("작성") || message.contains("정리") || message.contains("위키") || message.contains("문서화") {
+                contextualMessages.append("\(employeeName)이(가) 문서 구조를 구성하고 있습니다...")
+                contextualMessages.append("핵심 내용을 정리하고 있습니다...")
+                contextualMessages.append("문서 형식을 검토하고 있습니다...")
+            }
+
+            // 성능/최적화 관련
+            if message.contains("성능") || message.contains("최적화") || message.contains("속도") || message.contains("개선") {
+                contextualMessages.append("\(employeeName)이(가) 성능 개선 방안을 모색하고 있습니다...")
+                contextualMessages.append("최적화 포인트를 분석하고 있습니다...")
+                contextualMessages.append("효율적인 구현 방법을 고민하고 있습니다...")
+            }
+
+            // 기획/분석 관련
+            if message.contains("기획") || message.contains("요구사항") || message.contains("분석") || message.contains("전략") {
+                contextualMessages.append("\(employeeName)이(가) 요구사항을 분석하고 있습니다...")
+                contextualMessages.append("전략을 수립하고 있습니다...")
+                contextualMessages.append("기획안을 구상하고 있습니다...")
+            }
+
+            // 배포/운영 관련
+            if message.contains("배포") || message.contains("운영") || message.contains("릴리즈") || message.contains("출시") {
+                contextualMessages.append("\(employeeName)이(가) 배포 전략을 수립하고 있습니다...")
+                contextualMessages.append("릴리즈 계획을 검토하고 있습니다...")
+                contextualMessages.append("운영 방안을 고민하고 있습니다...")
+            }
+
+            // 매칭된 컨텍스트 메시지가 있으면 사용
+            if !contextualMessages.isEmpty {
+                // 부서별 기본 메시지도 1-2개 추가하여 다양성 확보
+                let defaultMessages = defaultDepartmentMessages
+                contextualMessages.append(defaultMessages[0])
+                if defaultMessages.count > 1 {
+                    contextualMessages.append(defaultMessages[1])
+                }
+                return contextualMessages
+            }
+        }
+
+        // 컨텍스트가 없으면 기본 부서별 메시지 사용
+        return defaultDepartmentMessages
+    }
+
+    /// 부서별 기본 메시지
+    private var defaultDepartmentMessages: [String] {
+        switch departmentType {
+        case .planning:
+            return [
+                "\(employeeName)이(가) 전략을 수립하고 있습니다...",
+                "요구사항을 분석하고 있습니다...",
+                "프로젝트 계획을 검토하고 있습니다...",
+                "기획안을 구상하고 있습니다..."
+            ]
+        case .design:
+            return [
+                "\(employeeName)이(가) 디자인을 구상하고 있습니다...",
+                "사용자 경험을 검토하고 있습니다...",
+                "레퍼런스를 분석하고 있습니다...",
+                "디자인 시스템을 고려하고 있습니다..."
+            ]
+        case .development:
+            return [
+                "\(employeeName)이(가) 코드를 분석하고 있습니다...",
+                "기술적 해결 방안을 모색하고 있습니다...",
+                "아키텍처를 검토하고 있습니다...",
+                "구현 방법을 고민하고 있습니다..."
+            ]
+        case .qa:
+            return [
+                "\(employeeName)이(가) 테스트 계획을 수립하고 있습니다...",
+                "품질 기준을 검토하고 있습니다...",
+                "테스트 케이스를 구상하고 있습니다...",
+                "버그 시나리오를 분석하고 있습니다..."
+            ]
+        case .marketing:
+            return [
+                "\(employeeName)이(가) 마케팅 전략을 검토하고 있습니다...",
+                "타겟 고객을 분석하고 있습니다...",
+                "캠페인 아이디어를 구상하고 있습니다...",
+                "시장 트렌드를 파악하고 있습니다..."
+            ]
+        case .general:
+            return [
+                "\(employeeName)이(가) 생각하고 있습니다...",
+                "답변을 준비하고 있습니다...",
+                "내용을 정리하고 있습니다...",
+                "최선의 답변을 찾고 있습니다..."
+            ]
+        }
+    }
+
+    private var currentMessage: String {
+        thinkingMessages[currentMessageIndex]
+    }
+
+    private var elapsedTimeText: String {
+        let seconds = Int(elapsedTime)
+        if seconds < 60 {
+            return "\(seconds)초 경과"
+        } else {
+            let minutes = seconds / 60
+            let remainingSeconds = seconds % 60
+            return "\(minutes)분 \(remainingSeconds)초 경과"
+        }
+    }
 }
 
 #Preview {

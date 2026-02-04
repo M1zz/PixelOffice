@@ -257,23 +257,28 @@ actor AIActionParser {
         let document = WikiDocument(
             title: title,
             content: content,
-            category: category,
-            createdAt: Date(),
-            updatedAt: Date()
+            category: category
         )
 
         // 위키 경로 결정
         let wikiPath: String
-        if let projectId = projectId,
-           let project = await companyStore.company.projects.first(where: { $0.id == projectId }) {
-            wikiPath = DataPathService.shared.projectWikiPath(project.name)
+        if let projectId = projectId {
+            // 프로젝트 위키 경로 (동기적으로 가져오기)
+            let projectName = await MainActor.run {
+                companyStore.company.projects.first(where: { $0.id == projectId })?.name ?? "Unknown"
+            }
+            wikiPath = DataPathService.shared.projectWikiPath(projectName)
         } else {
-            wikiPath = DataPathService.shared.wikiPath
+            // 전사 공용 위키 경로
+            wikiPath = "\(DataPathService.shared.sharedPath)/wiki"
+            DataPathService.shared.createDirectoryIfNeeded(at: wikiPath)
         }
 
         // 위키 문서 저장
         try? WikiService.shared.saveDocument(document, at: wikiPath)
-        await companyStore.addWikiDocument(document)
+        await MainActor.run {
+            companyStore.addWikiDocument(document)
+        }
     }
 
     private func createTask(
@@ -291,12 +296,13 @@ actor AIActionParser {
             title: title,
             description: description,
             status: .todo,
-            createdAt: Date(),
-            updatedAt: Date(),
-            estimatedHours: estimatedHours
+            estimatedHours: estimatedHours,
+            prompt: description
         )
 
-        await companyStore.addTask(task, toProject: projectId)
+        await MainActor.run {
+            companyStore.addTask(task, toProject: projectId)
+        }
     }
 
     private func processMention(
@@ -320,12 +326,12 @@ actor AIActionParser {
         outcome: String,
         companyStore: CompanyStore
     ) async {
-        // TODO: CollaborationRecord 구조에 맞게 수정 필요
-        // 현재 파싱된 정보(title, departments, content, outcome)와
-        // CollaborationRecord의 실제 필드(requester/responder)가 맞지 않음
-        print("[Collaboration] \(title) - Departments: \(departments.joined(separator: ", "))")
-        print("Content: \(content)")
-        print("Outcome: \(outcome)")
+        // TODO: 협업 기록 저장 구현
+        // 현재는 콘솔에만 출력
+        print("[Collaboration] \(title)")
+        print("  Departments: \(departments.joined(separator: ", "))")
+        print("  Content: \(content)")
+        print("  Outcome: \(outcome)")
     }
 }
 

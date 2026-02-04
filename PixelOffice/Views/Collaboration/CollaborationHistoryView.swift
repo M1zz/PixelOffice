@@ -359,6 +359,7 @@ struct CollaborationDetailView: View {
 }
 
 /// FlowLayout for tags
+/// 플로우 레이아웃 (자동으로 줄바꿈되는 레이아웃)
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
 
