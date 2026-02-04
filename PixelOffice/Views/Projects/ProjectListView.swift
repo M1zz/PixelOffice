@@ -3,6 +3,7 @@ import SwiftUI
 struct ProjectListView: View {
     @EnvironmentObject var companyStore: CompanyStore
     @Binding var selectedProjectId: UUID?
+    @Binding var selectedTab: SidebarItem
     @State private var showingAddProject = false
     @State private var searchText = ""
     @State private var filterStatus: ProjectStatus?
@@ -83,6 +84,7 @@ struct ProjectListView: View {
                             ProjectCard(project: project)
                                 .onTapGesture {
                                     selectedProjectId = project.id
+                                    selectedTab = .projectOffice(project.id)
                                 }
                         }
                     }
@@ -99,8 +101,9 @@ struct ProjectListView: View {
 struct ProjectCard: View {
     let project: Project
     @EnvironmentObject var companyStore: CompanyStore
+    @Environment(\.openWindow) private var openWindow
     @State private var isHovering = false
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
@@ -153,9 +156,19 @@ struct ProjectCard: View {
                 StatBadge(icon: "checkmark.circle.fill", value: "\(project.completedTasksCount)", color: .green)
                 StatBadge(icon: "play.circle.fill", value: "\(project.inProgressTasksCount)", color: .blue)
                 StatBadge(icon: "circle", value: "\(project.pendingTasksCount)", color: .gray)
-                
+
                 Spacer()
-                
+
+                // 칸반 보드 버튼
+                Button {
+                    openWindow(id: "kanban", value: project.id)
+                } label: {
+                    Image(systemName: "rectangle.split.3x1")
+                        .font(.body)
+                }
+                .buttonStyle(.bordered)
+                .help("칸반 보드 열기")
+
                 // Priority
                 HStack(spacing: 2) {
                     Image(systemName: project.priority.icon)
@@ -242,7 +255,7 @@ struct EmptyProjectsView: View {
 }
 
 #Preview {
-    ProjectListView(selectedProjectId: .constant(nil))
+    ProjectListView(selectedProjectId: .constant(nil), selectedTab: .constant(.projects))
         .environmentObject(CompanyStore())
         .frame(width: 900, height: 600)
 }

@@ -42,12 +42,27 @@
 		033 /* WikiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 134 /* WikiView.swift */; };
 		034 /* EmployeeChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 135 /* EmployeeChatView.swift */; };
 		035 /* ClaudeCodeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 136 /* ClaudeCodeService.swift */; };
+		137 /* DepartmentSkills.swift in Sources */ = {isa = PBXBuildFile; fileRef = 138 /* DepartmentSkills.swift */; };
+		139 /* EmployeeWorkLogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 140 /* EmployeeWorkLogService.swift */; };
+		141 /* DepartmentSkillsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142 /* DepartmentSkillsView.swift */; };
+		143 /* EmployeeWorkLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 144 /* EmployeeWorkLogView.swift */; };
+		145 /* DataPathService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 146 /* DataPathService.swift */; };
+		147 /* WalkingCharacter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149 /* WalkingCharacter.swift */; };
+		148 /* WalkingEmployeesLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 150 /* WalkingEmployeesLayer.swift */; };
 		9C615BAE2F30862A00A5BC73 /* ProjectEmployee.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615BAD2F30862A00A5BC73 /* ProjectEmployee.swift */; };
 		9C615BAF2F30862A00A5BC73 /* ProjectDepartment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615BAC2F30862A00A5BC73 /* ProjectDepartment.swift */; };
 		9C615BB22F30864D00A5BC73 /* ProjectDepartmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615BB02F30864D00A5BC73 /* ProjectDepartmentView.swift */; };
 		9C615BB32F30864D00A5BC73 /* ProjectOfficeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615BB12F30864D00A5BC73 /* ProjectOfficeView.swift */; };
 		9C615BB52F30865800A5BC73 /* AddProjectEmployeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615BB42F30865800A5BC73 /* AddProjectEmployeeView.swift */; };
 		9C615BB72F30866400A5BC73 /* ProjectEmployeeChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615BB62F30866400A5BC73 /* ProjectEmployeeChatView.swift */; };
+		9C615C202F31999800A5BC73 /* ToastManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615C1F2F31999800A5BC73 /* ToastManager.swift */; };
+		9C615C322F31BF6E00A5BC73 /* CollaborationRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615C312F31BF6E00A5BC73 /* CollaborationRecord.swift */; };
+		9C615C342F31BF8600A5BC73 /* CollaborationHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615C332F31BF8600A5BC73 /* CollaborationHistoryView.swift */; };
+		9C615C382F31C04400A5BC73 /* KanbanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C615C372F31C04400A5BC73 /* KanbanView.swift */; };
+		036 /* EmployeeBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 151 /* EmployeeBadgeView.swift */; };
+		037 /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 152 /* CommunityView.swift */; };
+		038 /* ProjectWikiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 153 /* ProjectWikiView.swift */; };
+		039 /* EmployeeThinking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 154 /* EmployeeThinking.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -88,12 +103,27 @@
 		134 /* WikiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiView.swift; sourceTree = "<group>"; };
 		135 /* EmployeeChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeChatView.swift; sourceTree = "<group>"; };
 		136 /* ClaudeCodeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCodeService.swift; sourceTree = "<group>"; };
+		138 /* DepartmentSkills.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartmentSkills.swift; sourceTree = "<group>"; };
+		140 /* EmployeeWorkLogService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeWorkLogService.swift; sourceTree = "<group>"; };
+		142 /* DepartmentSkillsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartmentSkillsView.swift; sourceTree = "<group>"; };
+		144 /* EmployeeWorkLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeWorkLogView.swift; sourceTree = "<group>"; };
+		146 /* DataPathService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataPathService.swift; sourceTree = "<group>"; };
+		149 /* WalkingCharacter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkingCharacter.swift; sourceTree = "<group>"; };
+		150 /* WalkingEmployeesLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkingEmployeesLayer.swift; sourceTree = "<group>"; };
 		9C615BAC2F30862A00A5BC73 /* ProjectDepartment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDepartment.swift; sourceTree = "<group>"; };
 		9C615BAD2F30862A00A5BC73 /* ProjectEmployee.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectEmployee.swift; sourceTree = "<group>"; };
 		9C615BB02F30864D00A5BC73 /* ProjectDepartmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDepartmentView.swift; sourceTree = "<group>"; };
 		9C615BB12F30864D00A5BC73 /* ProjectOfficeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectOfficeView.swift; sourceTree = "<group>"; };
 		9C615BB42F30865800A5BC73 /* AddProjectEmployeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddProjectEmployeeView.swift; sourceTree = "<group>"; };
 		9C615BB62F30866400A5BC73 /* ProjectEmployeeChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectEmployeeChatView.swift; sourceTree = "<group>"; };
+		9C615C1F2F31999800A5BC73 /* ToastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastManager.swift; sourceTree = "<group>"; };
+		9C615C312F31BF6E00A5BC73 /* CollaborationRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollaborationRecord.swift; sourceTree = "<group>"; };
+		9C615C332F31BF8600A5BC73 /* CollaborationHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollaborationHistoryView.swift; sourceTree = "<group>"; };
+		9C615C372F31C04400A5BC73 /* KanbanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KanbanView.swift; sourceTree = "<group>"; };
+		151 /* EmployeeBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeBadgeView.swift; sourceTree = "<group>"; };
+		152 /* CommunityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
+		153 /* ProjectWikiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWikiView.swift; sourceTree = "<group>"; };
+		154 /* EmployeeThinking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeThinking.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -143,6 +173,7 @@
 			children = (
 				104 /* Company.swift */,
 				105 /* Department.swift */,
+				138 /* DepartmentSkills.swift */,
 				106 /* Employee.swift */,
 				107 /* Project.swift */,
 				9C615BAD2F30862A00A5BC73 /* ProjectEmployee.swift */,
@@ -152,6 +183,8 @@
 				127 /* APIConfiguration.swift */,
 				130 /* CompanyWiki.swift */,
 				131 /* Onboarding.swift */,
+				9C615C312F31BF6E00A5BC73 /* CollaborationRecord.swift */,
+				154 /* EmployeeThinking.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -167,6 +200,9 @@
 				311 /* Onboarding */,
 				312 /* Wiki */,
 				313 /* Chat */,
+				314 /* Community */,
+				315 /* Kanban */,
+				316 /* Collaboration */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -177,8 +213,11 @@
 				117 /* ClaudeService.swift */,
 				136 /* ClaudeCodeService.swift */,
 				118 /* DataManager.swift */,
+				146 /* DataPathService.swift */,
 				119 /* CompanyStore.swift */,
+				140 /* EmployeeWorkLogService.swift */,
 				132 /* WikiService.swift */,
+				9C615C1F2F31999800A5BC73 /* ToastManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -197,7 +236,9 @@
 				109 /* OfficeView.swift */,
 				110 /* DepartmentView.swift */,
 				111 /* EmployeeView.swift */,
+				144 /* EmployeeWorkLogView.swift */,
 				126 /* DeskView.swift */,
+				150 /* WalkingEmployeesLayer.swift */,
 				9C615BB12F30864D00A5BC73 /* ProjectOfficeView.swift */,
 				9C615BB02F30864D00A5BC73 /* ProjectDepartmentView.swift */,
 			);
@@ -220,6 +261,7 @@
 		309 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				142 /* DepartmentSkillsView.swift */,
 				116 /* SettingsView.swift */,
 			);
 			path = Settings;
@@ -229,8 +271,10 @@
 			isa = PBXGroup;
 			children = (
 				112 /* PixelCharacter.swift */,
+				149 /* WalkingCharacter.swift */,
 				121 /* AddEmployeeView.swift */,
 				9C615BB42F30865800A5BC73 /* AddProjectEmployeeView.swift */,
+				151 /* EmployeeBadgeView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -247,6 +291,7 @@
 			isa = PBXGroup;
 			children = (
 				134 /* WikiView.swift */,
+				153 /* ProjectWikiView.swift */,
 			);
 			path = Wiki;
 			sourceTree = "<group>";
@@ -258,6 +303,30 @@
 				9C615BB62F30866400A5BC73 /* ProjectEmployeeChatView.swift */,
 			);
 			path = Chat;
+			sourceTree = "<group>";
+		};
+		314 /* Community */ = {
+			isa = PBXGroup;
+			children = (
+				152 /* CommunityView.swift */,
+			);
+			path = Community;
+			sourceTree = "<group>";
+		};
+		315 /* Kanban */ = {
+			isa = PBXGroup;
+			children = (
+				9C615C372F31C04400A5BC73 /* KanbanView.swift */,
+			);
+			path = Kanban;
+			sourceTree = "<group>";
+		};
+		316 /* Collaboration */ = {
+			isa = PBXGroup;
+			children = (
+				9C615C332F31BF8600A5BC73 /* CollaborationHistoryView.swift */,
+			);
+			path = Collaboration;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -331,6 +400,7 @@
 			files = (
 				001 /* PixelOfficeApp.swift in Sources */,
 				002 /* ContentView.swift in Sources */,
+				9C615C342F31BF8600A5BC73 /* CollaborationHistoryView.swift in Sources */,
 				9C615BB72F30866400A5BC73 /* ProjectEmployeeChatView.swift in Sources */,
 				004 /* Company.swift in Sources */,
 				005 /* Department.swift in Sources */,
@@ -355,6 +425,7 @@
 				021 /* AddEmployeeView.swift in Sources */,
 				022 /* AddProjectView.swift in Sources */,
 				023 /* AddTaskView.swift in Sources */,
+				9C615C202F31999800A5BC73 /* ToastManager.swift in Sources */,
 				024 /* ConversationView.swift in Sources */,
 				025 /* PixelArtRenderer.swift in Sources */,
 				026 /* DeskView.swift in Sources */,
@@ -366,9 +437,22 @@
 				032 /* OnboardingView.swift in Sources */,
 				033 /* WikiView.swift in Sources */,
 				034 /* EmployeeChatView.swift in Sources */,
+				9C615C322F31BF6E00A5BC73 /* CollaborationRecord.swift in Sources */,
 				9C615BAE2F30862A00A5BC73 /* ProjectEmployee.swift in Sources */,
+				9C615C382F31C04400A5BC73 /* KanbanView.swift in Sources */,
 				9C615BAF2F30862A00A5BC73 /* ProjectDepartment.swift in Sources */,
 				035 /* ClaudeCodeService.swift in Sources */,
+				137 /* DepartmentSkills.swift in Sources */,
+				139 /* EmployeeWorkLogService.swift in Sources */,
+				141 /* DepartmentSkillsView.swift in Sources */,
+				143 /* EmployeeWorkLogView.swift in Sources */,
+				145 /* DataPathService.swift in Sources */,
+				147 /* WalkingCharacter.swift in Sources */,
+				148 /* WalkingEmployeesLayer.swift in Sources */,
+				036 /* EmployeeBadgeView.swift in Sources */,
+				037 /* CommunityView.swift in Sources */,
+				038 /* ProjectWikiView.swift in Sources */,
+				039 /* EmployeeThinking.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

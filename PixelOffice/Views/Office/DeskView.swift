@@ -39,13 +39,15 @@ struct DeskView: View {
                         .blur(radius: 2)
                 }
 
-                // Character
-                PixelCharacter(
-                    appearance: employee.characterAppearance,
-                    status: employee.status,
-                    aiType: employee.aiType
-                )
-                .offset(y: -20)
+                // Character (휴식 중일 때는 걸어다니므로 숨김)
+                if employee.status != .idle {
+                    PixelCharacter(
+                        appearance: employee.characterAppearance,
+                        status: employee.status,
+                        aiType: employee.aiType
+                    )
+                    .offset(y: -20)
+                }
 
                 // 물음표 표시 (온보딩 질문이 있을 때)
                 if hasPendingQuestions {

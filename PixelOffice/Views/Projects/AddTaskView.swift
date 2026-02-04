@@ -170,12 +170,6 @@ struct AddTaskView: View {
 }
 
 #Preview {
-    let store = CompanyStore()
-    store.addEmployee(
-        Employee(name: "Claude-1", aiType: .claude),
-        toDepartment: store.company.departments[2].id  // 개발팀
-    )
-    
-    return AddTaskView(projectId: UUID())
-        .environmentObject(store)
+    AddTaskView(projectId: UUID())
+        .environmentObject(CompanyStore())
 }

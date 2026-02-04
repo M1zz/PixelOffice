@@ -3,9 +3,11 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var companyStore: CompanyStore
     @Environment(\.openWindow) private var openWindow
-    @State private var selectedTab: SidebarItem = .office
+    @State private var selectedTab: SidebarItem = .projects
     @State private var selectedProjectId: UUID?
     @State private var showingAddProject = false
+
+    @StateObject private var toastManager = ToastManager.shared
 
     var body: some View {
         NavigationSplitView {
@@ -24,24 +26,25 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .addNewEmployee)) { _ in
             openWindow(id: "add-employee", value: UUID())
         }
+        .overlay(alignment: .top) {
+            if let toast = toastManager.currentToast {
+                ToastView(toast: toast)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .padding(.top, 8)
+            }
+        }
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: toastManager.currentToast)
     }
     
     @ViewBuilder
     private var detailView: some View {
         switch selectedTab {
-        case .office:
-            OfficeView()
         case .projects:
-            if let projectId = selectedProjectId,
-               let project = companyStore.company.projects.first(where: { $0.id == projectId }) {
-                ProjectDetailView(project: project)
-            } else {
-                ProjectListView(selectedProjectId: $selectedProjectId)
-            }
+            ProjectListView(selectedProjectId: $selectedProjectId, selectedTab: $selectedTab)
         case .projectOffice(let projectId):
             ProjectOfficeView(projectId: projectId)
-        case .wiki:
-            WikiView()
+        case .community:
+            CommunityView()
         case .settings:
             SettingsView()
         }
@@ -49,10 +52,9 @@ struct ContentView: View {
 }
 
 enum SidebarItem: Hashable {
-    case office
     case projects
     case projectOffice(UUID)  // 프로젝트별 오피스
-    case wiki
+    case community  // 커뮤니티
     case settings
 }
 

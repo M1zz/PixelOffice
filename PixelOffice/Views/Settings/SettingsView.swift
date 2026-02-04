@@ -20,19 +20,26 @@ struct SettingsView: View {
                 }
                 .tag(1)
             
+            // Department Skills
+            DepartmentSkillsView()
+                .tabItem {
+                    Label("부서 스킬", systemImage: "person.3.fill")
+                }
+                .tag(2)
+
             // Data Management
             DataManagementView()
                 .tabItem {
                     Label("데이터 관리", systemImage: "externaldrive.fill")
                 }
-                .tag(2)
-            
+                .tag(3)
+
             // About
             AboutView()
                 .tabItem {
                     Label("정보", systemImage: "info.circle.fill")
                 }
-                .tag(3)
+                .tag(4)
         }
         .frame(minWidth: 600, minHeight: 400)
         .padding()

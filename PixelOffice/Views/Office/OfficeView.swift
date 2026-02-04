@@ -6,39 +6,76 @@ struct OfficeView: View {
     @State private var selectedDepartment: Department?
     @State private var selectedEmployee: Employee?
     @State private var zoomLevel: Double = 1.0
+    @State private var floorSize: CGSize = .zero
 
     let columns = 2
-    
+
+    /// 걸어다니는 직원들의 이동 범위
+    var walkingBounds: CGRect {
+        CGRect(x: 30, y: 80, width: max(floorSize.width - 60, 200), height: max(floorSize.height - 100, 200))
+    }
+
+    /// 직원 ID로 직원과 소속 부서 찾기
+    private func findEmployeeAndDepartment(employeeId: UUID) -> (Employee, Department)? {
+        for department in companyStore.company.departments {
+            if let employee = department.employees.first(where: { $0.id == employeeId }) {
+                return (employee, department)
+            }
+        }
+        return nil
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             // Office Floor View
             ScrollView([.horizontal, .vertical]) {
-                VStack(spacing: 0) {
-                    // Office Header
-                    OfficeHeader(companyName: companyStore.company.name)
+                ZStack {
+                    VStack(spacing: 0) {
+                        // Office Header
+                        OfficeHeader(companyName: companyStore.company.name)
 
-                    // Department Grid
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 20), count: columns), spacing: 20) {
-                        ForEach(companyStore.company.departments) { department in
-                            DepartmentView(
-                                department: department,
-                                isSelected: selectedDepartment?.id == department.id,
-                                onSelect: {
-                                    withAnimation(.spring(response: 0.3)) {
-                                        selectedDepartment = department
-                                        selectedEmployee = nil
+                        // Department Grid
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 20), count: columns), spacing: 20) {
+                            ForEach(companyStore.company.departments) { department in
+                                DepartmentView(
+                                    department: department,
+                                    isSelected: selectedDepartment?.id == department.id,
+                                    onSelect: {
+                                        withAnimation(.spring(response: 0.3)) {
+                                            selectedDepartment = department
+                                            selectedEmployee = nil
+                                        }
+                                    },
+                                    onEmployeeSelect: { employee in
+                                        withAnimation(.spring(response: 0.3)) {
+                                            selectedEmployee = employee
+                                            selectedDepartment = department
+                                        }
                                     }
-                                },
-                                onEmployeeSelect: { employee in
-                                    withAnimation(.spring(response: 0.3)) {
-                                        selectedEmployee = employee
-                                        selectedDepartment = department
-                                    }
-                                }
-                            )
+                                )
+                            }
+                        }
+                        .padding(30)
+                    }
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear
+                                .onAppear { floorSize = geo.size }
+                                .onChange(of: geo.size) { _, newSize in floorSize = newSize }
+                        }
+                    )
+
+                    // 걸어다니는 휴식 중인 직원들 (회사 직원만)
+                    WalkingEmployeesLayer(floorBounds: walkingBounds, projectId: nil) { employeeId in
+                        // 직원과 부서를 찾아서 선택
+                        if let (employee, department) = findEmployeeAndDepartment(employeeId: employeeId) {
+                            withAnimation(.spring(response: 0.3)) {
+                                selectedEmployee = employee
+                                selectedDepartment = department
+                            }
                         }
                     }
-                    .padding(30)
+                    .allowsHitTesting(true)
                 }
                 .scaleEffect(zoomLevel)
             }
@@ -297,9 +334,16 @@ struct ActionsCard: View {
     let employeeId: UUID
     @EnvironmentObject var companyStore: CompanyStore
     @Environment(\.openWindow) private var openWindow
+    @State private var showingBadge = false
 
     var employee: Employee? {
         companyStore.findEmployee(byId: employeeId)
+    }
+
+    var employeeDepartment: DepartmentType {
+        companyStore.company.departments.first { dept in
+            dept.employees.contains { $0.id == employeeId }
+        }?.type ?? .general
     }
 
     var body: some View {
@@ -318,6 +362,22 @@ struct ActionsCard: View {
                     .buttonStyle(.borderedProminent)
 
                     Button {
+                        showingBadge = true
+                    } label: {
+                        Label("사원증 보기", systemImage: "person.crop.rectangle")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button {
+                        openWindow(id: "employee-worklog", value: EmployeeWorkLogData(employeeId: employee.id, employeeName: employee.name))
+                    } label: {
+                        Label("업무 기록", systemImage: "doc.text.magnifyingglass")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button {
                         clearConversation()
                     } label: {
                         Label("대화 초기화", systemImage: "trash")
@@ -333,6 +393,27 @@ struct ActionsCard: View {
                     }
                     .buttonStyle(.bordered)
                 }
+            }
+            .sheet(isPresented: $showingBadge) {
+                VStack(spacing: 20) {
+                    Text("사원증")
+                        .font(.headline)
+
+                    EmployeeBadgeView(
+                        name: employee.name,
+                        employeeNumber: employee.employeeNumber,
+                        departmentType: employeeDepartment,
+                        aiType: employee.aiType,
+                        appearance: employee.characterAppearance,
+                        hireDate: employee.createdAt
+                    )
+
+                    Button("닫기") {
+                        showingBadge = false
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .padding(40)
             }
         }
     }

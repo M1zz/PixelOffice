@@ -7,10 +7,9 @@ class WikiService {
 
     private let fileManager = FileManager.default
 
-    /// 기본 위키 경로 (Documents/PixelOffice-Wiki)
+    /// 기본 위키 경로 (프로젝트 디렉토리 내)
     var defaultWikiPath: String {
-        let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-        return documentsPath.appendingPathComponent("PixelOffice-Wiki").path
+        DataPathService.shared.wikiPath
     }
 
     /// 위키 폴더 초기화

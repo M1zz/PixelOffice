@@ -82,58 +82,82 @@ actor ClaudeService {
     }
     
     // MARK: - Claude API
-    
+
     private func sendClaudeRequest(
         messages: [Message],
         configuration: APIConfiguration,
         systemPrompt: String?
     ) async throws -> String {
         let url = URL(string: "\(configuration.effectiveBaseURL)/messages")!
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(configuration.apiKey, forHTTPHeaderField: "x-api-key")
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        
+        request.setValue("web-search-2025-03-05", forHTTPHeaderField: "anthropic-beta")
+
         let claudeMessages = messages.filter { $0.role != .system }.map { message in
             [
                 "role": message.role.rawValue,
                 "content": message.content
             ]
         }
-        
+
+        // 웹 검색 도구 정의
+        let webSearchTool: [String: Any] = [
+            "type": "web_search_20250305",
+            "name": "web_search",
+            "max_uses": 5
+        ]
+
         var body: [String: Any] = [
             "model": configuration.model,
             "max_tokens": configuration.maxTokens,
-            "messages": claudeMessages
+            "messages": claudeMessages,
+            "tools": [webSearchTool]
         ]
-        
+
         if let systemPrompt = systemPrompt {
             body["system"] = systemPrompt
         }
-        
+
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        
+
         let (data, response) = try await URLSession.shared.data(for: request)
-        
+
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
-        
+
         guard httpResponse.statusCode == 200 else {
             let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
             throw APIError.serverError(statusCode: httpResponse.statusCode, message: errorMessage)
         }
-        
+
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let content = json["content"] as? [[String: Any]],
-              let firstContent = content.first,
-              let text = firstContent["text"] as? String else {
+              let content = json["content"] as? [[String: Any]] else {
             throw APIError.parsingError
         }
-        
-        return text
+
+        // 응답에서 텍스트 추출 (웹 검색 결과 포함 가능)
+        var resultText = ""
+        for block in content {
+            if let blockType = block["type"] as? String {
+                if blockType == "text", let text = block["text"] as? String {
+                    resultText += text
+                } else if blockType == "web_search_tool_result" {
+                    // 웹 검색 결과는 Claude가 자동으로 처리하여 텍스트로 반환
+                    continue
+                }
+            }
+        }
+
+        if resultText.isEmpty {
+            throw APIError.parsingError
+        }
+
+        return resultText
     }
     
     // MARK: - OpenAI API

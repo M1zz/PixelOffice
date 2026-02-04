@@ -93,6 +93,18 @@ enum DepartmentType: String, Codable, CaseIterable {
         }
     }
 
+    /// 짧은 설명 (멘션 피커용)
+    var shortDescription: String {
+        switch self {
+        case .planning: return "기획/전략"
+        case .design: return "UI/UX"
+        case .development: return "개발/구현"
+        case .marketing: return "마케팅"
+        case .qa: return "테스트/QA"
+        case .general: return "일반"
+        }
+    }
+
     /// 워크플로우 순서 (낮을수록 먼저)
     var workflowOrder: Int {
         switch self {
@@ -228,6 +240,66 @@ enum DepartmentType: String, Codable, CaseIterable {
             return """
             당신은 10년차 베테랑 직원입니다. 다양한 업무 경험으로 회사 전반을 이해하고 있습니다.
             """
+        }
+    }
+
+    /// 부서별 생각 목록 (커뮤니티/말풍선용)
+    var thoughts: [String] {
+        switch self {
+        case .planning:
+            return [
+                "사용자 여정을 다시 검토해봐야겠다...",
+                "이 기능의 우선순위는...",
+                "경쟁사 분석 결과가 궁금하네",
+                "다음 스프린트 계획을 세워야지",
+                "요구사항이 좀 더 명확해야 할 것 같아",
+                "ROI를 계산해봐야겠다"
+            ]
+        case .design:
+            return [
+                "이 버튼 색상이 좀 더 밝으면...",
+                "사용자 피드백을 반영해야겠다",
+                "디자인 시스템 정리해야지",
+                "이 애니메이션이 자연스러울까?",
+                "접근성 체크해봐야겠다",
+                "폰트 크기가 적당한가..."
+            ]
+        case .development:
+            return [
+                "이 로직을 리팩토링하면...",
+                "테스트 커버리지를 높여야지",
+                "API 응답 속도가 느린데...",
+                "이 버그 원인이 뭘까...",
+                "코드 리뷰 피드백 반영해야지",
+                "배포 스크립트 개선해야겠다"
+            ]
+        case .qa:
+            return [
+                "이 엣지 케이스를 테스트해봐야...",
+                "버그 리포트 정리해야지",
+                "회귀 테스트 돌려봐야겠다",
+                "성능 테스트 결과가...",
+                "테스트 자동화 범위를 넓혀야지",
+                "크리티컬 버그가 없길..."
+            ]
+        case .marketing:
+            return [
+                "타겟 고객 분석 결과는...",
+                "캠페인 성과가 어떨까",
+                "콘텐츠 일정 확인해야지",
+                "SNS 반응이 궁금하네",
+                "브랜드 메시지를 다듬어야겠다",
+                "출시 이벤트 준비해야지"
+            ]
+        case .general:
+            return [
+                "오늘 할 일이 뭐였지...",
+                "회의 준비해야겠다",
+                "이메일 확인해봐야지",
+                "점심 뭐 먹지...",
+                "커피 한 잔 마셔야겠다",
+                "집중해서 일해야지"
+            ]
         }
     }
 

@@ -111,13 +111,15 @@ struct ProjectDeskView: View {
                     .frame(width: 30, height: 20)
                     .offset(y: -5)
 
-                // Character
-                PixelCharacter(
-                    appearance: employee.characterAppearance,
-                    status: employee.status,
-                    aiType: employee.aiType
-                )
-                .offset(y: 25)
+                // Character (휴식 중일 때는 걸어다니므로 숨김)
+                if employee.status != .idle {
+                    PixelCharacter(
+                        appearance: employee.characterAppearance,
+                        status: employee.status,
+                        aiType: employee.aiType
+                    )
+                    .offset(y: 25)
+                }
             }
 
             // Name tag

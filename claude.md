@@ -184,5 +184,141 @@ PixelOffice/
 ├── Services/
 │   ├── ClaudeService.swift        # API 직접 호출
 │   └── ClaudeCodeService.swift    # Claude Code CLI 연동
-└── claude.md                      # 이 문서
+└── CLAUDE.md                      # 이 문서
+```
+
+---
+
+## 데이터 저장 규칙
+
+### 기본 원칙
+
+1. **프로젝트 디렉토리 외부에 파일 생성 금지**
+   - 절대 `/Users/leeo/Documents/code/PixelOffice/` 바깥에 파일을 만들지 않음
+   - `~/Documents/`, `~/Desktop/`, `/tmp/` 등 외부 경로 사용 금지
+   - 모든 데이터, 문서, 설정 파일은 프로젝트 디렉토리 내에 저장
+
+2. **모든 데이터는 프로젝트 디렉토리 내에 저장**
+   - 저장 위치: `/Users/leeo/Documents/code/PixelOffice/datas/`
+   - 앱 데이터, 업무 기록, 위키 문서 모두 이 경로 사용
+
+3. **모든 작업은 파일로 기록**
+   - 대화, 업무, 문서 등 모든 활동이 파일로 남아야 함
+   - 마크다운(.md) 형식 권장
+
+### 디렉토리 구조
+
+```
+PixelOffice/
+└── datas/
+    ├── _shared/                    # 전사 공용 (프로젝트 무관)
+    │   ├── documents/              # 전사 공용 문서
+    │   ├── wiki/                   # 회사 위키
+    │   └── collaboration/          # 부서 간 협업 기록
+    │
+    └── [프로젝트명]/                # 프로젝트별 디렉토리
+        ├── _shared/                # 프로젝트 내 공용
+        │   ├── documents/          # 프로젝트 공용 문서
+        │   └── meetings/           # 회의록
+        │
+        ├── 기획/                   # 기획팀
+        │   ├── documents/          # 기획 문서 (PRD, 기획서 등)
+        │   ├── people/             # 직원별 업무 기록
+        │   │   └── [직원명].md
+        │   └── tasks/              # 업무/태스크 기록
+        │
+        ├── 디자인/                 # 디자인팀
+        │   ├── documents/          # 디자인 문서 (가이드, 명세서 등)
+        │   ├── people/
+        │   │   └── [직원명].md
+        │   └── tasks/
+        │
+        ├── 개발/                   # 개발팀
+        │   ├── documents/          # 기술 문서 (API, 아키텍처 등)
+        │   ├── people/
+        │   │   └── [직원명].md
+        │   └── tasks/
+        │
+        ├── QA/                     # QA팀
+        │   ├── documents/          # QA 문서 (테스트 계획, 리포트 등)
+        │   ├── people/
+        │   │   └── [직원명].md
+        │   └── tasks/
+        │
+        └── 마케팅/                 # 마케팅팀
+            ├── documents/          # 마케팅 문서 (전략, 캠페인 등)
+            ├── people/
+            │   └── [직원명].md
+            └── tasks/
+```
+
+### 부서명 매핑
+
+| DepartmentType | 디렉토리명 |
+|----------------|-----------|
+| .planning      | 기획      |
+| .design        | 디자인    |
+| .development   | 개발      |
+| .qa            | QA        |
+| .marketing     | 마케팅    |
+| .general       | 일반      |
+
+### 파일 명명 규칙
+
+1. **직원 업무 기록**: `[직원명].md`
+   - 예: `Claude-기획.md`, `GPT-개발.md`
+
+2. **문서**: `[날짜]-[제목].md`
+   - 예: `2024-02-04-프로젝트-기획서.md`
+
+3. **태스크**: `[태스크ID]-[제목].md`
+   - 예: `001-로그인-기능-구현.md`
+
+4. **회의록**: `[날짜]-[회의주제].md`
+   - 예: `2024-02-04-킥오프-미팅.md`
+
+### 사용 예시
+
+```swift
+// 프로젝트 "앱개발"의 기획팀 직원 "Claude-기획"의 업무 기록 경로
+let path = "datas/앱개발/기획/people/Claude-기획.md"
+
+// 프로젝트 "앱개발"의 기획팀 문서 저장 경로
+let docsPath = "datas/앱개발/기획/documents/"
+
+// 전사 공용 위키 경로
+let wikiPath = "datas/_shared/wiki/"
+```
+
+### 코드에서의 경로 생성
+
+```swift
+class DataPathService {
+    static let shared = DataPathService()
+
+    var basePath: String {
+        // 프로젝트 디렉토리 내 datas 폴더
+        return "/Users/leeo/Documents/code/PixelOffice/datas"
+    }
+
+    func projectPath(_ projectName: String) -> String {
+        return "\(basePath)/\(projectName)"
+    }
+
+    func departmentPath(_ projectName: String, department: DepartmentType) -> String {
+        return "\(projectPath(projectName))/\(department.directoryName)"
+    }
+
+    func peoplePath(_ projectName: String, department: DepartmentType) -> String {
+        return "\(departmentPath(projectName, department: department))/people"
+    }
+
+    func documentsPath(_ projectName: String, department: DepartmentType) -> String {
+        return "\(departmentPath(projectName, department: department))/documents"
+    }
+
+    func tasksPath(_ projectName: String, department: DepartmentType) -> String {
+        return "\(departmentPath(projectName, department: department))/tasks"
+    }
+}
 ```

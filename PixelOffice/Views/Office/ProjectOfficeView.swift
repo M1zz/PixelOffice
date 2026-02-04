@@ -8,6 +8,7 @@ struct ProjectOfficeView: View {
     @State private var selectedDepartment: ProjectDepartment?
     @State private var selectedEmployee: ProjectEmployee?
     @State private var zoomLevel: Double = 1.0
+    @State private var floorSize: CGSize = .zero
 
     let columns = 2
 
@@ -15,38 +16,85 @@ struct ProjectOfficeView: View {
         companyStore.company.projects.first { $0.id == projectId }
     }
 
+    /// 프로젝트 직원 ID로 직원과 소속 부서 찾기
+    private func findProjectEmployeeAndDepartment(employeeId: UUID, project: Project) -> (ProjectEmployee, ProjectDepartment)? {
+        for department in project.departments {
+            if let employee = department.employees.first(where: { $0.id == employeeId }) {
+                return (employee, department)
+            }
+        }
+        return nil
+    }
+
+    /// 걸어다니는 직원들의 이동 범위
+    var walkingBounds: CGRect {
+        CGRect(x: 30, y: 80, width: max(floorSize.width - 60, 200), height: max(floorSize.height - 100, 200))
+    }
+
     var body: some View {
         if let project = project {
             HStack(spacing: 0) {
                 // Office Floor View
                 ScrollView([.horizontal, .vertical]) {
-                    VStack(spacing: 0) {
-                        // Project Office Header
-                        ProjectOfficeHeader(project: project)
+                    ZStack {
+                        VStack(spacing: 0) {
+                            // Project Office Header
+                            ProjectOfficeHeader(
+                                project: project,
+                                onOpenKanban: {
+                                    openWindow(id: "kanban", value: projectId)
+                                },
+                                onOpenWiki: {
+                                    openWindow(id: "project-wiki", value: projectId)
+                                },
+                                onOpenCollaboration: {
+                                    openWindow(id: "collaboration", value: projectId)
+                                }
+                            )
 
-                        // Department Grid
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 20), count: columns), spacing: 20) {
-                            ForEach(project.departments) { department in
-                                ProjectDepartmentView(
-                                    department: department,
-                                    projectId: projectId,
-                                    isSelected: selectedDepartment?.id == department.id,
-                                    onSelect: {
-                                        withAnimation(.spring(response: 0.3)) {
-                                            selectedDepartment = department
-                                            selectedEmployee = nil
+                            // Department Grid
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 20), count: columns), spacing: 20) {
+                                ForEach(project.departments) { department in
+                                    ProjectDepartmentView(
+                                        department: department,
+                                        projectId: projectId,
+                                        isSelected: selectedDepartment?.id == department.id,
+                                        onSelect: {
+                                            withAnimation(.spring(response: 0.3)) {
+                                                selectedDepartment = department
+                                                selectedEmployee = nil
+                                            }
+                                        },
+                                        onEmployeeSelect: { employee in
+                                            withAnimation(.spring(response: 0.3)) {
+                                                selectedEmployee = employee
+                                                selectedDepartment = department
+                                            }
                                         }
-                                    },
-                                    onEmployeeSelect: { employee in
-                                        withAnimation(.spring(response: 0.3)) {
-                                            selectedEmployee = employee
-                                            selectedDepartment = department
-                                        }
-                                    }
-                                )
+                                    )
+                                }
+                            }
+                            .padding(30)
+                        }
+                        .background(
+                            GeometryReader { geo in
+                                Color.clear
+                                    .onAppear { floorSize = geo.size }
+                                    .onChange(of: geo.size) { _, newSize in floorSize = newSize }
+                            }
+                        )
+
+                        // 걸어다니는 휴식 중인 직원들 (이 프로젝트 직원만)
+                        WalkingEmployeesLayer(floorBounds: walkingBounds, projectId: projectId) { employeeId in
+                            // 직원과 부서를 찾아서 선택
+                            if let (employee, department) = findProjectEmployeeAndDepartment(employeeId: employeeId, project: project) {
+                                withAnimation(.spring(response: 0.3)) {
+                                    selectedEmployee = employee
+                                    selectedDepartment = department
+                                }
                             }
                         }
-                        .padding(30)
+                        .allowsHitTesting(true)
                     }
                     .scaleEffect(zoomLevel)
                 }
@@ -84,6 +132,24 @@ struct ProjectOfficeView: View {
                     .frame(width: 100)
 
                     Button {
+                        openWindow(id: "kanban", value: projectId)
+                    } label: {
+                        Label("칸반", systemImage: "rectangle.split.3x1")
+                    }
+
+                    Button {
+                        openWindow(id: "project-wiki", value: projectId)
+                    } label: {
+                        Label("위키", systemImage: "books.vertical")
+                    }
+
+                    Button {
+                        openWindow(id: "collaboration", value: projectId)
+                    } label: {
+                        Label("협업", systemImage: "bubble.left.and.bubble.right")
+                    }
+
+                    Button {
                         openWindow(id: "add-project-employee", value: AddProjectEmployeeContext(projectId: projectId, departmentType: nil))
                     } label: {
                         Label("직원 추가", systemImage: "person.badge.plus")
@@ -98,6 +164,9 @@ struct ProjectOfficeView: View {
 
 struct ProjectOfficeHeader: View {
     let project: Project
+    let onOpenKanban: () -> Void
+    let onOpenWiki: () -> Void
+    let onOpenCollaboration: () -> Void
 
     var body: some View {
         HStack {
@@ -116,6 +185,31 @@ struct ProjectOfficeHeader: View {
                 }
             }
             Spacer()
+
+            // 칸반 보드 버튼
+            Button {
+                onOpenKanban()
+            } label: {
+                Label("칸반", systemImage: "rectangle.split.3x1")
+            }
+            .buttonStyle(.bordered)
+
+            // 위키 버튼
+            Button {
+                onOpenWiki()
+            } label: {
+                Label("위키", systemImage: "books.vertical")
+            }
+            .buttonStyle(.bordered)
+
+            // 협업 기록 버튼
+            Button {
+                onOpenCollaboration()
+            } label: {
+                Label("협업", systemImage: "bubble.left.and.bubble.right")
+            }
+            .buttonStyle(.bordered)
+
             VStack(alignment: .trailing) {
                 Text("직원 \(project.allEmployees.count)명")
                     .font(.body)
@@ -257,36 +351,86 @@ struct ProjectEmployeeActionsCard: View {
     let projectId: UUID
     @EnvironmentObject var companyStore: CompanyStore
     @Environment(\.openWindow) private var openWindow
+    @State private var showingBadge = false
+
+    var employee: ProjectEmployee? {
+        companyStore.getProjectEmployee(byId: employeeId, inProject: projectId)
+    }
+
+    var project: Project? {
+        companyStore.company.projects.first { $0.id == projectId }
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("액션")
-                .font(.headline)
+        if let employee = employee {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("액션")
+                    .font(.headline)
 
-            VStack(spacing: 8) {
-                Button {
-                    openWindow(id: "project-employee-chat", value: ProjectEmployeeChatContext(projectId: projectId, employeeId: employeeId))
-                } label: {
-                    Label("대화 열기", systemImage: "bubble.left.and.bubble.right")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
+                VStack(spacing: 8) {
+                    Button {
+                        openWindow(id: "project-employee-chat", value: ProjectEmployeeChatContext(projectId: projectId, employeeId: employeeId))
+                    } label: {
+                        Label("대화 열기", systemImage: "bubble.left.and.bubble.right")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
 
-                Button {
-                    clearConversation()
-                } label: {
-                    Label("대화 초기화", systemImage: "trash")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
+                    Button {
+                        showingBadge = true
+                    } label: {
+                        Label("사원증 보기", systemImage: "person.crop.rectangle")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
 
-                Button(role: .destructive) {
-                    companyStore.removeProjectEmployee(employeeId, fromProject: projectId)
-                } label: {
-                    Label("직원 제거", systemImage: "person.badge.minus")
-                        .frame(maxWidth: .infinity)
+                    if let proj = project {
+                        Button {
+                            openWindow(id: "project-employee-worklog", value: ProjectEmployeeWorkLogData(employeeId: employee.id, employeeName: employee.name, projectName: proj.name, departmentType: employee.departmentType))
+                        } label: {
+                            Label("업무 기록", systemImage: "doc.text.magnifyingglass")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    Button {
+                        clearConversation()
+                    } label: {
+                        Label("대화 초기화", systemImage: "trash")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button(role: .destructive) {
+                        companyStore.removeProjectEmployee(employeeId, fromProject: projectId)
+                    } label: {
+                        Label("직원 제거", systemImage: "person.badge.minus")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
+            }
+            .sheet(isPresented: $showingBadge) {
+                VStack(spacing: 20) {
+                    Text("사원증")
+                        .font(.headline)
+
+                    EmployeeBadgeView(
+                        name: employee.name,
+                        employeeNumber: employee.employeeNumber,
+                        departmentType: employee.departmentType,
+                        aiType: employee.aiType,
+                        appearance: employee.characterAppearance,
+                        hireDate: employee.createdAt
+                    )
+
+                    Button("닫기") {
+                        showingBadge = false
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .padding(40)
             }
         }
     }

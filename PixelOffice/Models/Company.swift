@@ -13,9 +13,17 @@ struct Company: Codable, Identifiable {
     var wikiDocuments: [WikiDocument]
     var employeeOnboardings: [EmployeeOnboarding]
 
+    // 협업 기록
+    var collaborationRecords: [CollaborationRecord]
+
+    // 직원 사고 과정 & 커뮤니티 게시글
+    var employeeThinkings: [EmployeeThinking]
+    var communityPosts: [CommunityPost]
+
     enum CodingKeys: String, CodingKey {
         case id, name, departments, projects, settings, createdAt, updatedAt
-        case wikiDocuments, employeeOnboardings
+        case wikiDocuments, employeeOnboardings, collaborationRecords
+        case employeeThinkings, communityPosts
     }
 
     init(
@@ -27,7 +35,10 @@ struct Company: Codable, Identifiable {
         createdAt: Date = Date(),
         updatedAt: Date = Date(),
         wikiDocuments: [WikiDocument] = [],
-        employeeOnboardings: [EmployeeOnboarding] = []
+        employeeOnboardings: [EmployeeOnboarding] = [],
+        collaborationRecords: [CollaborationRecord] = [],
+        employeeThinkings: [EmployeeThinking] = [],
+        communityPosts: [CommunityPost] = []
     ) {
         self.id = id
         self.name = name
@@ -38,6 +49,9 @@ struct Company: Codable, Identifiable {
         self.updatedAt = updatedAt
         self.wikiDocuments = wikiDocuments
         self.employeeOnboardings = employeeOnboardings
+        self.collaborationRecords = collaborationRecords
+        self.employeeThinkings = employeeThinkings
+        self.communityPosts = communityPosts
     }
 
     // 기존 저장 파일 호환성을 위한 커스텀 디코더
@@ -53,6 +67,9 @@ struct Company: Codable, Identifiable {
         // 새 필드는 없으면 빈 배열로
         wikiDocuments = try container.decodeIfPresent([WikiDocument].self, forKey: .wikiDocuments) ?? []
         employeeOnboardings = try container.decodeIfPresent([EmployeeOnboarding].self, forKey: .employeeOnboardings) ?? []
+        collaborationRecords = try container.decodeIfPresent([CollaborationRecord].self, forKey: .collaborationRecords) ?? []
+        employeeThinkings = try container.decodeIfPresent([EmployeeThinking].self, forKey: .employeeThinkings) ?? []
+        communityPosts = try container.decodeIfPresent([CommunityPost].self, forKey: .communityPosts) ?? []
     }
     
     var allEmployees: [Employee] {
@@ -118,9 +135,10 @@ struct CompanySettings: Codable {
     var cloudSyncEnabled: Bool
     var notificationsEnabled: Bool
     var wikiSettings: WikiSettings?
+    var departmentSkills: DepartmentSkills
 
     enum CodingKeys: String, CodingKey {
-        case apiConfigurations, autoSaveEnabled, cloudSyncEnabled, notificationsEnabled, wikiSettings
+        case apiConfigurations, autoSaveEnabled, cloudSyncEnabled, notificationsEnabled, wikiSettings, departmentSkills
     }
 
     init(
@@ -128,13 +146,15 @@ struct CompanySettings: Codable {
         autoSaveEnabled: Bool = true,
         cloudSyncEnabled: Bool = false,
         notificationsEnabled: Bool = true,
-        wikiSettings: WikiSettings? = WikiSettings()
+        wikiSettings: WikiSettings? = WikiSettings(),
+        departmentSkills: DepartmentSkills = DepartmentSkills()
     ) {
         self.apiConfigurations = apiConfigurations
         self.autoSaveEnabled = autoSaveEnabled
         self.cloudSyncEnabled = cloudSyncEnabled
         self.notificationsEnabled = notificationsEnabled
         self.wikiSettings = wikiSettings
+        self.departmentSkills = departmentSkills
     }
 
     // 기존 저장 파일 호환성
@@ -145,5 +165,6 @@ struct CompanySettings: Codable {
         cloudSyncEnabled = try container.decodeIfPresent(Bool.self, forKey: .cloudSyncEnabled) ?? false
         notificationsEnabled = try container.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? true
         wikiSettings = try container.decodeIfPresent(WikiSettings.self, forKey: .wikiSettings)
+        departmentSkills = try container.decodeIfPresent(DepartmentSkills.self, forKey: .departmentSkills) ?? DepartmentSkills()
     }
 }
