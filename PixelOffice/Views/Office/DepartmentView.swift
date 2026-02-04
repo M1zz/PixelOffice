@@ -113,7 +113,7 @@ struct DepartmentView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color.red.opacity(0.3))
+            .background(department.type.color.opacity(0.15))
 
             // Desk Area with Decorations
             ZStack(alignment: .topLeading) {
@@ -166,11 +166,11 @@ struct DepartmentView: View {
             }
         }
         .frame(width: 360, height: 380)
-        .background(Color.red.opacity(0.2))
+        .background(Color(NSColor.controlBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(isSelected ? Color.red : Color.red.opacity(0.5), lineWidth: 5)
+                .stroke(isSelected ? department.type.color : Color.clear, lineWidth: 3)
         )
         .shadow(color: isHovering ? department.type.color.opacity(0.3) : .clear, radius: 10)
         .scaleEffect(isHovering ? 1.02 : 1.0)

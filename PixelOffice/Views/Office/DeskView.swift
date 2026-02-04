@@ -10,39 +10,92 @@ struct DeskView: View {
     @State private var questionBounce = false
 
     var body: some View {
-        Rectangle()
-            .fill(Color.blue)
-            .frame(width: 120, height: 120)
-            .overlay(
-                VStack(spacing: 8) {
-                    Rectangle()
-                        .fill(Color.red)
-                        .frame(width: 80, height: 30)
-                        .overlay(
-                            Text("컴퓨터")
-                                .font(.headline.bold())
-                                .foregroundStyle(.white)
-                        )
+        VStack(spacing: 6) {
+            // 책상과 컴퓨터 영역
+            ZStack {
+                // 책상 (갈색)
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(red: 0.55, green: 0.35, blue: 0.2))
+                    .frame(width: 90, height: 45)
+                    .shadow(color: .black.opacity(0.2), radius: 2, y: 2)
 
-                    Rectangle()
-                        .fill(Color.yellow)
-                        .frame(width: 80, height: 30)
-                        .overlay(
-                            Text("책상")
-                                .font(.headline.bold())
-                                .foregroundStyle(.black)
-                        )
+                VStack(spacing: 4) {
+                    // 컴퓨터 모니터
+                    ZStack {
+                        // 모니터 프레임
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Color(white: 0.25))
+                            .frame(width: 50, height: 35)
 
-                    Text(employee.name)
-                        .font(.headline.bold())
-                        .foregroundStyle(.white)
-                        .padding(6)
-                        .background(Color.black)
+                        // 화면
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(employee.status == .working ?
+                                  Color.cyan.opacity(0.6) :
+                                  Color(white: 0.4))
+                            .frame(width: 44, height: 30)
+
+                        // 화면 글로우 (작업 중일 때)
+                        if employee.status == .working {
+                            RoundedRectangle(cornerRadius: 1)
+                                .fill(Color.cyan.opacity(0.3))
+                                .frame(width: 44, height: 30)
+                                .blur(radius: 4)
+                        }
+                    }
+                    .offset(y: -8)
+
+                    // 캐릭터 (작업 중일 때만)
+                    if employee.status != .idle {
+                        PixelCharacter(
+                            appearance: employee.characterAppearance,
+                            status: employee.status,
+                            aiType: employee.aiType
+                        )
+                        .scaleEffect(0.8)
+                        .offset(y: -5)
+                    } else {
+                        // 휴식 중일 때는 빈 공간 + 작은 표시
+                        Text("💤")
+                            .font(.caption)
+                            .opacity(0.5)
+                            .offset(y: -5)
+                    }
                 }
+            }
+            .frame(height: 80)
+
+            // 이름표
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(employee.status.color)
+                    .frame(width: 6, height: 6)
+
+                Text(employee.name)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(Color(white: 0.95))
+                    .shadow(color: .black.opacity(0.1), radius: 1, y: 1)
             )
-            .border(Color.purple, width: 5)
-            .fixedSize()
-            .onTapGesture(perform: onSelect)
+        }
+        .frame(width: 110, height: 120)
+        .padding(5)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isHovering ? Color.black.opacity(0.05) : Color.clear)
+        )
+        .scaleEffect(isHovering ? 1.05 : 1.0)
+        .onTapGesture(perform: onSelect)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovering = hovering
+            }
+        }
     }
 }
 
