@@ -6,40 +6,45 @@ import SwiftUI
 struct PixelComputer: View {
     var body: some View {
         Canvas { context, size in
-            let pixelSize: CGFloat = 2
+            let pixelSize: CGFloat = 3
 
-            // Monitor screen (파란색)
+            // Monitor screen (밝은 파란색 - 더 눈에 잘 띄게)
             context.fill(
-                Path(CGRect(x: 2*pixelSize, y: 0, width: 12*pixelSize, height: 10*pixelSize)),
-                with: .color(.blue.opacity(0.3))
+                Path(CGRect(x: 3*pixelSize, y: pixelSize, width: 14*pixelSize, height: 12*pixelSize)),
+                with: .color(.cyan.opacity(0.6))
             )
 
-            // Monitor frame (검정)
-            drawPixel(context, x: 2, y: 0, pixelSize: pixelSize, color: .black)
-            drawPixel(context, x: 13, y: 0, pixelSize: pixelSize, color: .black)
-            drawPixel(context, x: 2, y: 9, pixelSize: pixelSize, color: .black)
-            drawPixel(context, x: 13, y: 9, pixelSize: pixelSize, color: .black)
+            // Monitor frame (어두운 회색)
+            let frameColor = Color(white: 0.2)
 
-            for x in 3...12 {
-                drawPixel(context, x: x, y: 0, pixelSize: pixelSize, color: .black)
-                drawPixel(context, x: x, y: 9, pixelSize: pixelSize, color: .black)
-            }
-            for y in 1...8 {
-                drawPixel(context, x: 2, y: y, pixelSize: pixelSize, color: .black)
-                drawPixel(context, x: 13, y: y, pixelSize: pixelSize, color: .black)
+            // 상단 프레임
+            for x in 2...17 {
+                drawPixel(context, x: x, y: 0, pixelSize: pixelSize, color: frameColor)
             }
 
-            // Stand
-            for x in 6...9 {
-                drawPixel(context, x: x, y: 10, pixelSize: pixelSize, color: .gray)
+            // 하단 프레임
+            for x in 2...17 {
+                drawPixel(context, x: x, y: 13, pixelSize: pixelSize, color: frameColor)
             }
 
-            // Base
-            for x in 4...11 {
-                drawPixel(context, x: x, y: 11, pixelSize: pixelSize, color: .gray)
+            // 좌우 프레임
+            for y in 0...13 {
+                drawPixel(context, x: 2, y: y, pixelSize: pixelSize, color: frameColor)
+                drawPixel(context, x: 17, y: y, pixelSize: pixelSize, color: frameColor)
+            }
+
+            // Stand (짙은 회색)
+            for x in 8...11 {
+                drawPixel(context, x: x, y: 14, pixelSize: pixelSize, color: Color(white: 0.3))
+                drawPixel(context, x: x, y: 15, pixelSize: pixelSize, color: Color(white: 0.3))
+            }
+
+            // Base (더 넓은 받침대)
+            for x in 5...14 {
+                drawPixel(context, x: x, y: 16, pixelSize: pixelSize, color: Color(white: 0.25))
             }
         }
-        .frame(width: 32, height: 24)
+        .frame(width: 60, height: 51)
     }
 }
 

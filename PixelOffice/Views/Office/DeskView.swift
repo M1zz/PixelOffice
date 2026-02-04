@@ -20,7 +20,7 @@ struct DeskView: View {
 
                 // Pixel Computer on desk
                 PixelComputer()
-                    .offset(y: 5)
+                    .offset(y: 0)
 
                 // Screen glow when working
                 if employee.isWorking {
