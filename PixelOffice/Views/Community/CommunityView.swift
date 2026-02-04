@@ -216,43 +216,99 @@ struct CommunityEmployeeCard: View {
         Button {
             showingDetail = true
         } label: {
-            VStack(spacing: 8) {
-                ZStack {
+            VStack(spacing: 10) {
+                // 캐릭터와 상태
+                ZStack(alignment: .topTrailing) {
                     Circle()
                         .fill(employee.jobRole.department.color.opacity(0.2))
-                        .frame(width: 60, height: 60)
+                        .frame(width: 70, height: 70)
                     PixelCharacter(
                         appearance: employee.characterAppearance,
                         status: employee.status,
                         aiType: employee.aiType
                     )
-                    .scaleEffect(0.7)
+                    .scaleEffect(0.8)
+
+                    // 상태 표시
+                    Circle()
+                        .fill(employee.status.color)
+                        .frame(width: 12, height: 12)
+                        .overlay(
+                            Circle()
+                                .strokeBorder(Color.white, lineWidth: 2)
+                        )
                 }
 
-                HStack(spacing: 4) {
-                    Text(employee.name)
-                        .font(.headline)
-                    Image(systemName: employee.jobRole.department.icon)
-                        .font(.caption)
+                VStack(spacing: 6) {
+                    // 이름과 부서
+                    HStack(spacing: 4) {
+                        Text(employee.name)
+                            .font(.headline)
+                        Image(systemName: employee.jobRole.department.icon)
+                            .font(.caption)
+                            .foregroundColor(employee.jobRole.department.color)
+                    }
+
+                    // 직무
+                    Text(employee.jobRole.rawValue)
+                        .font(.caption.bold())
                         .foregroundColor(employee.jobRole.department.color)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(employee.jobRole.department.color.opacity(0.15))
+                        .clipShape(Capsule())
+
+                    // 사원번호
+                    Text(employee.employeeNumber)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+
+                    Divider()
+                        .padding(.horizontal, 8)
+
+                    // 성격
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                        Text(employee.personality)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    .lineLimit(1)
+
+                    // 강점 (첫 번째만)
+                    if let firstStrength = employee.strengths.first {
+                        HStack(spacing: 4) {
+                            Image(systemName: "star.fill")
+                                .font(.caption2)
+                                .foregroundColor(.yellow)
+                            Text(firstStrength)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        .lineLimit(1)
+                    }
+
+                    // 완료 태스크
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption2)
+                            .foregroundColor(.green)
+                        Text("완료: \(employee.totalTasksCompleted)개")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
                 }
-
-                Text(employee.jobRole.rawValue)
-                    .font(.caption.bold())
-                    .foregroundColor(employee.jobRole.department.color)
-
-                Text(employee.employeeNumber)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                Text("입사: \(employee.createdAt.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
             }
-            .padding()
-            .frame(width: 180)
+            .padding(12)
+            .frame(width: 200)
             .background(Color(nsColor: .controlBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(employee.jobRole.department.color.opacity(0.3), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
         .popover(isPresented: $showingDetail) {
@@ -267,43 +323,150 @@ struct CommunityEmployeeDetailView: View {
     let employee: Employee
 
     var body: some View {
-        VStack(spacing: 16) {
-            // 사원증
-            EmployeeBadgeView(
-                name: employee.name,
-                employeeNumber: employee.employeeNumber,
-                departmentType: employee.jobRole.department,
-                aiType: employee.aiType,
-                appearance: employee.characterAppearance,
-                hireDate: employee.createdAt,
-                jobRole: employee.jobRole,
-                personality: employee.personality,
-                strengths: employee.strengths,
-                workStyle: employee.workStyle
-            )
+        ScrollView {
+            VStack(spacing: 20) {
+                // 사원증
+                EmployeeBadgeView(
+                    name: employee.name,
+                    employeeNumber: employee.employeeNumber,
+                    departmentType: employee.jobRole.department,
+                    aiType: employee.aiType,
+                    appearance: employee.characterAppearance,
+                    hireDate: employee.createdAt,
+                    jobRole: employee.jobRole,
+                    personality: employee.personality,
+                    strengths: employee.strengths,
+                    workStyle: employee.workStyle
+                )
 
-            // 추가 정보
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                    Text("완료한 작업: \(employee.totalTasksCompleted)개")
-                        .font(.caption)
-                }
+                Divider()
 
-                HStack {
-                    Circle()
-                        .fill(employee.status.color)
-                        .frame(width: 8, height: 8)
-                    Text("상태: \(employee.status.rawValue)")
-                        .font(.caption)
+                // 상세 정보
+                VStack(alignment: .leading, spacing: 16) {
+                    // 현재 상태
+                    InfoSection(
+                        title: "현재 상태",
+                        icon: "circle.fill",
+                        iconColor: employee.status.color
+                    ) {
+                        Text(employee.status.rawValue)
+                            .font(.body)
+                    }
+
+                    // 성격
+                    InfoSection(
+                        title: "성격",
+                        icon: "sparkles",
+                        iconColor: .orange
+                    ) {
+                        Text(employee.personality)
+                            .font(.body)
+                    }
+
+                    // 강점
+                    InfoSection(
+                        title: "강점",
+                        icon: "star.fill",
+                        iconColor: .yellow
+                    ) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(employee.strengths, id: \.self) { strength in
+                                HStack(spacing: 6) {
+                                    Circle()
+                                        .fill(Color.yellow.opacity(0.3))
+                                        .frame(width: 6, height: 6)
+                                    Text(strength)
+                                        .font(.caption)
+                                }
+                            }
+                        }
+                    }
+
+                    // 업무 스타일
+                    InfoSection(
+                        title: "업무 스타일",
+                        icon: "briefcase.fill",
+                        iconColor: .blue
+                    ) {
+                        Text(employee.workStyle)
+                            .font(.body)
+                    }
+
+                    // 통계
+                    InfoSection(
+                        title: "업무 통계",
+                        icon: "chart.bar.fill",
+                        iconColor: .green
+                    ) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("완료한 작업:")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text("\(employee.totalTasksCompleted)개")
+                                    .font(.caption.bold())
+                            }
+
+                            HStack {
+                                Text("대화 기록:")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text("\(employee.conversationHistory.count)개")
+                                    .font(.caption.bold())
+                            }
+
+                            HStack {
+                                Text("입사일:")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text(employee.createdAt.formatted(date: .long, time: .omitted))
+                                    .font(.caption.bold())
+                            }
+                        }
+                    }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal)
+            .padding()
         }
-        .padding()
-        .frame(width: 250)
+        .frame(width: 350, height: 600)
+    }
+}
+
+// MARK: - Info Section Helper
+
+struct InfoSection<Content: View>: View {
+    let title: String
+    let icon: String
+    let iconColor: Color
+    let content: Content
+
+    init(title: String, icon: String, iconColor: Color, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.icon = icon
+        self.iconColor = iconColor
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.caption)
+                    .foregroundColor(iconColor)
+                Text(title)
+                    .font(.caption.bold())
+                    .foregroundColor(.secondary)
+            }
+
+            content
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
     }
 }
 
