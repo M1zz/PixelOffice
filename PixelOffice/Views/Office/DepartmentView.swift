@@ -117,9 +117,6 @@ struct DepartmentView: View {
 
             // Desk Area with Decorations
             ZStack(alignment: .topLeading) {
-                // 오피스 바닥 배경
-                OfficeFloor()
-
                 VStack(spacing: 12) {
                     // Desks Grid (2x2)
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -139,6 +136,30 @@ struct DepartmentView: View {
                     }
                 }
                 .padding(16)
+                .background(
+                    // 체크무늬 바닥 패턴
+                    Canvas { context, size in
+                        let tileSize: CGFloat = 20
+                        let lightGray = Color(white: 0.92)
+                        let darkGray = Color(white: 0.88)
+
+                        let rows = Int(size.height / tileSize) + 1
+                        let cols = Int(size.width / tileSize) + 1
+
+                        for row in 0..<rows {
+                            for col in 0..<cols {
+                                let color = (row + col) % 2 == 0 ? lightGray : darkGray
+                                let rect = CGRect(
+                                    x: CGFloat(col) * tileSize,
+                                    y: CGFloat(row) * tileSize,
+                                    width: tileSize,
+                                    height: tileSize
+                                )
+                                context.fill(Path(rect), with: .color(color))
+                            }
+                        }
+                    }
+                )
 
                 // Department-specific decorations
                 decorationsForDepartment
