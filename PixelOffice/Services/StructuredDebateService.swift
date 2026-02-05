@@ -13,6 +13,7 @@ class StructuredDebateService: ObservableObject {
     @Published var currentError: String?
 
     private let claudeService = ClaudeService()
+    private let claudeCodeService = ClaudeCodeService()
     private weak var companyStore: CompanyStore?
 
     private init() {}
@@ -435,21 +436,25 @@ class StructuredDebateService: ObservableObject {
 
         // 종합은 첫 번째 참여자의 AI 타입 사용 (또는 기본 Claude)
         let aiType = debate.participants.first?.aiType ?? .claude
-        guard let apiConfig = companyStore.getAPIConfiguration(for: aiType) else {
+        if let apiConfig = companyStore.getAPIConfiguration(for: aiType) {
+            let sessionId = UUID()
+            await claudeService.createSession(for: sessionId)
+
+            return try await claudeService.sendMessage(
+                prompt,
+                employeeId: sessionId,
+                configuration: apiConfig,
+                systemPrompt: systemPrompt
+            )
+        }
+
+        // API 없으면 Claude Code CLI 폴백
+        guard await claudeCodeService.isClaudeCodeAvailable() else {
             throw APIError.notConfigured
         }
 
-        let sessionId = UUID()
-        await claudeService.createSession(for: sessionId)
-
-        let result = try await claudeService.sendMessage(
-            prompt,
-            employeeId: sessionId,
-            configuration: apiConfig,
-            systemPrompt: systemPrompt
-        )
-
-        return result
+        let response = try await claudeCodeService.sendMessage(prompt, systemPrompt: systemPrompt)
+        return (response: response, inputTokens: 0, outputTokens: 0)
     }
 
     /// 종합 텍스트에서 구조화된 데이터 파싱
@@ -508,19 +513,26 @@ class StructuredDebateService: ObservableObject {
         participant: DebateParticipant,
         companyStore: CompanyStore
     ) async throws -> (response: String, inputTokens: Int, outputTokens: Int) {
-        guard let apiConfig = companyStore.getAPIConfiguration(for: participant.aiType) else {
+        // API 설정이 있으면 기존대로 ClaudeService 사용
+        if let apiConfig = companyStore.getAPIConfiguration(for: participant.aiType) {
+            let sessionId = UUID()
+            await claudeService.createSession(for: sessionId)
+
+            return try await claudeService.sendMessage(
+                prompt,
+                employeeId: sessionId,
+                configuration: apiConfig,
+                systemPrompt: systemPrompt
+            )
+        }
+
+        // API 없으면 Claude Code CLI 폴백
+        guard await claudeCodeService.isClaudeCodeAvailable() else {
             throw APIError.notConfigured
         }
 
-        let sessionId = UUID()
-        await claudeService.createSession(for: sessionId)
-
-        return try await claudeService.sendMessage(
-            prompt,
-            employeeId: sessionId,
-            configuration: apiConfig,
-            systemPrompt: systemPrompt
-        )
+        let response = try await claudeCodeService.sendMessage(prompt, systemPrompt: systemPrompt)
+        return (response: response, inputTokens: 0, outputTokens: 0)
     }
 
     private func buildParticipantSystemPrompt(participant: DebateParticipant) -> String {
