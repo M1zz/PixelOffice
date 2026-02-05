@@ -7,7 +7,7 @@ struct WikiView: View {
     @State private var selectedDocument: WikiDocument?
     @State private var showingNewDocument = false
     @State private var searchText = ""
-    @State private var selectedDepartment: String? = nil
+    @State private var selectedDepartment: DepartmentType? = nil
     @State private var sortOption: WikiSortOption = .newest
 
     enum WikiSortOption: String, CaseIterable {
@@ -22,6 +22,26 @@ struct WikiView: View {
         return path.isEmpty ? WikiService.shared.defaultWikiPath : path
     }
 
+    /// 문서의 부서 타입 추출
+    func departmentType(for document: WikiDocument) -> DepartmentType? {
+        // createdBy에서 부서명 추출 (예: "기획팀" -> "기획")
+        let createdBy = document.createdBy
+        for dept in DepartmentType.allCases {
+            if createdBy.contains(dept.rawValue) {
+                return dept
+            }
+        }
+        // 태그에서도 찾기
+        for tag in document.tags {
+            for dept in DepartmentType.allCases {
+                if tag.contains(dept.rawValue) {
+                    return dept
+                }
+            }
+        }
+        return nil
+    }
+
     /// 필터링 및 정렬된 문서
     var filteredDocuments: [WikiDocument] {
         var docs = companyStore.company.wikiDocuments
@@ -31,13 +51,14 @@ struct WikiView: View {
             docs = docs.filter {
                 $0.title.localizedCaseInsensitiveContains(searchText) ||
                 $0.content.localizedCaseInsensitiveContains(searchText) ||
-                $0.createdBy.localizedCaseInsensitiveContains(searchText)
+                $0.createdBy.localizedCaseInsensitiveContains(searchText) ||
+                $0.tags.contains { $0.localizedCaseInsensitiveContains(searchText) }
             }
         }
 
         // 부서 필터
         if let dept = selectedDepartment {
-            docs = docs.filter { $0.createdBy == dept }
+            docs = docs.filter { departmentType(for: $0) == dept }
         }
 
         // 정렬
@@ -49,15 +70,15 @@ struct WikiView: View {
         case .title:
             docs.sort { $0.title < $1.title }
         case .department:
-            docs.sort { $0.createdBy < $1.createdBy }
+            docs.sort { (departmentType(for: $0)?.rawValue ?? "") < (departmentType(for: $1)?.rawValue ?? "") }
         }
 
         return docs
     }
 
-    /// 모든 부서 목록
-    var departments: [String] {
-        Array(Set(companyStore.company.wikiDocuments.map { $0.createdBy })).sorted()
+    /// 오피스 부서 목록 (DepartmentType 기반)
+    var departments: [DepartmentType] {
+        DepartmentType.allCases.filter { $0 != .general }
     }
 
     var body: some View {
@@ -181,9 +202,9 @@ struct WikiView: View {
 // MARK: - 필터 바
 struct WikiFilterBar: View {
     @Binding var searchText: String
-    @Binding var selectedDepartment: String?
+    @Binding var selectedDepartment: DepartmentType?
     @Binding var sortOption: WikiView.WikiSortOption
-    let departments: [String]
+    let departments: [DepartmentType]
     let documentCount: Int
 
     var body: some View {
@@ -216,27 +237,29 @@ struct WikiFilterBar: View {
                     .foregroundStyle(.secondary)
             }
 
-            // 하단: 부서 필터 + 정렬
-            HStack {
-                // 부서 필터
-                Menu {
-                    Button("전체 부서") {
-                        selectedDepartment = nil
-                    }
-                    Divider()
-                    ForEach(departments, id: \.self) { dept in
-                        Button(dept) {
-                            selectedDepartment = dept
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
-                        Text(selectedDepartment ?? "전체 부서")
-                    }
-                    .font(.callout)
+            // 하단: 부서 필터 칩 + 정렬
+            HStack(spacing: 8) {
+                // 전체 버튼
+                WikiDepartmentChip(
+                    label: "전체",
+                    icon: "building.2",
+                    color: .gray,
+                    isSelected: selectedDepartment == nil
+                ) {
+                    selectedDepartment = nil
                 }
-                .menuStyle(.borderlessButton)
+
+                // 부서별 칩
+                ForEach(departments, id: \.self) { dept in
+                    WikiDepartmentChip(
+                        label: dept.rawValue,
+                        icon: dept.icon,
+                        color: dept.color,
+                        isSelected: selectedDepartment == dept
+                    ) {
+                        selectedDepartment = (selectedDepartment == dept) ? nil : dept
+                    }
+                }
 
                 Divider()
                     .frame(height: 16)
@@ -256,31 +279,79 @@ struct WikiFilterBar: View {
     }
 }
 
+/// 부서 필터 칩
+struct WikiDepartmentChip: View {
+    let label: String
+    let icon: String
+    let color: Color
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.caption2)
+                Text(label)
+                    .font(.caption)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(isSelected ? color.opacity(0.2) : Color(NSColor.controlBackgroundColor))
+            .foregroundStyle(isSelected ? color : .secondary)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .strokeBorder(isSelected ? color.opacity(0.5) : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: - 테이블 뷰
 struct WikiTableView: View {
     let documents: [WikiDocument]
     @Binding var selectedDocument: WikiDocument?
 
-    /// 부서별 아이콘
-    func departmentIcon(for createdBy: String) -> String {
-        if createdBy.contains("기획") { return "lightbulb.fill" }
-        else if createdBy.contains("디자인") { return "paintbrush.fill" }
-        else if createdBy.contains("개발") { return "chevron.left.forwardslash.chevron.right" }
-        else if createdBy.contains("QA") { return "checkmark.shield.fill" }
-        else if createdBy.contains("마케팅") { return "megaphone.fill" }
-        else if createdBy.contains("전사") || createdBy.contains("공용") { return "building.2.fill" }
-        else { return "doc.text.fill" }
+    /// 문서에서 부서 타입 추출
+    func extractDepartmentType(from doc: WikiDocument) -> DepartmentType? {
+        let createdBy = doc.createdBy
+        for dept in DepartmentType.allCases {
+            if createdBy.contains(dept.rawValue) {
+                return dept
+            }
+        }
+        for tag in doc.tags {
+            for dept in DepartmentType.allCases {
+                if tag.contains(dept.rawValue) {
+                    return dept
+                }
+            }
+        }
+        return nil
     }
 
-    /// 부서별 색상
-    func departmentColor(for createdBy: String) -> Color {
-        if createdBy.contains("기획") { return .purple }
-        else if createdBy.contains("디자인") { return .pink }
-        else if createdBy.contains("개발") { return .blue }
-        else if createdBy.contains("QA") { return .green }
-        else if createdBy.contains("마케팅") { return .orange }
-        else if createdBy.contains("전사") || createdBy.contains("공용") { return .gray }
-        else { return .secondary }
+    /// 문서에서 작성자(직원명) 추출
+    func extractAuthorName(from doc: WikiDocument) -> String? {
+        // createdBy가 "기획팀", "개발팀" 등이 아닌 경우 직원명으로 간주
+        let createdBy = doc.createdBy
+        for dept in DepartmentType.allCases {
+            if createdBy == dept.rawValue || createdBy == "\(dept.rawValue)팀" {
+                return nil // 부서명만 있으면 직원명 없음
+            }
+        }
+        if createdBy == "전사 공용" || createdBy == "시스템" || createdBy == "외부 파일" || createdBy == "CEO" {
+            return nil
+        }
+        return createdBy
+    }
+
+    /// 시간 포맷 (초 단위까지)
+    func formatDateTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M/d HH:mm:ss"
+        return formatter.string(from: date)
     }
 
     var body: some View {
@@ -290,12 +361,14 @@ struct WikiTableView: View {
                 HStack(spacing: 16) {
                     Text("제목")
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Text("작성자")
-                        .frame(width: 140, alignment: .leading)
-                    Text("태그")
-                        .frame(width: 180, alignment: .leading)
-                    Text("수정일")
+                    Text("부서")
                         .frame(width: 80, alignment: .leading)
+                    Text("작성자")
+                        .frame(width: 100, alignment: .leading)
+                    Text("태그")
+                        .frame(width: 140, alignment: .leading)
+                    Text("수정일시")
+                        .frame(width: 100, alignment: .leading)
                 }
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -345,46 +418,72 @@ struct WikiTableView: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                            // 작성자 (부서 뱃지)
-                            HStack(spacing: 6) {
-                                Image(systemName: departmentIcon(for: doc.createdBy))
+                            // 부서 뱃지
+                            if let dept = extractDepartmentType(from: doc) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: dept.icon)
+                                        .font(.caption2)
+                                    Text(dept.rawValue)
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(dept.color.opacity(0.15))
+                                .foregroundStyle(dept.color)
+                                .cornerRadius(10)
+                                .frame(width: 80, alignment: .leading)
+                            } else {
+                                Text("-")
                                     .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                                    .frame(width: 80, alignment: .leading)
+                            }
+
+                            // 작성자 (직원명)
+                            if let author = extractAuthorName(from: doc) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "person.fill")
+                                        .font(.caption2)
+                                    Text(author)
+                                        .font(.caption)
+                                        .lineLimit(1)
+                                }
+                                .foregroundStyle(.primary)
+                                .frame(width: 100, alignment: .leading)
+                            } else {
                                 Text(doc.createdBy)
                                     .font(.caption)
-                                    .fontWeight(.medium)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                                    .frame(width: 100, alignment: .leading)
                             }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(departmentColor(for: doc.createdBy).opacity(0.15))
-                            .foregroundStyle(departmentColor(for: doc.createdBy))
-                            .cornerRadius(12)
-                            .frame(width: 140, alignment: .leading)
 
                             // 태그 (칩 형태)
                             HStack(spacing: 4) {
                                 ForEach(doc.tags.prefix(2), id: \.self) { tag in
                                     Text(tag)
                                         .font(.caption2)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 3)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
                                         .background(Color.secondary.opacity(0.1))
                                         .foregroundStyle(.secondary)
-                                        .cornerRadius(8)
+                                        .cornerRadius(6)
                                         .lineLimit(1)
                                 }
                                 if doc.tags.count > 2 {
                                     Text("+\(doc.tags.count - 2)")
                                         .font(.caption2)
-                                        .foregroundStyle(.tertiary)
+                                        .foregroundStyle(.secondary.opacity(0.6))
                                 }
                             }
-                            .frame(width: 180, alignment: .leading)
+                            .frame(width: 140, alignment: .leading)
 
-                            // 수정일
-                            Text(doc.updatedAt.formatted(date: .abbreviated, time: .omitted))
-                                .font(.caption)
+                            // 수정일시 (초 단위까지)
+                            Text(formatDateTime(doc.updatedAt))
+                                .font(.caption.monospacedDigit())
                                 .foregroundStyle(.secondary)
-                                .frame(width: 80, alignment: .leading)
+                                .frame(width: 100, alignment: .leading)
                         }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 12)
@@ -556,7 +655,7 @@ struct WikiDocumentView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 16) {
                             Label(document.createdBy, systemImage: "person")
-                            Label(document.createdAt.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
+                            Label(document.createdAt.formatted(date: .abbreviated, time: .standard), systemImage: "calendar")
                         }
                         .font(.callout)
                         .foregroundStyle(.secondary)
