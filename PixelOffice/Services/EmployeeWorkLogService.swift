@@ -133,6 +133,15 @@ class EmployeeWorkLogService {
             workLog.profile?.lastActiveDate = messages.last?.timestamp ?? Date()
         }
 
+        // 토큰 통계 업데이트
+        workLog.profile?.totalTokensUsed = employee.statistics.totalTokensUsed
+        workLog.profile?.inputTokens = employee.statistics.inputTokens
+        workLog.profile?.outputTokens = employee.statistics.outputTokens
+        workLog.profile?.tokensPerConversation = employee.statistics.tokensPerConversation
+        workLog.profile?.tokensPerMinute = employee.statistics.tokensPerMinute
+        workLog.profile?.totalConversations = employee.statistics.conversationCount
+        workLog.profile?.tokenUsageHistory = employee.statistics.tokenUsageHistory
+
         saveWorkLog(workLog)
     }
 
@@ -175,6 +184,15 @@ class EmployeeWorkLogService {
             workLog.profile?.totalConversations = 1
             workLog.profile?.lastActiveDate = messages.last?.timestamp ?? Date()
         }
+
+        // 토큰 통계 업데이트
+        workLog.profile?.totalTokensUsed = employee.statistics.totalTokensUsed
+        workLog.profile?.inputTokens = employee.statistics.inputTokens
+        workLog.profile?.outputTokens = employee.statistics.outputTokens
+        workLog.profile?.tokensPerConversation = employee.statistics.tokensPerConversation
+        workLog.profile?.tokensPerMinute = employee.statistics.tokensPerMinute
+        workLog.profile?.totalConversations = employee.statistics.conversationCount
+        workLog.profile?.tokenUsageHistory = employee.statistics.tokenUsageHistory
 
         saveProjectWorkLog(workLog, projectName: projectName, department: employee.departmentType)
 
@@ -503,6 +521,14 @@ struct EmployeeProfile {
     var totalConversations: Int = 0
     var lastActiveDate: Date?
 
+    // 토큰 사용 통계
+    var totalTokensUsed: Int = 0
+    var inputTokens: Int = 0
+    var outputTokens: Int = 0
+    var tokensPerConversation: Double = 0
+    var tokensPerMinute: Double = 0
+    var tokenUsageHistory: [TokenUsageRecord] = []  // 토큰 사용 히스토리
+
     // 외모 설명
     var appearanceDescription: String {
         var desc = ""
@@ -550,7 +576,109 @@ struct EmployeeProfile {
             md += "| **마지막 활동** | \(dateFormatter.string(from: lastActive)) |\n"
         }
 
-        md += "\n### 외모\n\n"
+        // 토큰 사용 통계 추가
+        if totalTokensUsed > 0 {
+            md += "\n### 📊 토큰 사용 통계\n\n"
+
+            let formatter = NumberFormatter()
+            formatter.numberStyle = .decimal
+            formatter.maximumFractionDigits = 1
+
+            let totalFormatted = formatter.string(from: NSNumber(value: totalTokensUsed)) ?? "0"
+            let inputFormatted = formatter.string(from: NSNumber(value: inputTokens)) ?? "0"
+            let outputFormatted = formatter.string(from: NSNumber(value: outputTokens)) ?? "0"
+            let perConvFormatted = formatter.string(from: NSNumber(value: tokensPerConversation)) ?? "0"
+            let perMinuteFormatted = formatter.string(from: NSNumber(value: tokensPerMinute)) ?? "0"
+
+            // 기본 통계
+            md += "#### 사용량\n\n"
+            md += "| 항목 | 값 |\n"
+            md += "|------|------|\n"
+            md += "| **총 토큰** | \(totalFormatted) 토큰 |\n"
+            md += "| **입력 토큰** | \(inputFormatted) 토큰 (\(String(format: "%.1f", Double(inputTokens) / Double(totalTokensUsed) * 100))%) |\n"
+            md += "| **출력 토큰** | \(outputFormatted) 토큰 (\(String(format: "%.1f", Double(outputTokens) / Double(totalTokensUsed) * 100))%) |\n"
+            md += "| **대화 횟수** | \(totalConversations)회 |\n"
+
+            // 효율성 지표
+            md += "\n#### 효율성\n\n"
+            md += "| 지표 | 값 |\n"
+            md += "|------|------|\n"
+            md += "| **대화당 평균** | \(perConvFormatted) 토큰/회 |\n"
+            md += "| **분당 소진** | \(perMinuteFormatted) 토큰/분 |\n"
+
+            // 비용 추정 (Claude API 기준)
+            // Input: $3 per million tokens, Output: $15 per million tokens (Sonnet 4)
+            let inputCost = Double(inputTokens) / 1_000_000.0 * 3.0
+            let outputCost = Double(outputTokens) / 1_000_000.0 * 15.0
+            let totalCost = inputCost + outputCost
+
+            md += "\n#### 예상 비용 (Claude Sonnet 4 기준)\n\n"
+            md += "| 항목 | 비용 (USD) |\n"
+            md += "|------|------|\n"
+            md += "| **입력 토큰** | $\(String(format: "%.4f", inputCost)) |\n"
+            md += "| **출력 토큰** | $\(String(format: "%.4f", outputCost)) |\n"
+            md += "| **총 비용** | **$\(String(format: "%.4f", totalCost))** |\n"
+            md += "| **대화당 평균** | $\(String(format: "%.4f", totalCost / Double(max(totalConversations, 1)))) |\n"
+
+            // 그래프 (간단한 막대 그래프)
+            md += "\n#### 입출력 비율\n\n"
+            md += "```\n"
+            let inputRatio = Double(inputTokens) / Double(totalTokensUsed)
+            let outputRatio = Double(outputTokens) / Double(totalTokensUsed)
+            let inputBars = Int(inputRatio * 40)
+            let outputBars = Int(outputRatio * 40)
+            md += "입력:  \(String(repeating: "█", count: inputBars))\(String(repeating: "░", count: 40 - inputBars)) \(String(format: "%.1f", inputRatio * 100))%\n"
+            md += "출력:  \(String(repeating: "█", count: outputBars))\(String(repeating: "░", count: 40 - outputBars)) \(String(format: "%.1f", outputRatio * 100))%\n"
+            md += "```\n"
+
+            // 토큰 사용 히스토리
+            if !tokenUsageHistory.isEmpty {
+                md += "\n#### 최근 토큰 사용 기록\n\n"
+                let recentHistory = tokenUsageHistory.suffix(10).reversed()
+
+                md += "| 시간 | 입력 | 출력 | 합계 |\n"
+                md += "|------|------|------|------|\n"
+
+                let timeFormatter = DateFormatter()
+                timeFormatter.dateFormat = "MM/dd HH:mm"
+
+                for record in recentHistory {
+                    let timeStr = timeFormatter.string(from: record.timestamp)
+                    let inputStr = formatter.string(from: NSNumber(value: record.inputTokens)) ?? "0"
+                    let outputStr = formatter.string(from: NSNumber(value: record.outputTokens)) ?? "0"
+                    let totalStr = formatter.string(from: NSNumber(value: record.tokens)) ?? "0"
+                    md += "| \(timeStr) | \(inputStr) | \(outputStr) | \(totalStr) |\n"
+                }
+
+                // 시간대별 사용 패턴 (24시간 기준)
+                md += "\n#### 시간대별 사용 패턴\n\n"
+                md += "```\n"
+
+                // 시간대별 토큰 합계 계산
+                var hourlyUsage: [Int: Int] = [:]
+                let calendar = Calendar.current
+                for record in tokenUsageHistory {
+                    let hour = calendar.component(.hour, from: record.timestamp)
+                    hourlyUsage[hour, default: 0] += record.tokens
+                }
+
+                if !hourlyUsage.isEmpty {
+                    let maxUsage = hourlyUsage.values.max() ?? 1
+                    for hour in 0..<24 {
+                        let usage = hourlyUsage[hour] ?? 0
+                        let bars = Int(Double(usage) / Double(maxUsage) * 20)
+                        let hourStr = String(format: "%02d:00", hour)
+                        md += "\(hourStr) \(String(repeating: "▓", count: bars))\(String(repeating: "░", count: 20 - bars)) \(formatter.string(from: NSNumber(value: usage)) ?? "0")\n"
+                    }
+                }
+
+                md += "```\n"
+            }
+
+            md += "\n"
+        }
+
+        md += "### 외모\n\n"
         md += "\(appearanceDescription)\n\n"
 
         return md

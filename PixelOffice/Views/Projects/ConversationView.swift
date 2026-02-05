@@ -137,16 +137,22 @@ struct ConversationView: View {
         let systemPrompt = buildSystemPrompt()
         
         do {
-            let response = try await claudeService.sendMessage(
+            let (response, inputTokens, outputTokens) = try await claudeService.sendMessage(
                 content,
                 employeeId: employee.id,
                 configuration: config,
                 systemPrompt: systemPrompt
             )
-            
+
             await MainActor.run {
                 let assistantMessage = Message.assistantMessage(response)
                 companyStore.addMessageToTask(message: assistantMessage, taskId: task.id, projectId: projectId)
+
+                // 토큰 사용량 업데이트
+                if inputTokens > 0 || outputTokens > 0 {
+                    companyStore.updateEmployeeTokenUsage(employee.id, inputTokens: inputTokens, outputTokens: outputTokens)
+                }
+
                 isLoading = false
             }
         } catch {

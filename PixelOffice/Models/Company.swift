@@ -20,10 +20,15 @@ struct Company: Codable, Identifiable {
     var employeeThinkings: [EmployeeThinking]
     var communityPosts: [CommunityPost]
 
+    // 권한 요청 시스템
+    var permissionRequests: [PermissionRequest]
+    var autoApprovalRules: [AutoApprovalRule]
+
     enum CodingKeys: String, CodingKey {
         case id, name, departments, projects, settings, createdAt, updatedAt
         case wikiDocuments, employeeOnboardings, collaborationRecords
         case employeeThinkings, communityPosts
+        case permissionRequests, autoApprovalRules
     }
 
     init(
@@ -38,7 +43,9 @@ struct Company: Codable, Identifiable {
         employeeOnboardings: [EmployeeOnboarding] = [],
         collaborationRecords: [CollaborationRecord] = [],
         employeeThinkings: [EmployeeThinking] = [],
-        communityPosts: [CommunityPost] = []
+        communityPosts: [CommunityPost] = [],
+        permissionRequests: [PermissionRequest] = [],
+        autoApprovalRules: [AutoApprovalRule] = []
     ) {
         self.id = id
         self.name = name
@@ -52,6 +59,8 @@ struct Company: Codable, Identifiable {
         self.collaborationRecords = collaborationRecords
         self.employeeThinkings = employeeThinkings
         self.communityPosts = communityPosts
+        self.permissionRequests = permissionRequests
+        self.autoApprovalRules = autoApprovalRules
     }
 
     // 기존 저장 파일 호환성을 위한 커스텀 디코더
@@ -70,6 +79,8 @@ struct Company: Codable, Identifiable {
         collaborationRecords = try container.decodeIfPresent([CollaborationRecord].self, forKey: .collaborationRecords) ?? []
         employeeThinkings = try container.decodeIfPresent([EmployeeThinking].self, forKey: .employeeThinkings) ?? []
         communityPosts = try container.decodeIfPresent([CommunityPost].self, forKey: .communityPosts) ?? []
+        permissionRequests = try container.decodeIfPresent([PermissionRequest].self, forKey: .permissionRequests) ?? []
+        autoApprovalRules = try container.decodeIfPresent([AutoApprovalRule].self, forKey: .autoApprovalRules) ?? []
     }
     
     var allEmployees: [Employee] {

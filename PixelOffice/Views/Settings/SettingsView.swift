@@ -27,10 +27,10 @@ struct SettingsView: View {
                 }
                 .tag(2)
 
-            // Autonomous Communication
-            AutonomousCommunicationSettingsView()
+            // Structured Debate
+            DebateSettingsView()
                 .tabItem {
-                    Label("자율 소통", systemImage: "person.2.fill")
+                    Label("구조화된 토론", systemImage: "bubble.left.and.bubble.right.fill")
                 }
                 .tag(3)
 
@@ -550,116 +550,73 @@ struct DataManagementView: View {
     }
 }
 
-struct AutonomousCommunicationSettingsView: View {
-    @ObservedObject private var autonomousService = AutonomousCommunicationService.shared
-    @State private var selectedInterval: TimeInterval = 3600  // 1시간
-
-    let intervalOptions: [(String, TimeInterval)] = [
-        ("30분", 1800),
-        ("1시간", 3600),
-        ("2시간", 7200),
-        ("4시간", 14400),
-        ("12시간", 43200),
-        ("24시간", 86400)
-    ]
+struct DebateSettingsView: View {
+    @State private var defaultRounds = 1
+    @State private var autoPostToCommunity = true
+    @State private var saveToWiki = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // Header
             VStack(alignment: .leading, spacing: 8) {
-                Text("자율 소통 설정")
+                Text("🏛️ 구조화된 토론 설정")
                     .font(.title2.bold())
-                Text("직원들이 랜덤하게 소통하고 인사이트를 생성합니다")
+                Text("AI 직원들 간 구조화된 토론의 기본 설정을 관리합니다")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
 
             Divider()
 
-            Form {
-                Section("기본 설정") {
-                    Toggle("자율 소통 활성화", isOn: $autonomousService.isEnabled)
-                        .onChange(of: autonomousService.isEnabled) { _, enabled in
-                            if enabled {
-                                autonomousService.startCommunicationTimer()
-                            } else {
-                                autonomousService.stopCommunicationTimer()
-                            }
-                        }
+            VStack(alignment: .leading, spacing: 16) {
+                // 토론 구조 설명
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("토론 진행 구조")
+                        .font(.callout.weight(.semibold))
 
-                    if autonomousService.isEnabled {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("소통 주기")
-                                .font(.headline)
-
-                            Picker("", selection: $selectedInterval) {
-                                ForEach(intervalOptions, id: \.1) { option in
-                                    Text(option.0).tag(option.1)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .onChange(of: selectedInterval) { _, newValue in
-                                autonomousService.updateInterval(newValue)
-                            }
-
-                            Text("선택한 주기마다 두 명의 직원이 랜덤으로 만나 대화합니다")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+                    InfoRow(icon: "doc.text.fill", title: "Phase 1: 주제 제시", description: "토론 주제와 배경 정보를 정리합니다")
+                    InfoRow(icon: "person.fill.questionmark", title: "Phase 2: 독립 의견", description: "각 직원이 독립적으로 의견을 제출합니다 (병렬 처리)")
+                    InfoRow(icon: "arrow.triangle.2.circlepath", title: "Phase 3: 교차 검토", description: "다른 직원의 의견에 대해 반박/보완합니다")
+                    InfoRow(icon: "lightbulb.max.fill", title: "Phase 4: 종합", description: "합의점, 쟁점, 액션 아이템을 도출합니다")
                 }
 
-                Section("수동 실행") {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("지금 바로 소통 시작")
-                                .font(.headline)
-                            Text("타이머와 무관하게 즉시 한 번 실행합니다")
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                        }
+                Divider()
 
-                        Spacer()
+                // 기본 설정
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("기본 설정")
+                        .font(.callout.weight(.semibold))
 
-                        Button {
-                            autonomousService.triggerRandomCommunication()
-                        } label: {
-                            Label("소통 시작", systemImage: "play.fill")
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
+                    Stepper("교차 검토 라운드: \(defaultRounds)", value: $defaultRounds, in: 1...3)
+                        .font(.callout)
+
+                    Toggle("완료 후 커뮤니티에 자동 게시", isOn: $autoPostToCommunity)
+                        .font(.callout)
+
+                    Toggle("위키에 회의록 자동 저장", isOn: $saveToWiki)
+                        .font(.callout)
                 }
 
-                Section("안내") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        InfoRow(
-                            icon: "person.2.fill",
-                            title: "자율 소통이란?",
-                            description: "직원들이 자동으로 서로 만나 업무에 대해 이야기하고 유용한 인사이트를 도출합니다."
-                        )
+                Divider()
 
-                        InfoRow(
-                            icon: "lightbulb.fill",
-                            title: "어디서 볼 수 있나요?",
-                            description: "생성된 인사이트는 커뮤니티 탭에 '자율소통' 태그와 함께 게시됩니다."
-                        )
-
-                        InfoRow(
-                            icon: "clock.fill",
-                            title: "언제 실행되나요?",
-                            description: "설정한 주기마다 자동으로 실행되며, 수동으로도 언제든 실행할 수 있습니다."
-                        )
-                    }
+                // 비용 안내
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("예상 API 비용")
+                        .font(.callout.weight(.semibold))
+                    Text("참여자 3명, 교차 검토 1라운드 기준: ~10 API 호출")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Text("참여자 수와 라운드 수에 비례하여 증가합니다")
+                        .font(.callout)
+                        .foregroundStyle(.tertiary)
                 }
             }
-            .formStyle(.grouped)
+
+            Spacer()
         }
         .padding()
-        .onAppear {
-            selectedInterval = autonomousService.communicationInterval
-        }
     }
 }
+
 
 struct InfoRow: View {
     let icon: String

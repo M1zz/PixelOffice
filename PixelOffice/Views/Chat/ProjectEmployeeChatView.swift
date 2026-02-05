@@ -13,6 +13,7 @@ struct ProjectEmployeeChatView: View {
     @State private var messages: [ChatMessage] = []
     @State private var useClaudeCode = true
     @State private var loadingStartTime: Date?
+    @State private var showPermissionHistory = false
 
     private let claudeService = ClaudeService()
     private let claudeCodeService = ClaudeCodeService()
@@ -111,16 +112,27 @@ struct ProjectEmployeeChatView: View {
 
         \(AIActionGuide.guide)
 
-        📄 문서 작성 기능:
-        문서를 작성해달라는 요청을 받으면, 다음 형식으로 마크다운 문서를 작성하세요:
+        ## 📄 문서 작성 (중요!)
+
+        문서를 작성해달라는 요청을 받으면 **바로** 이 형식으로 작성하세요:
 
         <<<FILE:파일명.md>>>
-        (여기에 마크다운 내용)
+        (여기에 마크다운 내용 작성)
+        <<<END_FILE>>>
+
+        - 파일명만 입력 (경로 X): "기능명세서.md" ⭕️
+        - 바로 작성, 권한 요청 불필요
+        - 한글 파일명 가능
+
+        예시:
+        <<<FILE:프로젝트-기획서.md>>>
+        # 프로젝트 기획서
+        ## 개요
+        ...
         <<<END_FILE>>>
 
         ⚠️ 중요: 파일이나 문서를 작성할 때 사용자에게 미리 물어보지 말고 바로 작성하세요.
         권한은 이미 승인되어 있으므로, 필요한 파일은 즉시 생성하면 됩니다.
-        "권한이 필요합니다" 같은 메시지 없이 바로 작업을 진행하세요.
 
         📝 업무 결과 문서화:
         사용자가 "문서화해줘", "정리해줘", "위키에 작성해줘", "결과물 작성" 등을 요청하면:
@@ -166,9 +178,11 @@ struct ProjectEmployeeChatView: View {
                 ProjectChatHeader(
                     employee: emp,
                     projectName: project?.name ?? "프로젝트",
+                    pendingPermissionCount: companyStore.company.permissionRequests.filter { $0.employeeId == emp.id && $0.status == .pending }.count,
                     onClose: { dismiss() },
                     onClearConversation: { clearConversation() },
-                    onDocumentize: { requestDocumentize() }
+                    onDocumentize: { requestDocumentize() },
+                    onShowPermissions: { showPermissionHistory = true }
                 )
 
                 Divider()
@@ -179,6 +193,20 @@ struct ProjectEmployeeChatView: View {
                         LazyVStack(spacing: 12) {
                             ForEach(messages) { message in
                                 ChatBubble(message: message, aiType: emp.aiType)
+                            }
+
+                            // 권한 요청 카드 표시
+                            ForEach(companyStore.company.permissionRequests.filter { $0.employeeId == emp.id && $0.status == .pending }) { request in
+                                PermissionRequestCard(
+                                    request: request,
+                                    onApprove: { reason in
+                                        handlePermissionApproval(request.id, reason: reason)
+                                    },
+                                    onDeny: { reason in
+                                        handlePermissionDenial(request.id, reason: reason)
+                                    }
+                                )
+                                .padding(.horizontal)
                             }
 
                             if isLoading {
@@ -232,6 +260,12 @@ struct ProjectEmployeeChatView: View {
                 )
             }
             .frame(width: 500, height: 600)
+            .sheet(isPresented: $showPermissionHistory) {
+                if let emp = employee {
+                    PermissionRequestHistoryView(employeeId: emp.id)
+                        .environmentObject(companyStore)
+                }
+            }
             .onAppear {
                 loadConversation()
                 if messages.isEmpty {
@@ -277,20 +311,26 @@ struct ProjectEmployeeChatView: View {
         Task {
             do {
                 let response: String
+                var inputTokens = 0
+                var outputTokens = 0
 
                 if canUseClaudeCode && useClaudeCode {
                     response = try await claudeCodeService.sendMessage(
                         greetingPrompt,
                         systemPrompt: systemPrompt
                     )
+                    // ClaudeCodeService는 아직 토큰 정보를 반환하지 않음
                 } else if let config = apiConfig, config.isConfigured {
-                    response = try await claudeService.sendMessage(
+                    let result = try await claudeService.sendMessage(
                         greetingPrompt,
                         employeeId: emp.id,
                         configuration: config,
                         systemPrompt: systemPrompt,
                         isGreeting: true
                     )
+                    response = result.response
+                    inputTokens = result.inputTokens
+                    outputTokens = result.outputTokens
                 } else {
                     throw ClaudeCodeError.notInstalled
                 }
@@ -301,6 +341,12 @@ struct ProjectEmployeeChatView: View {
                     isLoading = false
                     loadingStartTime = nil
                     companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .idle)
+
+                    // 토큰 사용량 업데이트 (API 직접 호출인 경우만)
+                    if inputTokens > 0 || outputTokens > 0 {
+                        companyStore.updateEmployeeTokenUsage(emp.id, inputTokens: inputTokens, outputTokens: outputTokens)
+                    }
+
                     saveConversation()
                 }
             } catch {
@@ -340,6 +386,8 @@ struct ProjectEmployeeChatView: View {
         Task {
             do {
                 let response: String
+                var inputTokens = 0
+                var outputTokens = 0
 
                 if hasClaudeCode {
                     response = try await claudeCodeService.sendMessage(
@@ -347,13 +395,17 @@ struct ProjectEmployeeChatView: View {
                         systemPrompt: systemPrompt,
                         conversationHistory: employee?.conversationHistory ?? []
                     )
+                    // ClaudeCodeService는 아직 토큰 정보를 반환하지 않음
                 } else if let config = apiConfig, config.isConfigured {
-                    response = try await claudeService.sendMessage(
+                    let result = try await claudeService.sendMessage(
                         messageToSend,
                         employeeId: emp.id,
                         configuration: config,
                         systemPrompt: systemPrompt
                     )
+                    response = result.response
+                    inputTokens = result.inputTokens
+                    outputTokens = result.outputTokens
                 } else {
                     throw ClaudeCodeError.notInstalled
                 }
@@ -385,7 +437,7 @@ struct ProjectEmployeeChatView: View {
                     }
                 }
 
-                // 응답에서 파일 추출 및 저장 (기존 로직)
+                // 응답에서 파일 추출 및 저장
                 let (fileCleanedResponse, savedFiles) = await MainActor.run {
                     extractAndSaveFiles(from: response)
                 }
@@ -422,6 +474,11 @@ struct ProjectEmployeeChatView: View {
                     loadingStartTime = nil
                     companyStore.updateProjectEmployeeStatus(emp.id, inProject: projectId, status: .idle)
 
+                    // 토큰 사용량 업데이트 (API 직접 호출인 경우만)
+                    if inputTokens > 0 || outputTokens > 0 {
+                        companyStore.updateEmployeeTokenUsage(emp.id, inputTokens: inputTokens, outputTokens: outputTokens)
+                    }
+
                     saveConversation()
                 }
             } catch {
@@ -454,16 +511,21 @@ struct ProjectEmployeeChatView: View {
     }
 
     private func extractAndSaveFiles(from response: String) -> (cleanedResponse: String, savedFiles: [String]) {
+        print("📄 [FILE] 파일 추출 시작")
+        print("📝 [FILE] 응답 길이: \(response.count)자")
+
         var cleanedResponse = response
         var savedFiles: [String] = []
 
         let pattern = "<<<FILE:([^>]+)>>>([\\s\\S]*?)<<<END_FILE>>>"
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            print("❌ [FILE] 정규식 생성 실패")
             return (response, [])
         }
 
         let nsString = response as NSString
         let matches = regex.matches(in: response, options: [], range: NSRange(location: 0, length: nsString.length))
+        print("🔎 [FILE] 발견된 파일: \(matches.count)개")
 
         for match in matches.reversed() {
             guard match.numberOfRanges >= 3 else { continue }
@@ -475,32 +537,47 @@ struct ProjectEmployeeChatView: View {
             let fileName = nsString.substring(with: fileNameRange).trimmingCharacters(in: .whitespaces)
             let content = nsString.substring(with: contentRange).trimmingCharacters(in: .whitespacesAndNewlines)
 
+            print("📋 [FILE] 파일명: \(fileName)")
+            print("📄 [FILE] 내용 크기: \(content.count)자")
+            print("📂 [FILE] 저장 경로: \(departmentDocumentsPath ?? "경로 없음")")
+
             let document = WikiDocument(
                 title: (fileName as NSString).deletingPathExtension.replacingOccurrences(of: "-", with: " "),
                 content: content,
                 category: wikiCategory,
-                createdBy: employee?.name ?? "Unknown",
-                tags: [employee?.departmentType.rawValue ?? "general", employee?.name ?? "Unknown", project?.name ?? "Project"],
+                createdBy: "\(employee?.departmentType.rawValue ?? "일반")팀",
+                tags: [project?.name ?? "Project", employee?.name ?? "Unknown"],
                 fileName: fileName
             )
 
             do {
-                // 부서별 documents 폴더에 저장
-                if let deptDocsPath = departmentDocumentsPath {
-                    let filePath = (deptDocsPath as NSString).appendingPathComponent(fileName)
+                // Wiki 폴더에 저장 (기능 명세서 등은 wiki에 저장)
+                if let proj = project {
+                    let projectPath = DataPathService.shared.projectPath(proj.name)
+                    let wikiPath = "\(projectPath)/wiki"
+
+                    // wiki 디렉토리 생성
+                    try? FileManager.default.createDirectory(atPath: wikiPath, withIntermediateDirectories: true)
+
+                    let filePath = (wikiPath as NSString).appendingPathComponent(fileName)
+                    print("💾 [FILE] 저장 시도: \(filePath)")
+
                     try content.write(toFile: filePath, atomically: true, encoding: .utf8)
                     savedFiles.append(fileName)
+                    print("✅ [FILE] 저장 성공: \(fileName)")
 
                     // CompanyStore에도 등록 (앱 내에서 문서 목록 표시용)
                     companyStore.addWikiDocument(document)
+                    print("📚 [FILE] Wiki 문서 등록 완료")
                 }
             } catch {
-                print("파일 저장 실패: \(error)")
+                print("❌ [FILE] 저장 실패: \(error)")
             }
 
             cleanedResponse = (cleanedResponse as NSString).replacingCharacters(in: fullRange, with: "")
         }
 
+        print("📊 [FILE] 파일 추출 완료: \(savedFiles.count)개 저장")
         return (cleanedResponse.trimmingCharacters(in: .whitespacesAndNewlines), savedFiles)
     }
 
@@ -550,20 +627,33 @@ struct ProjectEmployeeChatView: View {
                     """
 
                     let mentionResponse: String
+                    var mentionInputTokens = 0
+                    var mentionOutputTokens = 0
+
                     if canUseClaudeCode && useClaudeCode {
                         mentionResponse = try await claudeCodeService.sendMessage(
                             requestContent,
                             systemPrompt: mentionSystemPrompt
                         )
                     } else if let config = apiConfig, config.isConfigured {
-                        mentionResponse = try await claudeService.sendMessage(
+                        let result = try await claudeService.sendMessage(
                             requestContent,
                             employeeId: targetEmployee.id,
                             configuration: config,
                             systemPrompt: mentionSystemPrompt
                         )
+                        mentionResponse = result.response
+                        mentionInputTokens = result.inputTokens
+                        mentionOutputTokens = result.outputTokens
                     } else {
                         mentionResponse = "[\(departmentName) 응답 실패: API 미설정]"
+                    }
+
+                    // 멘션 대상 직원의 토큰 사용량 업데이트
+                    if mentionInputTokens > 0 || mentionOutputTokens > 0 {
+                        await MainActor.run {
+                            companyStore.updateEmployeeTokenUsage(targetEmployee.id, inputTokens: mentionInputTokens, outputTokens: mentionOutputTokens)
+                        }
                     }
 
                     let formattedResponse = "📨 **@\(departmentName) (\(targetEmployee.name))의 답변:**\n\(mentionResponse)"
@@ -681,14 +771,152 @@ struct ProjectEmployeeChatView: View {
         inputText = "지금까지 논의된 내용을 정리하여 위키 문서로 작성해주세요. 핵심 내용, 결정 사항, 액션 아이템을 포함해주세요."
         sendMessage()
     }
+
+    // MARK: - Permission Request Handling
+
+    /// AI 응답에서 권한 요청 추출
+    private func extractPermissionRequests(from response: String) -> (cleanedResponse: String, requests: [PermissionRequest]) {
+        print("🔍 [Permission/Project] 권한 요청 추출 시작")
+        print("📝 [Permission/Project] 응답 길이: \(response.count)자")
+
+        guard let emp = employee else {
+            print("❌ [Permission/Project] employee가 nil")
+            return (response, [])
+        }
+
+        var cleanedResponse = response
+        var extractedRequests: [PermissionRequest] = []
+
+        let pattern = "<<<PERMISSION:([^>]+)>>>([\\s\\S]*?)<<<END_PERMISSION>>>"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return (response, [])
+        }
+
+        let nsString = response as NSString
+        let matches = regex.matches(in: response, options: [], range: NSRange(location: 0, length: nsString.length))
+
+        for match in matches.reversed() {
+            guard match.numberOfRanges >= 3 else { continue }
+
+            let permissionTypeRange = match.range(at: 1)
+            let contentRange = match.range(at: 2)
+            let fullRange = match.range(at: 0)
+
+            let permissionTypeStr = nsString.substring(with: permissionTypeRange).trimmingCharacters(in: .whitespaces)
+            let content = nsString.substring(with: contentRange).trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard let permissionType = parsePermissionType(permissionTypeStr) else { continue }
+
+            let fields = parsePermissionFields(content)
+            guard let title = fields["제목"] else { continue }
+
+            let description = fields["설명"] ?? ""
+            let targetPath = fields["경로"]
+            let estimatedSize = fields["크기"].flatMap { Int($0) }
+            let metadataStr = fields["메타데이터"] ?? ""
+            let metadata = parseMetadata(metadataStr)
+
+            let request = PermissionRequest(
+                type: permissionType,
+                employeeId: emp.id,
+                employeeName: emp.name,
+                employeeDepartment: emp.departmentType.rawValue,
+                projectId: projectId,
+                projectName: project?.name,
+                title: title,
+                description: description,
+                targetPath: targetPath,
+                estimatedSize: estimatedSize,
+                metadata: metadata
+            )
+
+            extractedRequests.append(request)
+            cleanedResponse = (cleanedResponse as NSString).replacingCharacters(in: fullRange, with: "")
+        }
+
+        return (cleanedResponse.trimmingCharacters(in: .whitespacesAndNewlines), extractedRequests)
+    }
+
+    private func parsePermissionType(_ typeStr: String) -> PermissionType? {
+        switch typeStr.uppercased() {
+        case "FILE_WRITE": return .fileWrite
+        case "FILE_EDIT": return .fileEdit
+        case "FILE_DELETE": return .fileDelete
+        case "COMMAND_EXECUTION": return .commandExecution
+        case "API_CALL": return .apiCall
+        case "DATA_EXPORT": return .dataExport
+        default: return nil
+        }
+    }
+
+    private func parsePermissionFields(_ content: String) -> [String: String] {
+        var fields: [String: String] = [:]
+        let lines = content.components(separatedBy: "\n")
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if let colonIndex = trimmed.firstIndex(of: ":") {
+                let key = String(trimmed[..<colonIndex]).trimmingCharacters(in: .whitespaces)
+                let value = String(trimmed[trimmed.index(after: colonIndex)...]).trimmingCharacters(in: .whitespaces)
+                fields[key] = value
+            }
+        }
+
+        return fields
+    }
+
+    private func parseMetadata(_ metadataStr: String) -> [String: String] {
+        var metadata: [String: String] = [:]
+        let pairs = metadataStr.components(separatedBy: ",")
+
+        for pair in pairs {
+            let trimmed = pair.trimmingCharacters(in: .whitespaces)
+            let parts = trimmed.components(separatedBy: "=")
+            if parts.count == 2 {
+                let key = parts[0].trimmingCharacters(in: .whitespaces)
+                let value = parts[1].trimmingCharacters(in: .whitespaces)
+                metadata[key] = value
+            }
+        }
+
+        return metadata
+    }
+
+    private func handlePermissionApproval(_ requestId: UUID, reason: String?) {
+        companyStore.approvePermissionRequest(requestId, reason: reason)
+
+        let approvalMessage = ChatMessage(
+            role: .system,
+            content: "✅ 권한이 승인되었습니다.\n\(reason.map { "사유: \($0)" } ?? "")"
+        )
+        messages.append(approvalMessage)
+
+        inputText = "권한이 승인되었습니다. 작업을 진행해주세요."
+        sendMessage()
+    }
+
+    private func handlePermissionDenial(_ requestId: UUID, reason: String?) {
+        companyStore.denyPermissionRequest(requestId, reason: reason)
+
+        let denialMessage = ChatMessage(
+            role: .system,
+            content: "❌ 권한이 거부되었습니다.\n\(reason.map { "사유: \($0)" } ?? "")"
+        )
+        messages.append(denialMessage)
+
+        inputText = "권한이 거부되었습니다. 대안을 제시해주세요.\n거부 사유: \(reason ?? "사유 없음")"
+        sendMessage()
+    }
 }
 
 struct ProjectChatHeader: View {
     let employee: ProjectEmployee
     let projectName: String
+    var pendingPermissionCount: Int = 0
     let onClose: () -> Void
     let onClearConversation: () -> Void
     let onDocumentize: () -> Void
+    let onShowPermissions: () -> Void
 
     var body: some View {
         HStack {
@@ -721,6 +949,29 @@ struct ProjectChatHeader: View {
             }
 
             Spacer()
+
+            // 권한 요청 알림 버튼
+            Button(action: onShowPermissions) {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "bell.fill")
+                        .font(.title3)
+                        .foregroundStyle(pendingPermissionCount > 0 ? .orange : .secondary)
+
+                    if pendingPermissionCount > 0 {
+                        ZStack {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 16, height: 16)
+                            Text("\(pendingPermissionCount)")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+                        .offset(x: 8, y: -8)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .help("권한 요청 \(pendingPermissionCount > 0 ? "(\(pendingPermissionCount)개 대기중)" : "")")
 
             // 문서화 버튼
             Button(action: onDocumentize) {

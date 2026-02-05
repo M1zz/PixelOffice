@@ -45,6 +45,8 @@ struct ContentView: View {
             ProjectOfficeView(projectId: projectId)
         case .community:
             CommunityView()
+        case .debate:
+            DebateView()
 //        case .permissions:
 //            PermissionsView()
         case .settings:
@@ -57,6 +59,7 @@ enum SidebarItem: Hashable {
     case projects
     case projectOffice(UUID)  // 프로젝트별 오피스
     case community  // 커뮤니티
+    case debate     // 구조화된 토론
 //    case permissions  // 권한 관리
     case settings
 }

@@ -550,10 +550,10 @@ struct WikiDocumentView: View {
                         .padding()
                 }
             } else {
-                // View mode with markdown rendering
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Metadata
+                // View mode — 메타데이터 + WKWebView 렌더링
+                VStack(alignment: .leading, spacing: 0) {
+                    // Metadata & Tags (SwiftUI)
+                    VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 16) {
                             Label(document.createdBy, systemImage: "person")
                             Label(document.createdAt.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
@@ -561,7 +561,6 @@ struct WikiDocumentView: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
 
-                        // Tags
                         if !document.tags.isEmpty {
                             HStack(spacing: 8) {
                                 Image(systemName: "tag")
@@ -577,18 +576,20 @@ struct WikiDocumentView: View {
                                 }
                             }
                         }
-
-                        Divider()
-
-                        // 파일 타입에 따라 렌더링
-                        if document.fileType == .html {
-                            HTMLContentView(content: document.content)
-                        } else {
-                            MarkdownContentView(content: document.content)
-                                .textSelection(.enabled)
-                        }
                     }
-                    .padding()
+                    .padding(.horizontal)
+                    .padding(.vertical, 12)
+
+                    Divider()
+
+                    // HTML 콘텐츠 (WKWebView가 자체 스크롤 처리)
+                    if document.fileType == .html {
+                        HTMLContentView(content: document.content)
+                    } else {
+                        HTMLContentView(
+                            content: MarkdownToHTMLConverter.convert(document.content)
+                        )
+                    }
                 }
             }
         }
@@ -624,114 +625,8 @@ struct WikiDocumentView: View {
     }
 }
 
-/// 마크다운 콘텐츠를 렌더링하는 뷰
-struct MarkdownContentView: View {
-    let content: String
-
-    var lines: [String] {
-        content.components(separatedBy: "\n")
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                MarkdownLineView(line: line)
-            }
-        }
-    }
-}
-
-/// 마크다운 라인을 렌더링하는 뷰
-struct MarkdownLineView: View {
-    let line: String
-
-    var body: some View {
-        if line.isEmpty {
-            Spacer().frame(height: 8)
-        } else if line.hasPrefix("# ") {
-            Text(String(line.dropFirst(2)))
-                .font(.title.bold())
-                .padding(.top, 8)
-        } else if line.hasPrefix("## ") {
-            Text(String(line.dropFirst(3)))
-                .font(.title2.bold())
-                .padding(.top, 6)
-        } else if line.hasPrefix("### ") {
-            Text(String(line.dropFirst(4)))
-                .font(.title3.bold())
-                .padding(.top, 4)
-        } else if line.hasPrefix("#### ") {
-            Text(String(line.dropFirst(5)))
-                .font(.headline)
-                .padding(.top, 2)
-        } else if line.hasPrefix("> ") {
-            HStack(spacing: 0) {
-                Rectangle()
-                    .fill(Color.blue.opacity(0.5))
-                    .frame(width: 4)
-                renderInlineMarkdown(String(line.dropFirst(2)))
-                    .font(.body.italic())
-                    .foregroundStyle(.secondary)
-                    .padding(.leading, 12)
-                Spacer()
-            }
-        } else if line.hasPrefix("- ") || line.hasPrefix("* ") {
-            HStack(alignment: .top, spacing: 8) {
-                Text("•")
-                    .foregroundStyle(.secondary)
-                renderInlineMarkdown(String(line.dropFirst(2)))
-            }
-        } else if line.range(of: #"^\d+\. "#, options: .regularExpression) != nil {
-            let components = line.split(separator: " ", maxSplits: 1)
-            if components.count >= 2, let number = components[0].dropLast().trimmingCharacters(in: .whitespaces).first {
-                HStack(alignment: .top, spacing: 8) {
-                    Text(String(components[0]))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 20, alignment: .trailing)
-                    renderInlineMarkdown(String(components[1]))
-                }
-            } else {
-                renderInlineMarkdown(line)
-            }
-        } else if line.hasPrefix("```") {
-            Text(line.replacingOccurrences(of: "```", with: ""))
-                .font(.body.monospaced())
-                .padding(8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(NSColor.textBackgroundColor).opacity(0.3))
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-        } else if line.hasPrefix("---") || line.hasPrefix("***") || line.hasPrefix("___") {
-            Divider()
-                .padding(.vertical, 8)
-        } else if line.hasPrefix("|") {
-            // 테이블 행
-            HStack(spacing: 0) {
-                ForEach(Array(line.split(separator: "|").map { String($0).trimmingCharacters(in: .whitespaces) }.enumerated()), id: \.offset) { _, cell in
-                    if !cell.isEmpty && !cell.allSatisfy({ $0 == "-" || $0 == ":" }) {
-                        Text(cell)
-                            .frame(minWidth: 60, alignment: .leading)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                    }
-                }
-            }
-            .background(Color(NSColor.textBackgroundColor).opacity(0.2))
-        } else {
-            renderInlineMarkdown(line)
-        }
-    }
-
-    @ViewBuilder
-    private func renderInlineMarkdown(_ text: String) -> some View {
-        if let attributed = try? AttributedString(markdown: text) {
-            Text(attributed)
-                .font(.body)
-        } else {
-            Text(text)
-                .font(.body)
-        }
-    }
-}
+// MarkdownContentView 및 MarkdownLineView 제거됨
+// → 마크다운은 MarkdownToHTMLConverter로 HTML 변환 후 HTMLContentView에서 렌더링
 
 struct WikiPlaceholderView: View {
     let onCreateDocument: () -> Void
@@ -863,29 +758,102 @@ struct NewWikiDocumentView: View {
 }
 
 /// HTML 콘텐츠를 렌더링하는 뷰 (WKWebView 사용)
+/// - 마크다운 변환된 HTML과 순수 HTML 콘텐츠 모두 지원
+/// - 이미 완전한 HTML 문서(<html> 태그 포함)는 그대로 로드하고,
+///   body 조각만 있는 경우 기본 CSS 템플릿으로 래핑
 struct HTMLContentView: NSViewRepresentable {
     let content: String
 
+    /// 완전한 HTML 문서인지 확인
+    private var isCompleteHTML: Bool {
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return trimmed.hasPrefix("<!doctype") || trimmed.hasPrefix("<html")
+    }
+
+    /// 렌더링할 최종 HTML
+    private var finalHTML: String {
+        if isCompleteHTML {
+            // 이미 완전한 HTML — 기본 다크모드 CSS만 주입
+            return injectBaseStylesIfNeeded(content)
+        } else {
+            // body 조각 — 템플릿으로 래핑
+            return MarkdownToHTMLConverter.wrapInHTMLTemplate(content)
+        }
+    }
+
     func makeNSView(context: Context) -> WKWebView {
-        let webView = WKWebView()
+        let config = WKWebViewConfiguration()
+        config.preferences.setValue(true, forKey: "developerExtrasEnabled")
+
+        let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
+        webView.setValue(false, forKey: "drawsBackground") // 투명 배경
         return webView
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
-        // HTML 콘텐츠 로드
-        webView.loadHTMLString(content, baseURL: nil)
+        let html = finalHTML
+        // 콘텐츠가 변경된 경우에만 리로드
+        if context.coordinator.lastContent != html {
+            context.coordinator.lastContent = html
+            webView.loadHTMLString(html, baseURL: nil)
+            print("✅ [HTMLContentView] HTML 콘텐츠 로드 완료 (\(html.count)자)")
+        }
     }
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
 
+    /// 완전한 HTML 문서에 기본 다크모드 CSS를 주입
+    private func injectBaseStylesIfNeeded(_ html: String) -> String {
+        // 이미 prefers-color-scheme이 있으면 주입 안 함
+        if html.contains("prefers-color-scheme") {
+            return html
+        }
+
+        let darkModeCSS = """
+        <style>
+        @media (prefers-color-scheme: dark) {
+            body { background: #1d1d1f; color: #f5f5f7; }
+            a { color: #4da3ff; }
+            table, th, td { border-color: #38383a; }
+            code, pre { background: #2c2c2e; }
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+            font-size: 14px;
+            line-height: 1.7;
+            padding: 24px;
+        }
+        </style>
+        """
+
+        // </head> 앞에 주입
+        if let range = html.range(of: "</head>", options: .caseInsensitive) {
+            var modified = html
+            modified.insert(contentsOf: darkModeCSS, at: range.lowerBound)
+            return modified
+        }
+
+        // <head>가 없으면 <html> 뒤에 추가
+        if let range = html.range(of: "<html", options: .caseInsensitive) {
+            if let closeRange = html[range.upperBound...].range(of: ">") {
+                var modified = html
+                modified.insert(contentsOf: "<head>\(darkModeCSS)</head>", at: closeRange.upperBound)
+                return modified
+            }
+        }
+
+        // 어떤 구조도 없으면 그냥 앞에 추가
+        return darkModeCSS + html
+    }
+
     class Coordinator: NSObject, WKNavigationDelegate {
-        // 외부 링크 처리 (새 탭에서 열기)
+        var lastContent: String = ""
+
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             if let url = navigationAction.request.url {
-                // HTTP/HTTPS 링크는 기본 브라우저에서 열기
                 if url.scheme == "http" || url.scheme == "https" {
                     if navigationAction.navigationType == .linkActivated {
                         NSWorkspace.shared.open(url)
@@ -895,6 +863,14 @@ struct HTMLContentView: NSViewRepresentable {
                 }
             }
             decisionHandler(.allow)
+        }
+
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            print("❌ [HTMLContentView] 로드 실패: \(error.localizedDescription)")
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            print("✅ [HTMLContentView] 렌더링 완료")
         }
     }
 }

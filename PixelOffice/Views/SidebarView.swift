@@ -27,6 +27,14 @@ struct SidebarView: View {
                 ) {
                     selectedTab = .community
                 }
+
+                SidebarButton(
+                    label: "토론",
+                    icon: "bubble.left.and.bubble.right.fill",
+                    isSelected: selectedTab == .debate
+                ) {
+                    selectedTab = .debate
+                }
             }
 
 //            Section {

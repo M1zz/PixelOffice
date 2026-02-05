@@ -13,6 +13,7 @@ struct EmployeeChatView: View {
     @State private var useClaudeCode = true  // Claude Code CLI 사용 여부
     @State private var currentThinking: EmployeeThinking?  // 현재 사고 과정
     @State private var loadingStartTime: Date?  // 로딩 시작 시간
+    @State private var showPermissionHistory = false  // 권한 요청 히스토리 표시
 
     private let claudeService = ClaudeService()
     private let claudeCodeService = ClaudeCodeService()
@@ -197,9 +198,11 @@ struct EmployeeChatView: View {
             ChatHeader(
                 employee: employee,
                 thinkingStatus: currentThinking != nil ? "💭 \(currentThinking!.reasoning.keyInsights.count)개 인사이트 (준비도: \(currentThinking!.reasoning.readinessScore)/10)" : nil,
+                pendingPermissionCount: companyStore.company.permissionRequests.filter { $0.employeeId == employee.id && $0.status == .pending }.count,
                 onClose: { dismiss() },
                 onClearConversation: { clearConversation() },
-                onDocumentize: { requestDocumentize() }
+                onDocumentize: { requestDocumentize() },
+                onShowPermissions: { showPermissionHistory = true }
             )
 
             Divider()
@@ -210,6 +213,28 @@ struct EmployeeChatView: View {
                     LazyVStack(spacing: 12) {
                         ForEach(messages) { message in
                             ChatBubble(message: message, aiType: employee.aiType)
+                        }
+
+                        // 권한 요청 카드 표시
+                        let pendingRequests = companyStore.company.permissionRequests.filter { $0.employeeId == employee.id && $0.status == .pending }
+                        let _ = print("🎨 [UI] 권한 카드 필터링 결과: \(pendingRequests.count)개 (전체 \(companyStore.company.permissionRequests.count)개 중)")
+                        let _ = print("   - 현재 직원 ID: \(employee.id)")
+                        let _ = print("   - 이 직원의 모든 권한 요청: \(companyStore.company.permissionRequests.filter { $0.employeeId == employee.id }.count)개")
+
+                        ForEach(pendingRequests) { request in
+                            PermissionRequestCard(
+                                request: request,
+                                onApprove: { reason in
+                                    handlePermissionApproval(request.id, reason: reason)
+                                },
+                                onDeny: { reason in
+                                    handlePermissionDenial(request.id, reason: reason)
+                                }
+                            )
+                            .padding(.horizontal)
+                            .onAppear {
+                                print("🎨 [UI] 권한 카드 표시됨: \(request.title)")
+                            }
                         }
 
                         if isLoading {
@@ -263,6 +288,10 @@ struct EmployeeChatView: View {
             )
         }
         .frame(width: 500, height: 600)
+        .sheet(isPresented: $showPermissionHistory) {
+            PermissionRequestHistoryView(employeeId: employee.id)
+                .environmentObject(companyStore)
+        }
         .onAppear {
             // 기존 대화 기록 로드
             messages = employee.conversationHistory.map { msg in
@@ -304,6 +333,8 @@ struct EmployeeChatView: View {
         Task {
             do {
                 let response: String
+                var inputTokens = 0
+                var outputTokens = 0
 
                 // Claude 타입이면 Claude Code CLI 먼저 시도
                 if canUseClaudeCode && useClaudeCode {
@@ -311,15 +342,19 @@ struct EmployeeChatView: View {
                         greetingPrompt,
                         systemPrompt: systemPrompt
                     )
+                    // ClaudeCodeService는 아직 토큰 정보를 반환하지 않음
                 } else if let config = apiConfig, config.isConfigured {
                     // 그 외에는 직접 API 호출
-                    response = try await claudeService.sendMessage(
+                    let result = try await claudeService.sendMessage(
                         greetingPrompt,
                         employeeId: employee.id,
                         configuration: config,
                         systemPrompt: systemPrompt,
                         isGreeting: true
                     )
+                    response = result.response
+                    inputTokens = result.inputTokens
+                    outputTokens = result.outputTokens
                 } else {
                     throw ClaudeCodeError.notInstalled
                 }
@@ -329,6 +364,12 @@ struct EmployeeChatView: View {
                     messages.append(assistantMessage)
                     isLoading = false
                     companyStore.updateEmployeeStatus(employee.id, status: .idle)  // 휴식중으로 변경
+
+                    // 토큰 사용량 업데이트 (API 직접 호출인 경우만)
+                    if inputTokens > 0 || outputTokens > 0 {
+                        companyStore.updateEmployeeTokenUsage(employee.id, inputTokens: inputTokens, outputTokens: outputTokens)
+                    }
+
                     saveConversation()
                 }
             } catch {
@@ -368,6 +409,8 @@ struct EmployeeChatView: View {
         Task {
             do {
                 let response: String
+                var inputTokens = 0
+                var outputTokens = 0
 
                 // Claude 타입이면 Claude Code CLI 먼저 시도
                 if hasClaudeCode {
@@ -376,14 +419,18 @@ struct EmployeeChatView: View {
                         systemPrompt: systemPrompt,
                         conversationHistory: employee.conversationHistory
                     )
+                    // ClaudeCodeService는 아직 토큰 정보를 반환하지 않음
                 } else if let config = apiConfig, config.isConfigured {
                     // 그 외에는 직접 API 호출
-                    response = try await claudeService.sendMessage(
+                    let result = try await claudeService.sendMessage(
                         messageToSend,
                         employeeId: employee.id,
                         configuration: config,
                         systemPrompt: systemPrompt
                     )
+                    response = result.response
+                    inputTokens = result.inputTokens
+                    outputTokens = result.outputTokens
                 } else {
                     throw ClaudeCodeError.notInstalled
                 }
@@ -457,6 +504,11 @@ struct EmployeeChatView: View {
                     isLoading = false
                     companyStore.updateEmployeeStatus(employee.id, status: .idle)
 
+                    // 토큰 사용량 업데이트 (API 직접 호출인 경우만)
+                    if inputTokens > 0 || outputTokens > 0 {
+                        companyStore.updateEmployeeTokenUsage(employee.id, inputTokens: inputTokens, outputTokens: outputTokens)
+                    }
+
                     // 대화 기록 저장
                     saveConversation()
                 }
@@ -517,8 +569,8 @@ struct EmployeeChatView: View {
                 title: (fileName as NSString).deletingPathExtension.replacingOccurrences(of: "-", with: " "),
                 content: content,
                 category: wikiCategory,
-                createdBy: employee.name,
-                tags: [departmentType.rawValue, employee.name],
+                createdBy: "\(departmentType.rawValue)팀",
+                tags: [employee.name],
                 fileName: fileName
             )
 
@@ -586,20 +638,33 @@ struct EmployeeChatView: View {
                     """
 
                     let mentionResponse: String
+                    var mentionInputTokens = 0
+                    var mentionOutputTokens = 0
+
                     if canUseClaudeCode && useClaudeCode {
                         mentionResponse = try await claudeCodeService.sendMessage(
                             requestContent,
                             systemPrompt: mentionSystemPrompt
                         )
                     } else if let config = apiConfig, config.isConfigured {
-                        mentionResponse = try await claudeService.sendMessage(
+                        let result = try await claudeService.sendMessage(
                             requestContent,
                             employeeId: targetEmployee.id,
                             configuration: config,
                             systemPrompt: mentionSystemPrompt
                         )
+                        mentionResponse = result.response
+                        mentionInputTokens = result.inputTokens
+                        mentionOutputTokens = result.outputTokens
                     } else {
                         mentionResponse = "[\(departmentName) 응답 실패: API 미설정]"
+                    }
+
+                    // 멘션 대상 직원의 토큰 사용량 업데이트
+                    if mentionInputTokens > 0 || mentionOutputTokens > 0 {
+                        await MainActor.run {
+                            companyStore.updateEmployeeTokenUsage(targetEmployee.id, inputTokens: mentionInputTokens, outputTokens: mentionOutputTokens)
+                        }
                     }
 
                     let formattedResponse = "📨 **@\(departmentName) (\(targetEmployee.name))의 답변:**\n\(mentionResponse)"
@@ -799,20 +864,33 @@ struct EmployeeChatView: View {
                 """
 
                 let response: String
+                var inputTokens = 0
+                var outputTokens = 0
+
                 if canUseClaudeCode && useClaudeCode {
                     response = try await claudeCodeService.sendMessage(
                         conclusionPrompt,
                         systemPrompt: systemPrompt
                     )
                 } else if let config = apiConfig, config.isConfigured {
-                    response = try await claudeService.sendMessage(
+                    let result = try await claudeService.sendMessage(
                         conclusionPrompt,
                         employeeId: employee.id,
                         configuration: config,
                         systemPrompt: systemPrompt
                     )
+                    response = result.response
+                    inputTokens = result.inputTokens
+                    outputTokens = result.outputTokens
                 } else {
                     return
+                }
+
+                // 토큰 사용량 업데이트
+                if inputTokens > 0 || outputTokens > 0 {
+                    await MainActor.run {
+                        companyStore.updateEmployeeTokenUsage(employee.id, inputTokens: inputTokens, outputTokens: outputTokens)
+                    }
                 }
 
                 // 결론 파싱
@@ -981,14 +1059,198 @@ struct EmployeeChatView: View {
         inputText = "지금까지 논의된 내용을 정리하여 위키 문서로 작성해주세요. 핵심 내용, 결정 사항, 액션 아이템을 포함해주세요."
         sendMessage()
     }
+
+    // MARK: - Permission Request Handling
+
+    /// AI 응답에서 권한 요청 추출
+    private func extractPermissionRequests(from response: String) -> (cleanedResponse: String, requests: [PermissionRequest]) {
+        print("🔍 [Permission] 권한 요청 추출 시작")
+        print("📝 [Permission] 응답 길이: \(response.count)자")
+
+        var cleanedResponse = response
+        var extractedRequests: [PermissionRequest] = []
+
+        // <<<PERMISSION:권한타입>>> ... <<<END_PERMISSION>>> 패턴 찾기
+        let pattern = "<<<PERMISSION:([^>]+)>>>([\\s\\S]*?)<<<END_PERMISSION>>>"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            print("❌ [Permission] 정규식 생성 실패")
+            return (response, [])
+        }
+
+        let nsString = response as NSString
+        let matches = regex.matches(in: response, options: [], range: NSRange(location: 0, length: nsString.length))
+        print("🔎 [Permission] 발견된 패턴 수: \(matches.count)")
+
+        for match in matches.reversed() {
+            guard match.numberOfRanges >= 3 else { continue }
+
+            let permissionTypeRange = match.range(at: 1)
+            let contentRange = match.range(at: 2)
+            let fullRange = match.range(at: 0)
+
+            let permissionTypeStr = nsString.substring(with: permissionTypeRange).trimmingCharacters(in: .whitespaces)
+            let content = nsString.substring(with: contentRange).trimmingCharacters(in: .whitespacesAndNewlines)
+
+            print("📋 [Permission] 권한 타입: \(permissionTypeStr)")
+            print("📄 [Permission] 내용 미리보기: \(content.prefix(100))...")
+
+            // 권한 타입 파싱
+            guard let permissionType = parsePermissionType(permissionTypeStr) else { continue }
+
+            // 내용 파싱
+            let fields = parsePermissionFields(content)
+
+            guard let title = fields["제목"] else { continue }
+            let description = fields["설명"] ?? ""
+            let targetPath = fields["경로"]
+            let estimatedSize = fields["크기"].flatMap { Int($0) }
+            let metadataStr = fields["메타데이터"] ?? ""
+            let metadata = parseMetadata(metadataStr)
+
+            // PermissionRequest 생성
+            let request = PermissionRequest(
+                type: permissionType,
+                employeeId: employee.id,
+                employeeName: employee.name,
+                employeeDepartment: departmentType.rawValue,
+                projectId: nil,
+                projectName: nil,
+                title: title,
+                description: description,
+                targetPath: targetPath,
+                estimatedSize: estimatedSize,
+                metadata: metadata
+            )
+
+            print("✅ [Permission] 권한 요청 생성 완료:")
+            print("   - ID: \(request.id)")
+            print("   - 타입: \(request.type.rawValue)")
+            print("   - 제목: \(request.title)")
+            print("   - 직원: \(request.employeeName) (\(request.employeeId))")
+            print("   - 경로: \(request.targetPath ?? "없음")")
+
+            extractedRequests.append(request)
+
+            // 응답에서 권한 요청 블록 제거
+            cleanedResponse = (cleanedResponse as NSString).replacingCharacters(in: fullRange, with: "")
+        }
+
+        print("📊 [Permission] 추출 완료: \(extractedRequests.count)개 권한 요청")
+        return (cleanedResponse.trimmingCharacters(in: .whitespacesAndNewlines), extractedRequests)
+    }
+
+    /// 권한 타입 문자열을 PermissionType으로 변환
+    private func parsePermissionType(_ typeStr: String) -> PermissionType? {
+        switch typeStr.uppercased() {
+        case "FILE_WRITE":
+            return .fileWrite
+        case "FILE_EDIT":
+            return .fileEdit
+        case "FILE_DELETE":
+            return .fileDelete
+        case "COMMAND_EXECUTION":
+            return .commandExecution
+        case "API_CALL":
+            return .apiCall
+        case "DATA_EXPORT":
+            return .dataExport
+        default:
+            return nil
+        }
+    }
+
+    /// 권한 요청 필드 파싱
+    private func parsePermissionFields(_ content: String) -> [String: String] {
+        var fields: [String: String] = [:]
+        let lines = content.components(separatedBy: "\n")
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if let colonIndex = trimmed.firstIndex(of: ":") {
+                let key = String(trimmed[..<colonIndex]).trimmingCharacters(in: .whitespaces)
+                let value = String(trimmed[trimmed.index(after: colonIndex)...]).trimmingCharacters(in: .whitespaces)
+                fields[key] = value
+            }
+        }
+
+        return fields
+    }
+
+    /// 메타데이터 문자열 파싱 (key1=value1, key2=value2)
+    private func parseMetadata(_ metadataStr: String) -> [String: String] {
+        var metadata: [String: String] = [:]
+        let pairs = metadataStr.components(separatedBy: ",")
+
+        for pair in pairs {
+            let trimmed = pair.trimmingCharacters(in: .whitespaces)
+            let parts = trimmed.components(separatedBy: "=")
+            if parts.count == 2 {
+                let key = parts[0].trimmingCharacters(in: .whitespaces)
+                let value = parts[1].trimmingCharacters(in: .whitespaces)
+                metadata[key] = value
+            }
+        }
+
+        return metadata
+    }
+
+    /// 권한 승인 처리
+    private func handlePermissionApproval(_ requestId: UUID, reason: String?) {
+        print("✅ [Permission] 권한 승인 처리 시작: \(requestId)")
+
+        // 요청 정보 가져오기
+        guard let request = companyStore.company.permissionRequests.first(where: { $0.id == requestId }) else {
+            print("❌ [Permission] 권한 요청을 찾을 수 없음: \(requestId)")
+            return
+        }
+
+        print("   - 승인할 요청: \(request.title)")
+        companyStore.approvePermissionRequest(requestId, reason: reason)
+
+        let approvalMessage = ChatMessage(
+            role: .system,
+            content: "✅ '\(request.title)' 권한이 승인되었습니다.\n\(reason.map { "사유: \($0)" } ?? "")"
+        )
+        messages.append(approvalMessage)
+
+        // AI에게 승인 알림 (작업 진행 요청)
+        inputText = "권한이 승인되었습니다. '\(request.title)' 작업을 진행해주세요."
+        sendMessage()
+    }
+
+    /// 권한 거부 처리
+    private func handlePermissionDenial(_ requestId: UUID, reason: String?) {
+        print("❌ [Permission] 권한 거부 처리 시작: \(requestId)")
+
+        // 요청 정보 가져오기
+        guard let request = companyStore.company.permissionRequests.first(where: { $0.id == requestId }) else {
+            print("❌ [Permission] 권한 요청을 찾을 수 없음: \(requestId)")
+            return
+        }
+
+        print("   - 거부할 요청: \(request.title)")
+        companyStore.denyPermissionRequest(requestId, reason: reason)
+
+        let denialMessage = ChatMessage(
+            role: .system,
+            content: "❌ '\(request.title)' 권한이 거부되었습니다.\n\(reason.map { "사유: \($0)" } ?? "")"
+        )
+        messages.append(denialMessage)
+
+        // AI에게 거부 알림 (대안 제시 요청)
+        inputText = "권한이 거부되었습니다. '\(request.title)' 작업의 대안을 제시해주세요.\n거부 사유: \(reason ?? "사유 없음")"
+        sendMessage()
+    }
 }
 
 struct ChatHeader: View {
     let employee: Employee
     var thinkingStatus: String? = nil
+    var pendingPermissionCount: Int = 0
     let onClose: () -> Void
     let onClearConversation: () -> Void
     let onDocumentize: () -> Void
+    let onShowPermissions: () -> Void
 
     var body: some View {
         HStack {
@@ -1023,6 +1285,29 @@ struct ChatHeader: View {
             }
 
             Spacer()
+
+            // 권한 요청 알림 버튼
+            Button(action: onShowPermissions) {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "bell.fill")
+                        .font(.title3)
+                        .foregroundStyle(pendingPermissionCount > 0 ? .orange : .secondary)
+
+                    if pendingPermissionCount > 0 {
+                        ZStack {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 16, height: 16)
+                            Text("\(pendingPermissionCount)")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+                        .offset(x: 8, y: -8)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .help("권한 요청 \(pendingPermissionCount > 0 ? "(\(pendingPermissionCount)개 대기중)" : "")")
 
             // 문서화 버튼
             Button(action: onDocumentize) {

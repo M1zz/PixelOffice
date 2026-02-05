@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// 데이터 저장 경로 관리 서비스
 /// 모든 데이터는 프로젝트 디렉토리 내 datas/ 폴더에 저장됨
@@ -8,19 +9,56 @@ class DataPathService {
     /// 기본 데이터 저장 경로 (프로젝트 디렉토리 내)
     var basePath: String {
         let fileManager = FileManager.default
-        let homePath = NSHomeDirectory()
 
-        // 프로젝트의 예상 경로 (사용자 홈 기준)
-        let projectPath = "\(homePath)/Documents/workspace/code/PixelOffice/datas"
-
-        // 경로가 존재하면 사용
-        if fileManager.fileExists(atPath: projectPath) {
-            return projectPath
+        // 1. 현재 실행 파일의 위치에서 프로젝트 루트 찾기
+        if let projectRoot = findProjectRoot() {
+            let datasPath = "\(projectRoot)/datas"
+            // datas 폴더가 없으면 생성
+            if !fileManager.fileExists(atPath: datasPath) {
+                try? fileManager.createDirectory(atPath: datasPath, withIntermediateDirectories: true)
+            }
+            return datasPath
         }
 
-        // 경로가 없으면 생성 시도
-        try? fileManager.createDirectory(atPath: projectPath, withIntermediateDirectories: true)
+        // 2. Fallback: 현재 프로젝트 위치 (하드코딩)
+        let homePath = NSHomeDirectory()
+        let projectPath = "\(homePath)/Documents/code/PixelOffice/datas"
+
+        if !fileManager.fileExists(atPath: projectPath) {
+            try? fileManager.createDirectory(atPath: projectPath, withIntermediateDirectories: true)
+        }
         return projectPath
+    }
+
+    /// 프로젝트 루트 디렉토리 찾기 (.xcodeproj 파일이 있는 위치)
+    private func findProjectRoot() -> String? {
+        let fileManager = FileManager.default
+
+        // 현재 실행 파일 위치
+        let executablePath = Bundle.main.bundlePath
+        var currentPath = (executablePath as NSString).deletingLastPathComponent
+
+        // 최대 10단계까지 상위 디렉토리 탐색
+        for _ in 0..<10 {
+            // .xcodeproj 파일이 있는지 확인
+            let contents = try? fileManager.contentsOfDirectory(atPath: currentPath)
+            if let contents = contents {
+                for item in contents {
+                    if item.hasSuffix(".xcodeproj") {
+                        return currentPath
+                    }
+                }
+            }
+
+            // 한 단계 위로
+            let parentPath = (currentPath as NSString).deletingLastPathComponent
+            if parentPath == currentPath {
+                break  // 루트에 도달
+            }
+            currentPath = parentPath
+        }
+
+        return nil
     }
 
     private init() {

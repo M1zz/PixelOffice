@@ -151,7 +151,10 @@ struct CommunityView: View {
 
     @ViewBuilder
     private var employeesSection: some View {
-        EmployeeDirectoryView()
+        // EmployeeDirectoryView()
+        Text("사원 디렉토리 기능 준비 중")
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Guides Section
@@ -760,8 +763,8 @@ struct CommunityPostDetailView: View {
 
                     Divider()
 
-                    // 본문 (마크다운)
-                    MarkdownContentView(content: post.content)
+                    // 본문 (마크다운 → HTML 렌더링)
+                    HTMLContentView(content: MarkdownToHTMLConverter.convert(post.content))
 
                     // 태그
                     if !post.tags.isEmpty {

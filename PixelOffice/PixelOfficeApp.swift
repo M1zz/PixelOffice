@@ -12,9 +12,9 @@ struct PixelOfficeApp: App {
                 .environmentObject(companyStore)
                 .frame(minWidth: 1200, minHeight: 800)
                 .onAppear {
-                    // 자율 소통 서비스에 CompanyStore 연결
-                    AutonomousCommunicationService.shared.setCompanyStore(companyStore)
-                    print("✅ [App] 자율 소통 서비스 초기화 완료")
+                    // 구조화된 토론 서비스 초기화
+                    StructuredDebateService.shared.setCompanyStore(companyStore)
+                    print("✅ [App] 초기화 완료")
                 }
                 .onChange(of: scenePhase) { _, newPhase in
                     if newPhase == .inactive || newPhase == .background {

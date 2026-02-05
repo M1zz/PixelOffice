@@ -58,8 +58,73 @@
 - [x] 회사 위키 마크다운 렌더링 및 편집 기능
 - [x] AI 직원 문서를 부서별 카테고리에 저장 및 부서별 필터 추가
 
+## 완료된 작업
+
+- [x] 직원 권한 요청 시스템
+  - Company.swift에 permissionRequests, autoApprovalRules 추가
+  - CompanyStore.swift에 권한 요청 관리 메서드 추가
+  - PermissionRequestCard.swift UI 컴포넌트 생성
+  - EmployeeChatView.swift에 권한 요청 파싱 및 UI 통합
+  - 시스템 프롬프트에 권한 요청 가이드 추가
+  - 승인/거부 UI 및 처리 로직 구현
+  - PermissionRequest.swift를 Xcode 프로젝트에 추가
+- [x] DataPathService 상대경로로 변경
+  - 프로젝트 루트 자동 탐색 (.xcodeproj 기준)
+  - workspace 경로 제거
+  - 현재 프로젝트 디렉토리(/Users/leeo/Documents/code/PixelOffice/datas) 사용
+- [x] 권한 요청 알림 UI 구현
+  - PermissionRequestHistoryView.swift 생성
+  - 대화 창 헤더에 벨 아이콘 버튼 추가
+  - 대기 중인 권한 요청 개수 뱃지 표시
+  - 권한 요청 히스토리 및 승인/거부 기능
+  - EmployeeChatView 및 ProjectEmployeeChatView에 적용
+- [x] ProjectEmployeeChatView 권한 요청 시스템 통합
+  - 시스템 프롬프트에 권한 요청 가이드 추가
+  - 권한 요청 파싱 로직 추가 (extractPermissionRequests 등)
+  - 대화 창에 권한 요청 카드 표시
+  - 승인/거부 처리 로직 추가
+  - 벨 아이콘 및 히스토리 뷰 연동
+
+## 진행 중
+
+- [ ] **서비스 단위 분리 및 리팩토링** (2026-02-05 시작)
+  - [ ] **Phase 1: Repository Layer** (우선순위: P0)
+    - [x] RepositoryProtocol.swift 생성
+    - [x] FileRepository.swift 생성 (Thread-safe actor)
+    - [x] EmployeeRepository.swift 생성
+    - [x] ProjectRepository.swift 생성
+    - [x] TaskRepository.swift 생성
+    - [x] WikiRepository.swift 생성
+    - [ ] Xcode 프로젝트에 파일 추가 (수동, REPOSITORY_SETUP.md 참고)
+    - [ ] 빌드 테스트
+  - [ ] **Phase 2: Models 정리** (우선순위: P1)
+    - [ ] Employee.swift 순수 데이터 모델로 변환 (689줄 → 150줄)
+    - [ ] Department.swift 순수 데이터 모델로 변환 (357줄 → 60줄)
+    - [ ] EmployeeProtocol.swift 생성
+    - [ ] EmployeeFactory.swift 생성 (생성 로직 분리)
+    - [ ] DepartmentPromptBuilder.swift 생성
+    - [ ] Presentation 폴더 생성 (UI 속성 분리)
+  - [ ] **Phase 3: Services 분리** (우선순위: P0)
+    - [ ] EventBus.swift 생성
+    - [ ] 8개 Store 생성 (CompanyStore 분해)
+    - [ ] Service 레이어 생성
+  - [ ] **Phase 4: ViewModels 도입** (우선순위: P1)
+    - [ ] EmployeeChatViewModel.swift 생성
+    - [ ] EmployeeChatView.swift 리팩토링 (1,740줄 → 300줄)
+  - [ ] **Phase 5: Views 리팩토링** (우선순위: P2)
+  - [ ] **Phase 6: 테스트 추가** (병행)
+
+- [ ] 토큰 사용량 추적 시스템
+  - [x] EmployeeStatistics에 토큰 통계 추가 (대화당 평균, 시간당/분당 소진 속도)
+  - [x] ClaudeService에서 토큰 정보 추출 (usage 필드)
+  - [ ] EmployeeChatView에서 토큰 정보 업데이트
+  - [ ] CompanyStore에 토큰 업데이트 메서드 추가
+  - [ ] EmployeeWorkLogService에 토큰 통계 표시
+  - [ ] ClaudeCodeService 토큰 정보 추가
+
 ## 예정된 작업
 
+- [ ] 권한 요청 시스템 테스트 및 검증
 - [ ] 온보딩 질문 답변 UI 구현
 - [ ] 프로젝트/태스크 워크플로우 진행 UI
 

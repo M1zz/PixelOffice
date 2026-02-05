@@ -113,12 +113,14 @@ enum PostSource: String, Codable {
     case manual = "수동"          // 사용자가 직접 생성
     case thinking = "사고과정"     // 사고 과정에서 생성
     case autonomous = "자율소통"   // 직원 간 자율 소통
+    case debate = "토론"          // 구조화된 토론에서 생성
 
     var icon: String {
         switch self {
         case .manual: return "person.fill"
         case .thinking: return "brain"
         case .autonomous: return "person.2.fill"
+        case .debate: return "bubble.left.and.bubble.right.fill"
         }
     }
 
@@ -127,6 +129,7 @@ enum PostSource: String, Codable {
         case .manual: return .blue
         case .thinking: return .purple
         case .autonomous: return .orange
+        case .debate: return .green
         }
     }
 }

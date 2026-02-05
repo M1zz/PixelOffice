@@ -2,8 +2,20 @@ import Foundation
 import SwiftUI
 import Combine
 
+/// 🏢 CompanyStore — Facade / Coordinator
+///
+/// 기존 View들과의 하위 호환성을 유지하면서 내부적으로 도메인 Store에 위임
+/// 모든 기존 메서드 시그니처를 그대로 유지하되, 실제 비즈니스 로직은 각 도메인 Store에 위치
+///
+/// - EmployeeStore: 직원 CRUD, 상태 관리, 온보딩
+/// - ProjectStore: 프로젝트 CRUD, 태스크, 프로젝트 직원, 워크플로우
+/// - CommunityStore: 커뮤니티 게시글, 사고 과정
+/// - WikiStore: 위키 문서 관리
+/// - SettingsStore: API 설정, 부서 스킬
+/// - CollaborationStore: 협업 기록
+/// - PermissionStore: 권한 요청, 자동 승인 규칙
 @MainActor
-class CompanyStore: ObservableObject {
+class CompanyStore: ObservableObject, StoreCoordinator {
     @Published var company: Company
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -14,7 +26,19 @@ class CompanyStore: ObservableObject {
     private let dataManager = DataManager()
     private var autoSaveTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
-    
+
+    // MARK: - 도메인 Stores
+
+    private(set) var employeeStore: EmployeeStore!
+    private(set) var projectStore: ProjectStore!
+    private(set) var communityStore: CommunityStore!
+    private(set) var wikiStore: WikiStore!
+    private(set) var settingsStore: SettingsStore!
+    private(set) var collaborationStore: CollaborationStore!
+    private(set) var permissionStore: PermissionStore!
+
+    // MARK: - Init
+
     init() {
         print("🏢 CompanyStore init started")
         let loadedCompany = dataManager.loadCompany()
@@ -26,90 +50,37 @@ class CompanyStore: ObservableObject {
             print("⚠️ No saved company found, created new empty company")
         }
 
+        // 도메인 Store 초기화
+        setupDomainStores()
+
         setupAutoSave()
-        loadEmployeeStatuses()
+        employeeStore.loadEmployeeStatuses()
         print("👥 Employee statuses loaded: \(employeeStatuses.count) entries")
 
         // _projects 폴더에서 자동 복구
         ProjectRecoveryService.shared.recoverProjectsIfNeeded(company: &company)
 
-        ensureProjectDirectoriesExist()
-        ensureEmployeeProfilesExist()
-        syncWikiDocumentsToFiles()
+        projectStore.ensureProjectDirectoriesExist()
+        employeeStore.ensureEmployeeProfilesExist()
+        wikiStore.syncWikiDocumentsToFiles()
 
         print("✅ CompanyStore init completed")
         print("👥 Final employee count: \(company.allEmployees.count)")
     }
 
-    /// 기존 프로젝트들의 디렉토리 구조 생성 (README 포함)
-    private func ensureProjectDirectoriesExist() {
-        for project in company.projects {
-            DataPathService.shared.createProjectDirectories(projectName: project.name)
-        }
+    // MARK: - Coordinator 구현
+
+    /// 도메인 Store 초기화
+    private func setupDomainStores() {
+        employeeStore = EmployeeStore(coordinator: self)
+        projectStore = ProjectStore(coordinator: self)
+        communityStore = CommunityStore(coordinator: self)
+        wikiStore = WikiStore(coordinator: self)
+        settingsStore = SettingsStore(coordinator: self)
+        collaborationStore = CollaborationStore(coordinator: self)
+        permissionStore = PermissionStore(coordinator: self)
     }
 
-    /// 기존 직원들의 프로필 파일 생성 및 대화 기록 동기화
-    private func ensureEmployeeProfilesExist() {
-        let fileManager = FileManager.default
-
-        // 일반 직원
-        for dept in company.departments {
-            for emp in dept.employees {
-                let filePath = EmployeeWorkLogService.shared.getWorkLogFilePath(for: emp.id, employeeName: emp.name)
-                if !fileManager.fileExists(atPath: filePath) {
-                    EmployeeWorkLogService.shared.createEmployeeProfile(employee: emp, departmentType: dept.type)
-                }
-                // 대화 기록이 있으면 동기화
-                if !emp.conversationHistory.isEmpty {
-                    EmployeeWorkLogService.shared.syncEmployeeConversations(employee: emp, departmentType: dept.type)
-                }
-            }
-        }
-
-        // 프로젝트 직원
-        for project in company.projects {
-            for dept in project.departments {
-                for emp in dept.employees {
-                    let filePath = EmployeeWorkLogService.shared.getProjectWorkLogFilePath(
-                        projectName: project.name,
-                        department: dept.type,
-                        employeeName: emp.name
-                    )
-                    if !fileManager.fileExists(atPath: filePath) {
-                        EmployeeWorkLogService.shared.createProjectEmployeeProfile(employee: emp, projectName: project.name)
-                    }
-                    // 대화 기록이 있으면 동기화
-                    if !emp.conversationHistory.isEmpty {
-                        EmployeeWorkLogService.shared.syncProjectEmployeeConversations(employee: emp, projectName: project.name)
-                    }
-                }
-            }
-        }
-    }
-
-    /// 기존 직원들의 상태를 중앙 저장소에 로드
-    private func loadEmployeeStatuses() {
-        // 일반 직원
-        for dept in company.departments {
-            for emp in dept.employees {
-                employeeStatuses[emp.id] = emp.status
-            }
-        }
-        // 프로젝트 직원
-        for project in company.projects {
-            for dept in project.departments {
-                for emp in dept.employees {
-                    employeeStatuses[emp.id] = emp.status
-                }
-            }
-        }
-    }
-
-    /// 직원 상태 조회 (중앙 저장소 우선)
-    func getEmployeeStatus(_ employeeId: UUID) -> EmployeeStatus {
-        return employeeStatuses[employeeId] ?? .idle
-    }
-    
     private func setupAutoSave() {
         $company
             .debounce(for: .seconds(2), scheduler: RunLoop.main)
@@ -118,843 +89,393 @@ class CompanyStore: ObservableObject {
             }
             .store(in: &cancellables)
     }
-    
+
     func saveCompany() {
         print("💾 Saving company... (\(company.allEmployees.count) employees)")
         dataManager.saveCompany(company)
     }
-    
-    // MARK: - Department Operations
-    
+
+    func triggerObjectUpdate() {
+        objectWillChange.send()
+    }
+
+    // MARK: - Department Operations (CompanyStore 직접 관리)
+
     func addDepartment(_ department: Department) {
         company.departments.append(department)
     }
-    
+
     func removeDepartment(_ departmentId: UUID) {
         company.departments.removeAll { $0.id == departmentId }
     }
-    
+
     func getDepartment(byId id: UUID) -> Department? {
         company.departments.first { $0.id == id }
     }
-    
+
     func getDepartment(byType type: DepartmentType) -> Department? {
         company.departments.first { $0.type == type }
     }
-    
-    // MARK: - Employee Operations
-    
+
+    // MARK: - Employee Operations (→ EmployeeStore 위임)
+
     func addEmployee(_ employee: Employee, toDepartment departmentId: UUID) {
-        // 🐛 디버그: CompanyStore에 추가되는 직원 외모 확인
-        print("💾 [CompanyStore] 저장 전 직원 \(employee.name)의 외모:")
-        print("   피부색: \(employee.characterAppearance.skinTone)")
-        print("   헤어스타일: \(employee.characterAppearance.hairStyle)")
-        print("   헤어색: \(employee.characterAppearance.hairColor)")
-        print("   셔츠색: \(employee.characterAppearance.shirtColor)")
-        print("   악세서리: \(employee.characterAppearance.accessory)")
-        print("   표정: \(employee.characterAppearance.expression)")
-
-        company.addEmployee(employee, toDepartment: departmentId)
-        employeeStatuses[employee.id] = employee.status  // 중앙 저장소에 등록
-        saveCompany()  // 즉시 저장
-
-        // 🐛 디버그: 저장 후 확인
-        if let savedEmployee = findEmployee(byId: employee.id) {
-            print("✅ [CompanyStore] 저장 후 직원 \(savedEmployee.name)의 외모:")
-            print("   피부색: \(savedEmployee.characterAppearance.skinTone)")
-            print("   헤어스타일: \(savedEmployee.characterAppearance.hairStyle)")
-            print("   헤어색: \(savedEmployee.characterAppearance.hairColor)")
-            print("   셔츠색: \(savedEmployee.characterAppearance.shirtColor)")
-            print("   악세서리: \(savedEmployee.characterAppearance.accessory)")
-            print("   표정: \(savedEmployee.characterAppearance.expression)")
-        }
-
-        // 직원 프로필 파일 생성
-        if let dept = getDepartment(byId: departmentId) {
-            EmployeeWorkLogService.shared.createEmployeeProfile(employee: employee, departmentType: dept.type)
-        }
+        employeeStore.addEmployee(employee, toDepartment: departmentId)
     }
 
     func removeEmployee(_ employeeId: UUID) {
-        company.removeEmployee(employeeId)
-        saveCompany()  // 즉시 저장
+        employeeStore.removeEmployee(employeeId)
     }
 
     func findEmployee(byId employeeId: UUID) -> Employee? {
-        for dept in company.departments {
-            if let employee = dept.employees.first(where: { $0.id == employeeId }) {
-                return employee
-            }
-        }
-        return nil
+        employeeStore.findEmployee(byId: employeeId)
     }
-    
+
     func updateEmployeeStatus(_ employeeId: UUID, status: EmployeeStatus) {
-        let previousStatus = employeeStatuses[employeeId]
-
-        // 상태가 변경된 경우에만 처리
-        guard previousStatus != status else { return }
-
-        // 중앙 저장소 업데이트
-        employeeStatuses[employeeId] = status
-
-        // 데이터 모델도 동기화
-        company.updateEmployeeStatus(employeeId, status: status)
-
-        // company를 다시 할당하여 @Published 트리거 (UI 전체 업데이트)
-        let updatedCompany = company
-        company = updatedCompany
-
-        // 직원 이름 찾기
-        let employeeName = findEmployeeName(byId: employeeId)
-
-        // 토스트 알림
-        let toastType: ToastType = status == .thinking ? .info : (status == .idle ? .success : .info)
-        ToastManager.shared.show(
-            title: "\(employeeName) 상태 변경",
-            message: "\(previousStatus?.rawValue ?? "알 수 없음") → \(status.rawValue)",
-            type: toastType
-        )
-
-        // 시스템 알림 (앱이 백그라운드일 때 유용)
-        ToastManager.shared.sendNotification(
-            title: "\(employeeName) 상태 변경",
-            body: "\(status.rawValue)"
-        )
+        employeeStore.updateEmployeeStatus(employeeId, status: status)
     }
 
-    /// 직원 이름 찾기 (일반 직원 + 프로젝트 직원)
-    private func findEmployeeName(byId employeeId: UUID) -> String {
-        // 일반 직원에서 찾기
-        for dept in company.departments {
-            if let emp = dept.employees.first(where: { $0.id == employeeId }) {
-                return emp.name
-            }
-        }
-        // 프로젝트 직원에서 찾기
-        for project in company.projects {
-            for dept in project.departments {
-                if let emp = dept.employees.first(where: { $0.id == employeeId }) {
-                    return emp.name
-                }
-            }
-        }
-        return "직원"
+    func getEmployeeStatus(_ employeeId: UUID) -> EmployeeStatus {
+        employeeStore.getEmployeeStatus(employeeId)
     }
 
-    /// 직원 토큰 사용량 업데이트
     func updateEmployeeTokenUsage(_ employeeId: UUID, inputTokens: Int, outputTokens: Int) {
-        // 일반 직원에서 찾기
-        for deptIndex in company.departments.indices {
-            if let empIndex = company.departments[deptIndex].employees.firstIndex(where: { $0.id == employeeId }) {
-                company.departments[deptIndex].employees[empIndex].statistics.addTokenUsage(input: inputTokens, output: outputTokens)
-                company.departments[deptIndex].employees[empIndex].statistics.conversationCount += 1
-                company.departments[deptIndex].employees[empIndex].statistics.lastActiveDate = Date()
-
-                // UI 업데이트 트리거
-                objectWillChange.send()
-                return
-            }
-        }
-
-        // 프로젝트 직원에서 찾기
-        for projectIndex in company.projects.indices {
-            for deptIndex in company.projects[projectIndex].departments.indices {
-                if let empIndex = company.projects[projectIndex].departments[deptIndex].employees.firstIndex(where: { $0.id == employeeId }) {
-                    company.projects[projectIndex].departments[deptIndex].employees[empIndex].statistics.addTokenUsage(input: inputTokens, output: outputTokens)
-                    company.projects[projectIndex].departments[deptIndex].employees[empIndex].statistics.conversationCount += 1
-                    company.projects[projectIndex].departments[deptIndex].employees[empIndex].statistics.lastActiveDate = Date()
-
-                    // UI 업데이트 트리거
-                    objectWillChange.send()
-                    return
-                }
-            }
-        }
+        employeeStore.updateEmployeeTokenUsage(employeeId, inputTokens: inputTokens, outputTokens: outputTokens)
     }
-    
+
     func getEmployee(byId id: UUID) -> Employee? {
-        company.getEmployee(byId: id)
-    }
-    
-    func assignTaskToEmployee(taskId: UUID, employeeId: UUID, projectId: UUID) {
-        guard var project = company.projects.first(where: { $0.id == projectId }),
-              var task = project.tasks.first(where: { $0.id == taskId }) else { return }
-        
-        task.assign(to: employeeId)
-        project.updateTask(task)
-        
-        if let index = company.projects.firstIndex(where: { $0.id == projectId }) {
-            company.projects[index] = project
-        }
-    }
-    
-    func startTask(taskId: UUID, projectId: UUID) {
-        guard var project = company.projects.first(where: { $0.id == projectId }),
-              var task = project.tasks.first(where: { $0.id == taskId }) else { return }
-        
-        task.start()
-        project.updateTask(task)
-        
-        if let index = company.projects.firstIndex(where: { $0.id == projectId }) {
-            company.projects[index] = project
-        }
-        
-        // Update employee status
-        if let employeeId = task.assigneeId {
-            updateEmployeeStatus(employeeId, status: .working)
-            
-            // Update employee's current task
-            for i in company.departments.indices {
-                if let j = company.departments[i].employees.firstIndex(where: { $0.id == employeeId }) {
-                    company.departments[i].employees[j].currentTaskId = taskId
-                }
-            }
-        }
-    }
-    
-    func completeTask(taskId: UUID, projectId: UUID) {
-        guard var project = company.projects.first(where: { $0.id == projectId }),
-              var task = project.tasks.first(where: { $0.id == taskId }) else { return }
-        
-        let employeeId = task.assigneeId
-        
-        task.complete()
-        project.updateTask(task)
-        
-        if let index = company.projects.firstIndex(where: { $0.id == projectId }) {
-            company.projects[index] = project
-        }
-        
-        // Update employee status
-        if let employeeId = employeeId {
-            updateEmployeeStatus(employeeId, status: .idle)
-            
-            // Clear employee's current task and increment completed count
-            for i in company.departments.indices {
-                if let j = company.departments[i].employees.firstIndex(where: { $0.id == employeeId }) {
-                    company.departments[i].employees[j].currentTaskId = nil
-                    company.departments[i].employees[j].totalTasksCompleted += 1
-                }
-            }
-        }
-    }
-    
-    // MARK: - Project Operations
-    
-    func addProject(_ project: Project) {
-        company.addProject(project)
-        // 프로젝트 디렉토리 구조 생성
-        DataPathService.shared.createProjectDirectories(projectName: project.name)
-    }
-    
-    func removeProject(_ projectId: UUID) {
-        company.removeProject(projectId)
-    }
-    
-    func getProject(byId id: UUID) -> Project? {
-        company.projects.first { $0.id == id }
-    }
-    
-    func updateProject(_ project: Project) {
-        if let index = company.projects.firstIndex(where: { $0.id == project.id }) {
-            company.projects[index] = project
-        }
-    }
-    
-    // MARK: - Task Operations
-    
-    func addTask(_ task: ProjectTask, toProject projectId: UUID) {
-        if let index = company.projects.firstIndex(where: { $0.id == projectId }) {
-            company.projects[index].addTask(task)
-        }
-    }
-    
-    func removeTask(_ taskId: UUID, fromProject projectId: UUID) {
-        if let index = company.projects.firstIndex(where: { $0.id == projectId }) {
-            company.projects[index].removeTask(taskId)
-        }
-    }
-    
-    func updateTask(_ task: ProjectTask, inProject projectId: UUID) {
-        if let index = company.projects.firstIndex(where: { $0.id == projectId }) {
-            company.projects[index].updateTask(task)
-        }
-    }
-    
-    func addMessageToTask(message: Message, taskId: UUID, projectId: UUID) {
-        if let projectIndex = company.projects.firstIndex(where: { $0.id == projectId }),
-           let taskIndex = company.projects[projectIndex].tasks.firstIndex(where: { $0.id == taskId }) {
-            company.projects[projectIndex].tasks[taskIndex].addMessage(message)
-        }
-    }
-    
-    func addOutputToTask(output: TaskOutput, taskId: UUID, projectId: UUID) {
-        if let projectIndex = company.projects.firstIndex(where: { $0.id == projectId }),
-           let taskIndex = company.projects[projectIndex].tasks.firstIndex(where: { $0.id == taskId }) {
-            company.projects[projectIndex].tasks[taskIndex].addOutput(output)
-        }
+        employeeStore.getEmployee(byId: id)
     }
 
-    // MARK: - Workflow Operations
-
-    /// 태스크를 다음 부서로 이동
-    func moveTaskToDepartment(taskId: UUID, projectId: UUID, toDepartment: DepartmentType, note: String = "") {
-        if let projectIndex = company.projects.firstIndex(where: { $0.id == projectId }),
-           let taskIndex = company.projects[projectIndex].tasks.firstIndex(where: { $0.id == taskId }) {
-            company.projects[projectIndex].tasks[taskIndex].moveToDepartment(toDepartment, note: note)
-        }
-    }
-
-    /// 특정 부서의 대기 중인 태스크들 조회
-    func getPendingTasks(for departmentType: DepartmentType) -> [(task: ProjectTask, projectId: UUID)] {
-        var result: [(task: ProjectTask, projectId: UUID)] = []
-        for project in company.projects {
-            let tasks = project.tasks.filter { $0.departmentType == departmentType && $0.status == .todo }
-            result.append(contentsOf: tasks.map { (task: $0, projectId: project.id) })
-        }
-        return result
-    }
-
-    /// 워크플로우 순서대로 정렬된 부서들
-    var departmentsByWorkflowOrder: [Department] {
-        company.departments.sorted { $0.type.workflowOrder < $1.type.workflowOrder }
-    }
-
-    // MARK: - Settings Operations
-    
-    func updateSettings(_ settings: CompanySettings) {
-        company.settings = settings
-    }
-    
-    func addAPIConfiguration(_ config: APIConfiguration) {
-        company.settings.apiConfigurations.append(config)
-    }
-    
-    func removeAPIConfiguration(_ configId: UUID) {
-        company.settings.apiConfigurations.removeAll { $0.id == configId }
-    }
-    
-    func updateAPIConfiguration(_ config: APIConfiguration) {
-        if let index = company.settings.apiConfigurations.firstIndex(where: { $0.id == config.id }) {
-            company.settings.apiConfigurations[index] = config
-        }
-    }
-    
-    func getAPIConfiguration(for aiType: AIType) -> APIConfiguration? {
-        company.settings.apiConfigurations.first { $0.type == aiType && $0.isEnabled }
-    }
-
-    // MARK: - Department Skills Operations
-
-    /// 부서 스킬 조회
-    func getDepartmentSkills(for department: DepartmentType) -> DepartmentSkillSet {
-        return company.settings.departmentSkills.getSkills(for: department)
-    }
-
-    /// 부서 스킬 업데이트
-    func updateDepartmentSkills(for department: DepartmentType, skills: DepartmentSkillSet) {
-        company.settings.departmentSkills.updateSkills(for: department, skills: skills)
-        saveCompany()
-    }
-
-    /// 부서 스킬 초기화
-    func resetDepartmentSkills(for department: DepartmentType) {
-        let defaultSkills = DepartmentSkillSet.defaultSkills(for: department)
-        company.settings.departmentSkills.updateSkills(for: department, skills: defaultSkills)
-        saveCompany()
-    }
-
-    /// 부서 스킬로부터 시스템 프롬프트 생성
-    func getSystemPrompt(for department: DepartmentType) -> String {
-        return getDepartmentSkills(for: department).fullPrompt
-    }
-
-    // MARK: - Wiki Operations
-
-    func addWikiDocument(_ document: WikiDocument) {
-        company.wikiDocuments.append(document)
-    }
-
-    func removeWikiDocument(_ documentId: UUID) {
-        company.wikiDocuments.removeAll { $0.id == documentId }
-    }
-
-    func clearAllWikiDocuments() {
-        company.wikiDocuments.removeAll()
-        saveCompany()
-    }
-
-    func updateWikiDocument(_ document: WikiDocument) {
-        if let index = company.wikiDocuments.firstIndex(where: { $0.id == document.id }) {
-            company.wikiDocuments[index] = document
-        }
-    }
-
-    func updateWikiPath(_ path: String) {
-        if company.settings.wikiSettings == nil {
-            company.settings.wikiSettings = WikiSettings()
-        }
-        company.settings.wikiSettings?.wikiPath = path
-    }
-
-    /// 위키 문서를 부서별 documents 폴더에 동기화
-    func syncWikiDocumentsToFiles() {
-        for document in company.wikiDocuments {
-            // 부서 타입 추출 (tags에서)
-            var departmentType: DepartmentType = .general
-            for tag in document.tags {
-                if let deptType = DepartmentType(rawValue: tag) {
-                    departmentType = deptType
-                    break
-                }
-            }
-
-            // 프로젝트명 추출 (tags에서 - 직원명과 부서명이 아닌 태그)
-            let knownTags = Set(DepartmentType.allCases.map { $0.rawValue })
-            let projectName = document.tags.first { tag in
-                !knownTags.contains(tag) && tag != document.createdBy
-            }
-
-            // 저장 경로 결정
-            let documentsPath: String
-            if let projName = projectName {
-                // 프로젝트별 부서 문서 폴더
-                documentsPath = DataPathService.shared.documentsPath(projName, department: departmentType)
-            } else {
-                // 전사 공용 부서 문서 폴더
-                let basePath = DataPathService.shared.basePath
-                documentsPath = "\(basePath)/_shared/\(departmentType.directoryName)/documents"
-                DataPathService.shared.createDirectoryIfNeeded(at: documentsPath)
-            }
-
-            // 파일 저장
-            let filePath = (documentsPath as NSString).appendingPathComponent(document.fileName)
-            try? document.content.write(toFile: filePath, atomically: true, encoding: .utf8)
-        }
-    }
-
-    // MARK: - Onboarding Operations
+    // MARK: - Onboarding Operations (→ EmployeeStore 위임)
 
     func addOnboarding(_ onboarding: EmployeeOnboarding) {
-        company.employeeOnboardings.append(onboarding)
+        employeeStore.addOnboarding(onboarding)
     }
 
     func updateOnboarding(_ onboarding: EmployeeOnboarding) {
-        if let index = company.employeeOnboardings.firstIndex(where: { $0.id == onboarding.id }) {
-            company.employeeOnboardings[index] = onboarding
-        }
+        employeeStore.updateOnboarding(onboarding)
     }
 
     func getOnboarding(for employeeId: UUID) -> EmployeeOnboarding? {
-        company.employeeOnboardings.first { $0.employeeId == employeeId }
+        employeeStore.getOnboarding(for: employeeId)
     }
 
     func completeOnboarding(employeeId: UUID, questions: [OnboardingQuestion]) {
-        if let index = company.employeeOnboardings.firstIndex(where: { $0.employeeId == employeeId }) {
-            company.employeeOnboardings[index].questions = questions
-            company.employeeOnboardings[index].isCompleted = true
-            company.employeeOnboardings[index].completedAt = Date()
-        }
+        employeeStore.completeOnboarding(employeeId: employeeId, questions: questions)
     }
 
-    // MARK: - Project Employee Operations
+    // MARK: - Project Operations (→ ProjectStore 위임)
 
-    /// 프로젝트에 직원 추가
+    func addProject(_ project: Project) {
+        projectStore.addProject(project)
+    }
+
+    func removeProject(_ projectId: UUID) {
+        projectStore.removeProject(projectId)
+    }
+
+    func getProject(byId id: UUID) -> Project? {
+        projectStore.getProject(byId: id)
+    }
+
+    func updateProject(_ project: Project) {
+        projectStore.updateProject(project)
+    }
+
+    // MARK: - Task Operations (→ ProjectStore 위임)
+
+    func addTask(_ task: ProjectTask, toProject projectId: UUID) {
+        projectStore.addTask(task, toProject: projectId)
+    }
+
+    func removeTask(_ taskId: UUID, fromProject projectId: UUID) {
+        projectStore.removeTask(taskId, fromProject: projectId)
+    }
+
+    func updateTask(_ task: ProjectTask, inProject projectId: UUID) {
+        projectStore.updateTask(task, inProject: projectId)
+    }
+
+    func addMessageToTask(message: Message, taskId: UUID, projectId: UUID) {
+        projectStore.addMessageToTask(message: message, taskId: taskId, projectId: projectId)
+    }
+
+    func addOutputToTask(output: TaskOutput, taskId: UUID, projectId: UUID) {
+        projectStore.addOutputToTask(output: output, taskId: taskId, projectId: projectId)
+    }
+
+    func assignTaskToEmployee(taskId: UUID, employeeId: UUID, projectId: UUID) {
+        projectStore.assignTaskToEmployee(taskId: taskId, employeeId: employeeId, projectId: projectId)
+    }
+
+    func startTask(taskId: UUID, projectId: UUID) {
+        projectStore.startTask(taskId: taskId, projectId: projectId)
+    }
+
+    func completeTask(taskId: UUID, projectId: UUID) {
+        projectStore.completeTask(taskId: taskId, projectId: projectId)
+    }
+
+    // MARK: - Workflow Operations (→ ProjectStore 위임)
+
+    func moveTaskToDepartment(taskId: UUID, projectId: UUID, toDepartment: DepartmentType, note: String = "") {
+        projectStore.moveTaskToDepartment(taskId: taskId, projectId: projectId, toDepartment: toDepartment, note: note)
+    }
+
+    func getPendingTasks(for departmentType: DepartmentType) -> [(task: ProjectTask, projectId: UUID)] {
+        projectStore.getPendingTasks(for: departmentType)
+    }
+
+    var departmentsByWorkflowOrder: [Department] {
+        projectStore.departmentsByWorkflowOrder
+    }
+
+    // MARK: - Project Employee Operations (→ ProjectStore 위임)
+
     func addProjectEmployee(_ employee: ProjectEmployee, toProject projectId: UUID, department: DepartmentType) {
-        if let index = company.projects.firstIndex(where: { $0.id == projectId }) {
-            company.projects[index].addEmployee(employee, toDepartment: department)
-            employeeStatuses[employee.id] = employee.status  // 중앙 저장소에 등록
-            saveCompany()
-
-            // 프로젝트 직원 프로필 파일 생성
-            let projectName = company.projects[index].name
-            EmployeeWorkLogService.shared.createProjectEmployeeProfile(employee: employee, projectName: projectName)
-        }
+        projectStore.addProjectEmployee(employee, toProject: projectId, department: department)
     }
 
-    /// 프로젝트에서 직원 제거
     func removeProjectEmployee(_ employeeId: UUID, fromProject projectId: UUID) {
-        if let index = company.projects.firstIndex(where: { $0.id == projectId }) {
-            company.projects[index].removeEmployee(employeeId)
-            saveCompany()
-        }
+        projectStore.removeProjectEmployee(employeeId, fromProject: projectId)
     }
 
-    /// 프로젝트 내 직원 찾기
     func getProjectEmployee(byId employeeId: UUID, inProject projectId: UUID) -> ProjectEmployee? {
-        guard let project = company.projects.first(where: { $0.id == projectId }) else { return nil }
-        return project.getEmployee(byId: employeeId)
+        projectStore.getProjectEmployee(byId: employeeId, inProject: projectId)
     }
 
-    /// 프로젝트 직원 상태 업데이트
     func updateProjectEmployeeStatus(_ employeeId: UUID, inProject projectId: UUID, status: EmployeeStatus) {
-        let previousStatus = employeeStatuses[employeeId]
-
-        // 상태가 변경된 경우에만 처리
-        guard previousStatus != status else { return }
-
-        // 중앙 저장소 업데이트
-        employeeStatuses[employeeId] = status
-
-        // 데이터 모델도 동기화
-        guard let projectIndex = company.projects.firstIndex(where: { $0.id == projectId }) else { return }
-        for deptIndex in company.projects[projectIndex].departments.indices {
-            if let empIndex = company.projects[projectIndex].departments[deptIndex].employees.firstIndex(where: { $0.id == employeeId }) {
-                company.projects[projectIndex].departments[deptIndex].employees[empIndex].status = status
-                break
-            }
-        }
-
-        // company를 다시 할당하여 @Published 트리거 (UI 전체 업데이트)
-        let updatedCompany = company
-        company = updatedCompany
-
-        // 직원 이름 찾기
-        let employeeName = findEmployeeName(byId: employeeId)
-
-        // 토스트 알림
-        let toastType: ToastType = status == .thinking ? .info : (status == .idle ? .success : .info)
-        ToastManager.shared.show(
-            title: "\(employeeName) 상태 변경",
-            message: "\(previousStatus?.rawValue ?? "알 수 없음") → \(status.rawValue)",
-            type: toastType
-        )
-
-        // 시스템 알림 (앱이 백그라운드일 때 유용)
-        ToastManager.shared.sendNotification(
-            title: "\(employeeName) 상태 변경",
-            body: "\(status.rawValue)"
-        )
+        projectStore.updateProjectEmployeeStatus(employeeId, inProject: projectId, status: status)
     }
 
-    /// 프로젝트 직원 대화 기록 업데이트
     func updateProjectEmployeeConversation(projectId: UUID, employeeId: UUID, messages: [Message]) {
-        guard let projectIndex = company.projects.firstIndex(where: { $0.id == projectId }) else { return }
-        for deptIndex in company.projects[projectIndex].departments.indices {
-            if let empIndex = company.projects[projectIndex].departments[deptIndex].employees.firstIndex(where: { $0.id == employeeId }) {
-                company.projects[projectIndex].departments[deptIndex].employees[empIndex].conversationHistory = messages
-                saveCompany()
-                break
-            }
-        }
+        projectStore.updateProjectEmployeeConversation(projectId: projectId, employeeId: employeeId, messages: messages)
     }
 
-    /// 프로젝트 직원 수
     func getProjectEmployeeCount(_ projectId: UUID) -> Int {
-        guard let project = company.projects.first(where: { $0.id == projectId }) else { return 0 }
-        return project.allEmployees.count
+        projectStore.getProjectEmployeeCount(projectId)
     }
 
-    /// 프로젝트 내 작업 중인 직원 수
     func getProjectWorkingEmployeesCount(_ projectId: UUID) -> Int {
-        guard let project = company.projects.first(where: { $0.id == projectId }) else { return 0 }
-        return project.workingEmployees.count
+        projectStore.getProjectWorkingEmployeesCount(projectId)
     }
 
-    // MARK: - Collaboration Records
+    // MARK: - Settings Operations (→ SettingsStore 위임)
 
-    /// 협업 기록 추가
+    func updateSettings(_ settings: CompanySettings) {
+        settingsStore.updateSettings(settings)
+    }
+
+    func addAPIConfiguration(_ config: APIConfiguration) {
+        settingsStore.addAPIConfiguration(config)
+    }
+
+    func removeAPIConfiguration(_ configId: UUID) {
+        settingsStore.removeAPIConfiguration(configId)
+    }
+
+    func updateAPIConfiguration(_ config: APIConfiguration) {
+        settingsStore.updateAPIConfiguration(config)
+    }
+
+    func getAPIConfiguration(for aiType: AIType) -> APIConfiguration? {
+        settingsStore.getAPIConfiguration(for: aiType)
+    }
+
+    // MARK: - Department Skills Operations (→ SettingsStore 위임)
+
+    func getDepartmentSkills(for department: DepartmentType) -> DepartmentSkillSet {
+        settingsStore.getDepartmentSkills(for: department)
+    }
+
+    func updateDepartmentSkills(for department: DepartmentType, skills: DepartmentSkillSet) {
+        settingsStore.updateDepartmentSkills(for: department, skills: skills)
+    }
+
+    func resetDepartmentSkills(for department: DepartmentType) {
+        settingsStore.resetDepartmentSkills(for: department)
+    }
+
+    func getSystemPrompt(for department: DepartmentType) -> String {
+        settingsStore.getSystemPrompt(for: department)
+    }
+
+    // MARK: - Wiki Operations (→ WikiStore 위임)
+
+    func addWikiDocument(_ document: WikiDocument) {
+        wikiStore.addWikiDocument(document)
+    }
+
+    func removeWikiDocument(_ documentId: UUID) {
+        wikiStore.removeWikiDocument(documentId)
+    }
+
+    func clearAllWikiDocuments() {
+        wikiStore.clearAllWikiDocuments()
+    }
+
+    func updateWikiDocument(_ document: WikiDocument) {
+        wikiStore.updateWikiDocument(document)
+    }
+
+    func updateWikiPath(_ path: String) {
+        wikiStore.updateWikiPath(path)
+    }
+
+    func syncWikiDocumentsToFiles() {
+        wikiStore.syncWikiDocumentsToFiles()
+    }
+
+    // MARK: - Collaboration Records (→ CollaborationStore 위임)
+
     func addCollaborationRecord(_ record: CollaborationRecord) {
-        company.collaborationRecords.append(record)
-        saveCompany()
+        collaborationStore.addCollaborationRecord(record)
     }
 
-    /// 협업 기록 조회 (최신순)
     var collaborationRecords: [CollaborationRecord] {
-        company.collaborationRecords.sorted { $0.timestamp > $1.timestamp }
+        collaborationStore.collaborationRecords
     }
 
-    /// 특정 부서의 협업 기록
     func getCollaborationRecords(forDepartment department: String) -> [CollaborationRecord] {
-        collaborationRecords.filter {
-            $0.requesterDepartment == department || $0.responderDepartment == department
-        }
+        collaborationStore.getCollaborationRecords(forDepartment: department)
     }
 
-    /// 특정 프로젝트의 협업 기록
     func getCollaborationRecords(forProject projectId: UUID) -> [CollaborationRecord] {
-        collaborationRecords.filter { $0.projectId == projectId }
+        collaborationStore.getCollaborationRecords(forProject: projectId)
     }
 
-    /// 협업 기록 삭제
     func removeCollaborationRecord(_ recordId: UUID) {
-        company.collaborationRecords.removeAll { $0.id == recordId }
-        saveCompany()
+        collaborationStore.removeCollaborationRecord(recordId)
     }
 
-    /// 모든 협업 기록 삭제
     func clearAllCollaborationRecords() {
-        company.collaborationRecords.removeAll()
-        saveCompany()
+        collaborationStore.clearAllCollaborationRecords()
     }
 
-    // MARK: - Employee Thinking
+    // MARK: - Employee Thinking (→ CommunityStore 위임)
 
-    /// 새 사고 과정 시작
     func startThinking(employeeId: UUID, employeeName: String, departmentType: DepartmentType, topic: String) -> EmployeeThinking {
-        let thinking = EmployeeThinking(
-            employeeId: employeeId,
-            employeeName: employeeName,
-            departmentType: departmentType,
-            topic: topic,
-            topicCreatedAt: Date(),
-            reasoning: ThinkingReasoning()
-        )
-        company.employeeThinkings.append(thinking)
-        saveCompany()
-        return thinking
+        communityStore.startThinking(employeeId: employeeId, employeeName: employeeName, departmentType: departmentType, topic: topic)
     }
 
-    /// 사고 과정에 정보 추가
     func addThinkingInput(thinkingId: UUID, content: String, source: String) {
-        guard let index = company.employeeThinkings.firstIndex(where: { $0.id == thinkingId }) else { return }
-        let input = ThinkingInput(content: content, source: source)
-        company.employeeThinkings[index].inputs.append(input)
-        saveCompany()
+        communityStore.addThinkingInput(thinkingId: thinkingId, content: content, source: source)
     }
 
-    /// 사고 과정 갱신
     func updateThinkingReasoning(thinkingId: UUID, reasoning: ThinkingReasoning) {
-        guard let index = company.employeeThinkings.firstIndex(where: { $0.id == thinkingId }) else { return }
-        company.employeeThinkings[index].reasoning = reasoning
-        company.employeeThinkings[index].reasoning.lastUpdated = Date()
-        saveCompany()
+        communityStore.updateThinkingReasoning(thinkingId: thinkingId, reasoning: reasoning)
     }
 
-    /// 결론 설정
     func setThinkingConclusion(thinkingId: UUID, conclusion: ThinkingConclusion) {
-        guard let index = company.employeeThinkings.firstIndex(where: { $0.id == thinkingId }) else { return }
-        company.employeeThinkings[index].conclusion = conclusion
-        company.employeeThinkings[index].status = .concluded
-        saveCompany()
+        communityStore.setThinkingConclusion(thinkingId: thinkingId, conclusion: conclusion)
     }
 
-    /// 직원의 활성 사고 과정 조회
     func getActiveThinking(employeeId: UUID) -> EmployeeThinking? {
-        company.employeeThinkings.first {
-            $0.employeeId == employeeId && $0.status == .thinking
-        }
+        communityStore.getActiveThinking(employeeId: employeeId)
     }
 
-    /// 모든 사고 과정 조회
     var employeeThinkings: [EmployeeThinking] {
-        company.employeeThinkings.sorted { $0.topicCreatedAt > $1.topicCreatedAt }
+        communityStore.employeeThinkings
     }
 
-    // MARK: - Community Posts
+    // MARK: - Community Posts (→ CommunityStore 위임)
 
-    /// 게시글 작성
     func addCommunityPost(_ post: CommunityPost) {
-        company.communityPosts.append(post)
-
-        // 연결된 사고 과정이 있으면 상태 업데이트
-        if let thinkingId = post.thinkingId,
-           let index = company.employeeThinkings.firstIndex(where: { $0.id == thinkingId }) {
-            company.employeeThinkings[index].status = .posted
-        }
-
-        saveCompany()
+        communityStore.addCommunityPost(post)
     }
 
-    /// 사고 과정에서 게시글 생성
     func createPostFromThinking(_ thinking: EmployeeThinking) -> CommunityPost? {
-        guard let conclusion = thinking.conclusion else { return nil }
-
-        var post = CommunityPost(
-            employeeId: thinking.employeeId,
-            employeeName: thinking.employeeName,
-            departmentType: thinking.departmentType,
-            thinkingId: thinking.id,
-            title: thinking.topic,
-            content: """
-            ## 결론
-
-            \(conclusion.summary)
-
-            ## 근거
-
-            \(conclusion.reasoning)
-
-            ## 실행 계획
-
-            \(conclusion.actionPlan.map { "- \($0)" }.joined(separator: "\n"))
-
-            ## 리스크
-
-            \(conclusion.risks.map { "- \($0)" }.joined(separator: "\n"))
-            """,
-            summary: conclusion.summary,
-            tags: [thinking.departmentType.rawValue]
-        )
-
-        post.source = .thinking  // 사고 과정 출처 표시
-
-        addCommunityPost(post)
-        return post
+        communityStore.createPostFromThinking(thinking)
     }
 
-    /// 게시글 조회 (최신순)
     var communityPosts: [CommunityPost] {
-        company.communityPosts.sorted { $0.createdAt > $1.createdAt }
+        communityStore.communityPosts
     }
 
-    /// 특정 직원의 게시글
     func getCommunityPosts(employeeId: UUID) -> [CommunityPost] {
-        communityPosts.filter { $0.employeeId == employeeId }
+        communityStore.getCommunityPosts(employeeId: employeeId)
     }
 
-    /// 좋아요 추가
     func likeCommunityPost(_ postId: UUID) {
-        guard let index = company.communityPosts.firstIndex(where: { $0.id == postId }) else { return }
-        company.communityPosts[index].likes += 1
-        saveCompany()
+        communityStore.likeCommunityPost(postId)
     }
 
-    /// 댓글 추가
     func addCommentToPost(_ postId: UUID, comment: PostComment) {
-        guard let index = company.communityPosts.firstIndex(where: { $0.id == postId }) else { return }
-        company.communityPosts[index].comments.append(comment)
-        saveCompany()
+        communityStore.addCommentToPost(postId, comment: comment)
     }
 
-    /// 게시글 삭제
     func removeCommunityPost(_ postId: UUID) {
-        company.communityPosts.removeAll { $0.id == postId }
-        saveCompany()
+        communityStore.removeCommunityPost(postId)
     }
 
-    // MARK: - Statistics
+    // MARK: - Permission Requests (→ PermissionStore 위임)
+
+    func addPermissionRequest(_ request: PermissionRequest) {
+        permissionStore.addPermissionRequest(request)
+    }
+
+    func approvePermissionRequest(_ requestId: UUID, reason: String? = nil) {
+        permissionStore.approvePermissionRequest(requestId, reason: reason)
+    }
+
+    func denyPermissionRequest(_ requestId: UUID, reason: String? = nil) {
+        permissionStore.denyPermissionRequest(requestId, reason: reason)
+    }
+
+    var pendingPermissionRequests: [PermissionRequest] {
+        permissionStore.pendingPermissionRequests
+    }
+
+    func getPermissionRequests(employeeId: UUID) -> [PermissionRequest] {
+        permissionStore.getPermissionRequests(employeeId: employeeId)
+    }
+
+    func removePermissionRequest(_ requestId: UUID) {
+        permissionStore.removePermissionRequest(requestId)
+    }
+
+    // MARK: - Auto Approval Rules (→ PermissionStore 위임)
+
+    func addAutoApprovalRule(_ rule: AutoApprovalRule) {
+        permissionStore.addAutoApprovalRule(rule)
+    }
+
+    func updateAutoApprovalRule(_ ruleId: UUID, update: (inout AutoApprovalRule) -> Void) {
+        permissionStore.updateAutoApprovalRule(ruleId, update: update)
+    }
+
+    func removeAutoApprovalRule(_ ruleId: UUID) {
+        permissionStore.removeAutoApprovalRule(ruleId)
+    }
+
+    var autoApprovalRules: [AutoApprovalRule] {
+        permissionStore.autoApprovalRules
+    }
+
+    // MARK: - Statistics (CompanyStore 직접 관리)
 
     var totalEmployees: Int {
         company.allEmployees.count
     }
-    
+
     var workingEmployeesCount: Int {
         company.workingEmployees.count
     }
-    
+
     var totalProjects: Int {
         company.projects.count
     }
-    
+
     var activeProjects: Int {
         company.projects.filter { $0.status == .inProgress }.count
     }
-    
+
     var completedTasks: Int {
         company.projects.flatMap { $0.tasks }.filter { $0.status == .done }.count
     }
-    
+
     var pendingTasks: Int {
         company.projects.flatMap { $0.tasks }.filter { $0.status == .todo }.count
-    }
-
-    // MARK: - Permission Requests
-
-    /// 권한 요청 추가 (자동 승인 규칙 확인)
-    func addPermissionRequest(_ request: PermissionRequest) {
-        print("🏪 [CompanyStore] 권한 요청 추가 시작")
-        print("   - 요청 ID: \(request.id)")
-        print("   - 제목: \(request.title)")
-        print("   - 직원: \(request.employeeName)")
-
-        var modifiedRequest = request
-
-        // 자동 승인 규칙 확인
-        if let matchingRule = company.autoApprovalRules.first(where: { $0.matches(request) }) {
-            print("⚡️ [CompanyStore] 자동 승인 규칙 매칭: \(matchingRule.name)")
-            modifiedRequest.status = .approved
-            modifiedRequest.autoApproved = true
-            modifiedRequest.reason = "자동 승인: \(matchingRule.name)"
-            modifiedRequest.respondedAt = Date()
-        } else {
-            print("⏳ [CompanyStore] 자동 승인 규칙 없음 - Pending 상태로 추가")
-        }
-
-        company.permissionRequests.append(modifiedRequest)
-        print("✅ [CompanyStore] 권한 요청 추가 완료 - 총 \(company.permissionRequests.count)개")
-        print("📊 [CompanyStore] Pending: \(company.permissionRequests.filter { $0.status == .pending }.count)개")
-
-        saveCompany()
-
-        // UI 업데이트 강제
-        objectWillChange.send()
-    }
-
-    /// 권한 요청 승인
-    func approvePermissionRequest(_ requestId: UUID, reason: String? = nil) {
-        guard let index = company.permissionRequests.firstIndex(where: { $0.id == requestId }) else { return }
-        company.permissionRequests[index].status = .approved
-        company.permissionRequests[index].respondedAt = Date()
-        company.permissionRequests[index].reason = reason
-        saveCompany()
-
-        // 토스트 알림
-        let request = company.permissionRequests[index]
-        ToastManager.shared.show(
-            title: "권한 승인",
-            message: "\(request.employeeName)의 '\(request.title)' 요청을 승인했습니다",
-            type: .success
-        )
-    }
-
-    /// 권한 요청 거부
-    func denyPermissionRequest(_ requestId: UUID, reason: String? = nil) {
-        guard let index = company.permissionRequests.firstIndex(where: { $0.id == requestId }) else { return }
-        company.permissionRequests[index].status = .denied
-        company.permissionRequests[index].respondedAt = Date()
-        company.permissionRequests[index].reason = reason
-        saveCompany()
-
-        // 토스트 알림
-        let request = company.permissionRequests[index]
-        ToastManager.shared.show(
-            title: "권한 거부",
-            message: "\(request.employeeName)의 '\(request.title)' 요청을 거부했습니다",
-            type: .error
-        )
-    }
-
-    /// 대기 중인 권한 요청 조회
-    var pendingPermissionRequests: [PermissionRequest] {
-        company.permissionRequests.filter { $0.status == .pending }
-    }
-
-    /// 특정 직원의 권한 요청 조회
-    func getPermissionRequests(employeeId: UUID) -> [PermissionRequest] {
-        company.permissionRequests.filter { $0.employeeId == employeeId }
-    }
-
-    /// 권한 요청 삭제
-    func removePermissionRequest(_ requestId: UUID) {
-        company.permissionRequests.removeAll { $0.id == requestId }
-        saveCompany()
-    }
-
-    // MARK: - Auto Approval Rules
-
-    /// 자동 승인 규칙 추가
-    func addAutoApprovalRule(_ rule: AutoApprovalRule) {
-        company.autoApprovalRules.append(rule)
-        saveCompany()
-    }
-
-    /// 자동 승인 규칙 업데이트
-    func updateAutoApprovalRule(_ ruleId: UUID, update: (inout AutoApprovalRule) -> Void) {
-        guard let index = company.autoApprovalRules.firstIndex(where: { $0.id == ruleId }) else { return }
-        update(&company.autoApprovalRules[index])
-        saveCompany()
-    }
-
-    /// 자동 승인 규칙 삭제
-    func removeAutoApprovalRule(_ ruleId: UUID) {
-        company.autoApprovalRules.removeAll { $0.id == ruleId }
-        saveCompany()
-    }
-
-    /// 모든 자동 승인 규칙
-    var autoApprovalRules: [AutoApprovalRule] {
-        company.autoApprovalRules
     }
 }

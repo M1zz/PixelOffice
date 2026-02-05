@@ -25,7 +25,7 @@ actor ClaudeService {
         configuration: APIConfiguration,
         systemPrompt: String? = nil,
         isGreeting: Bool = false
-    ) async throws -> String {
+    ) async throws -> (response: String, inputTokens: Int, outputTokens: Int) {
         // Initialize session if needed
         if sessions[employeeId] == nil {
             sessions[employeeId] = []
@@ -45,29 +45,29 @@ actor ClaudeService {
         }
 
         // Build request based on AI type
-        let response: String
+        let result: (response: String, inputTokens: Int, outputTokens: Int)
 
         switch configuration.type {
         case .claude:
-            response = try await sendClaudeRequest(
+            result = try await sendClaudeRequest(
                 messages: messagesForRequest,
                 configuration: configuration,
                 systemPrompt: systemPrompt
             )
         case .gpt:
-            response = try await sendOpenAIRequest(
+            result = try await sendOpenAIRequest(
                 messages: messagesForRequest,
                 configuration: configuration,
                 systemPrompt: systemPrompt
             )
         case .gemini:
-            response = try await sendGeminiRequest(
+            result = try await sendGeminiRequest(
                 messages: messagesForRequest,
                 configuration: configuration,
                 systemPrompt: systemPrompt
             )
         case .local:
-            response = try await sendLocalRequest(
+            result = try await sendLocalRequest(
                 messages: messagesForRequest,
                 configuration: configuration,
                 systemPrompt: systemPrompt
@@ -75,10 +75,10 @@ actor ClaudeService {
         }
 
         // Add assistant response to history (인사말도 응답은 저장)
-        let assistantMessage = Message.assistantMessage(response)
+        let assistantMessage = Message.assistantMessage(result.response)
         sessions[employeeId]?.append(assistantMessage)
 
-        return response
+        return result
     }
     
     // MARK: - Claude API
@@ -87,7 +87,7 @@ actor ClaudeService {
         messages: [Message],
         configuration: APIConfiguration,
         systemPrompt: String?
-    ) async throws -> String {
+    ) async throws -> (response: String, inputTokens: Int, outputTokens: Int) {
         let url = URL(string: "\(configuration.effectiveBaseURL)/messages")!
 
         var request = URLRequest(url: url)
@@ -140,6 +140,14 @@ actor ClaudeService {
             throw APIError.parsingError
         }
 
+        // 토큰 사용량 추출
+        var inputTokens = 0
+        var outputTokens = 0
+        if let usage = json["usage"] as? [String: Any] {
+            inputTokens = usage["input_tokens"] as? Int ?? 0
+            outputTokens = usage["output_tokens"] as? Int ?? 0
+        }
+
         // 응답에서 텍스트 추출 (웹 검색 결과 포함 가능)
         var resultText = ""
         for block in content {
@@ -157,7 +165,7 @@ actor ClaudeService {
             throw APIError.parsingError
         }
 
-        return resultText
+        return (resultText, inputTokens, outputTokens)
     }
     
     // MARK: - OpenAI API
@@ -166,7 +174,7 @@ actor ClaudeService {
         messages: [Message],
         configuration: APIConfiguration,
         systemPrompt: String?
-    ) async throws -> String {
+    ) async throws -> (response: String, inputTokens: Int, outputTokens: Int) {
         let url = URL(string: "\(configuration.effectiveBaseURL)/chat/completions")!
         
         var request = URLRequest(url: url)
@@ -214,8 +222,16 @@ actor ClaudeService {
               let content = message["content"] as? String else {
             throw APIError.parsingError
         }
-        
-        return content
+
+        // OpenAI API는 토큰 사용량 정보 제공 (있으면 추출)
+        var inputTokens = 0
+        var outputTokens = 0
+        if let usage = json["usage"] as? [String: Any] {
+            inputTokens = usage["prompt_tokens"] as? Int ?? 0
+            outputTokens = usage["completion_tokens"] as? Int ?? 0
+        }
+
+        return (content, inputTokens, outputTokens)
     }
     
     // MARK: - Gemini API
@@ -224,7 +240,7 @@ actor ClaudeService {
         messages: [Message],
         configuration: APIConfiguration,
         systemPrompt: String?
-    ) async throws -> String {
+    ) async throws -> (response: String, inputTokens: Int, outputTokens: Int) {
         let url = URL(string: "\(configuration.effectiveBaseURL)/models/\(configuration.model):generateContent?key=\(configuration.apiKey)")!
         
         var request = URLRequest(url: url)
@@ -282,8 +298,16 @@ actor ClaudeService {
               let text = firstPart["text"] as? String else {
             throw APIError.parsingError
         }
-        
-        return text
+
+        // Gemini API는 토큰 사용량 정보 제공 (있으면 추출)
+        var inputTokens = 0
+        var outputTokens = 0
+        if let usageMetadata = json["usageMetadata"] as? [String: Any] {
+            inputTokens = usageMetadata["promptTokenCount"] as? Int ?? 0
+            outputTokens = usageMetadata["candidatesTokenCount"] as? Int ?? 0
+        }
+
+        return (text, inputTokens, outputTokens)
     }
     
     // MARK: - Local LLM (Ollama)
@@ -292,7 +316,7 @@ actor ClaudeService {
         messages: [Message],
         configuration: APIConfiguration,
         systemPrompt: String?
-    ) async throws -> String {
+    ) async throws -> (response: String, inputTokens: Int, outputTokens: Int) {
         let url = URL(string: "\(configuration.effectiveBaseURL)/chat")!
         
         var request = URLRequest(url: url)
@@ -336,8 +360,9 @@ actor ClaudeService {
               let content = message["content"] as? String else {
             throw APIError.parsingError
         }
-        
-        return content
+
+        // Ollama는 토큰 사용량 정보를 제공하지 않음
+        return (content, 0, 0)
     }
 }
 

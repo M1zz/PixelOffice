@@ -570,6 +570,52 @@ struct EmployeeStatistics: Codable, Hashable {
             .reduce(0) { $0 + $1.tokens }
     }
 
+    /// 대화당 평균 토큰 사용량
+    var tokensPerConversation: Double {
+        guard conversationCount > 0 else { return 0 }
+        return Double(totalTokensUsed) / Double(conversationCount)
+    }
+
+    /// 최근 1시간 토큰 소진 속도 (토큰/분)
+    var tokensPerMinute: Double {
+        let oneHourAgo = Date().addingTimeInterval(-3600)
+        let recentRecords = tokenUsageHistory.filter { $0.timestamp > oneHourAgo }
+
+        guard !recentRecords.isEmpty else { return 0 }
+
+        let totalRecentTokens = recentRecords.reduce(0) { $0 + $1.tokens }
+        let oldestTimestamp = recentRecords.map { $0.timestamp }.min() ?? Date()
+        let minutesElapsed = Date().timeIntervalSince(oldestTimestamp) / 60
+
+        guard minutesElapsed > 0 else { return 0 }
+        return Double(totalRecentTokens) / minutesElapsed
+    }
+
+    /// 포맷된 토큰 통계 문자열
+    var formattedTokenStats: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 1
+
+        let totalFormatted = formatter.string(from: NSNumber(value: totalTokensUsed)) ?? "0"
+        let inputFormatted = formatter.string(from: NSNumber(value: inputTokens)) ?? "0"
+        let outputFormatted = formatter.string(from: NSNumber(value: outputTokens)) ?? "0"
+        let perConvFormatted = formatter.string(from: NSNumber(value: tokensPerConversation)) ?? "0"
+        let perHourFormatted = formatter.string(from: NSNumber(value: tokensPerHour)) ?? "0"
+        let perMinuteFormatted = formatter.string(from: NSNumber(value: tokensPerMinute)) ?? "0"
+        let last24HFormatted = formatter.string(from: NSNumber(value: tokensLast24Hours)) ?? "0"
+
+        return """
+        📊 토큰 사용 통계:
+        - 총 토큰: \(totalFormatted) (입력: \(inputFormatted), 출력: \(outputFormatted))
+        - 대화 수: \(conversationCount)회
+        - 대화당 평균: \(perConvFormatted) 토큰
+        - 시간당 소진: \(perHourFormatted) 토큰/시간
+        - 분당 소진: \(perMinuteFormatted) 토큰/분 (최근 1시간)
+        - 최근 24시간: \(last24HFormatted) 토큰
+        """
+    }
+
     /// 토큰 사용량 기록 추가
     mutating func addTokenUsage(input: Int, output: Int) {
         let total = input + output
