@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// 직원의 사고 과정을 추적하는 모델
 struct EmployeeThinking: Codable, Identifiable {
@@ -90,6 +91,10 @@ struct CommunityPost: Codable, Identifiable {
     var summary: String
     var tags: [String] = []
 
+    var source: PostSource = .manual  // 게시글 출처
+    var secondaryEmployeeId: UUID?    // 자율 소통 시 두 번째 직원
+    var secondaryEmployeeName: String?  // 두 번째 직원 이름
+
     var likes: Int = 0
     var comments: [PostComment] = []
 
@@ -100,6 +105,29 @@ struct CommunityPost: Codable, Identifiable {
         let formatter = RelativeDateTimeFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
         return formatter.localizedString(for: createdAt, relativeTo: Date())
+    }
+}
+
+/// 게시글 출처
+enum PostSource: String, Codable {
+    case manual = "수동"          // 사용자가 직접 생성
+    case thinking = "사고과정"     // 사고 과정에서 생성
+    case autonomous = "자율소통"   // 직원 간 자율 소통
+
+    var icon: String {
+        switch self {
+        case .manual: return "person.fill"
+        case .thinking: return "brain"
+        case .autonomous: return "person.2.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .manual: return .blue
+        case .thinking: return .purple
+        case .autonomous: return .orange
+        }
     }
 }
 

@@ -145,9 +145,29 @@ class CompanyStore: ObservableObject {
     // MARK: - Employee Operations
     
     func addEmployee(_ employee: Employee, toDepartment departmentId: UUID) {
+        // 🐛 디버그: CompanyStore에 추가되는 직원 외모 확인
+        print("💾 [CompanyStore] 저장 전 직원 \(employee.name)의 외모:")
+        print("   피부색: \(employee.characterAppearance.skinTone)")
+        print("   헤어스타일: \(employee.characterAppearance.hairStyle)")
+        print("   헤어색: \(employee.characterAppearance.hairColor)")
+        print("   셔츠색: \(employee.characterAppearance.shirtColor)")
+        print("   악세서리: \(employee.characterAppearance.accessory)")
+        print("   표정: \(employee.characterAppearance.expression)")
+
         company.addEmployee(employee, toDepartment: departmentId)
         employeeStatuses[employee.id] = employee.status  // 중앙 저장소에 등록
         saveCompany()  // 즉시 저장
+
+        // 🐛 디버그: 저장 후 확인
+        if let savedEmployee = findEmployee(byId: employee.id) {
+            print("✅ [CompanyStore] 저장 후 직원 \(savedEmployee.name)의 외모:")
+            print("   피부색: \(savedEmployee.characterAppearance.skinTone)")
+            print("   헤어스타일: \(savedEmployee.characterAppearance.hairStyle)")
+            print("   헤어색: \(savedEmployee.characterAppearance.hairColor)")
+            print("   셔츠색: \(savedEmployee.characterAppearance.shirtColor)")
+            print("   악세서리: \(savedEmployee.characterAppearance.accessory)")
+            print("   표정: \(savedEmployee.characterAppearance.expression)")
+        }
 
         // 직원 프로필 파일 생성
         if let dept = getDepartment(byId: departmentId) {
@@ -220,6 +240,37 @@ class CompanyStore: ObservableObject {
             }
         }
         return "직원"
+    }
+
+    /// 직원 토큰 사용량 업데이트
+    func updateEmployeeTokenUsage(_ employeeId: UUID, inputTokens: Int, outputTokens: Int) {
+        // 일반 직원에서 찾기
+        for deptIndex in company.departments.indices {
+            if let empIndex = company.departments[deptIndex].employees.firstIndex(where: { $0.id == employeeId }) {
+                company.departments[deptIndex].employees[empIndex].statistics.addTokenUsage(input: inputTokens, output: outputTokens)
+                company.departments[deptIndex].employees[empIndex].statistics.conversationCount += 1
+                company.departments[deptIndex].employees[empIndex].statistics.lastActiveDate = Date()
+
+                // UI 업데이트 트리거
+                objectWillChange.send()
+                return
+            }
+        }
+
+        // 프로젝트 직원에서 찾기
+        for projectIndex in company.projects.indices {
+            for deptIndex in company.projects[projectIndex].departments.indices {
+                if let empIndex = company.projects[projectIndex].departments[deptIndex].employees.firstIndex(where: { $0.id == employeeId }) {
+                    company.projects[projectIndex].departments[deptIndex].employees[empIndex].statistics.addTokenUsage(input: inputTokens, output: outputTokens)
+                    company.projects[projectIndex].departments[deptIndex].employees[empIndex].statistics.conversationCount += 1
+                    company.projects[projectIndex].departments[deptIndex].employees[empIndex].statistics.lastActiveDate = Date()
+
+                    // UI 업데이트 트리거
+                    objectWillChange.send()
+                    return
+                }
+            }
+        }
     }
     
     func getEmployee(byId id: UUID) -> Employee? {
@@ -710,7 +761,7 @@ class CompanyStore: ObservableObject {
     func createPostFromThinking(_ thinking: EmployeeThinking) -> CommunityPost? {
         guard let conclusion = thinking.conclusion else { return nil }
 
-        let post = CommunityPost(
+        var post = CommunityPost(
             employeeId: thinking.employeeId,
             employeeName: thinking.employeeName,
             departmentType: thinking.departmentType,
@@ -736,6 +787,8 @@ class CompanyStore: ObservableObject {
             summary: conclusion.summary,
             tags: [thinking.departmentType.rawValue]
         )
+
+        post.source = .thinking  // 사고 과정 출처 표시
 
         addCommunityPost(post)
         return post
@@ -795,5 +848,113 @@ class CompanyStore: ObservableObject {
     
     var pendingTasks: Int {
         company.projects.flatMap { $0.tasks }.filter { $0.status == .todo }.count
+    }
+
+    // MARK: - Permission Requests
+
+    /// 권한 요청 추가 (자동 승인 규칙 확인)
+    func addPermissionRequest(_ request: PermissionRequest) {
+        print("🏪 [CompanyStore] 권한 요청 추가 시작")
+        print("   - 요청 ID: \(request.id)")
+        print("   - 제목: \(request.title)")
+        print("   - 직원: \(request.employeeName)")
+
+        var modifiedRequest = request
+
+        // 자동 승인 규칙 확인
+        if let matchingRule = company.autoApprovalRules.first(where: { $0.matches(request) }) {
+            print("⚡️ [CompanyStore] 자동 승인 규칙 매칭: \(matchingRule.name)")
+            modifiedRequest.status = .approved
+            modifiedRequest.autoApproved = true
+            modifiedRequest.reason = "자동 승인: \(matchingRule.name)"
+            modifiedRequest.respondedAt = Date()
+        } else {
+            print("⏳ [CompanyStore] 자동 승인 규칙 없음 - Pending 상태로 추가")
+        }
+
+        company.permissionRequests.append(modifiedRequest)
+        print("✅ [CompanyStore] 권한 요청 추가 완료 - 총 \(company.permissionRequests.count)개")
+        print("📊 [CompanyStore] Pending: \(company.permissionRequests.filter { $0.status == .pending }.count)개")
+
+        saveCompany()
+
+        // UI 업데이트 강제
+        objectWillChange.send()
+    }
+
+    /// 권한 요청 승인
+    func approvePermissionRequest(_ requestId: UUID, reason: String? = nil) {
+        guard let index = company.permissionRequests.firstIndex(where: { $0.id == requestId }) else { return }
+        company.permissionRequests[index].status = .approved
+        company.permissionRequests[index].respondedAt = Date()
+        company.permissionRequests[index].reason = reason
+        saveCompany()
+
+        // 토스트 알림
+        let request = company.permissionRequests[index]
+        ToastManager.shared.show(
+            title: "권한 승인",
+            message: "\(request.employeeName)의 '\(request.title)' 요청을 승인했습니다",
+            type: .success
+        )
+    }
+
+    /// 권한 요청 거부
+    func denyPermissionRequest(_ requestId: UUID, reason: String? = nil) {
+        guard let index = company.permissionRequests.firstIndex(where: { $0.id == requestId }) else { return }
+        company.permissionRequests[index].status = .denied
+        company.permissionRequests[index].respondedAt = Date()
+        company.permissionRequests[index].reason = reason
+        saveCompany()
+
+        // 토스트 알림
+        let request = company.permissionRequests[index]
+        ToastManager.shared.show(
+            title: "권한 거부",
+            message: "\(request.employeeName)의 '\(request.title)' 요청을 거부했습니다",
+            type: .error
+        )
+    }
+
+    /// 대기 중인 권한 요청 조회
+    var pendingPermissionRequests: [PermissionRequest] {
+        company.permissionRequests.filter { $0.status == .pending }
+    }
+
+    /// 특정 직원의 권한 요청 조회
+    func getPermissionRequests(employeeId: UUID) -> [PermissionRequest] {
+        company.permissionRequests.filter { $0.employeeId == employeeId }
+    }
+
+    /// 권한 요청 삭제
+    func removePermissionRequest(_ requestId: UUID) {
+        company.permissionRequests.removeAll { $0.id == requestId }
+        saveCompany()
+    }
+
+    // MARK: - Auto Approval Rules
+
+    /// 자동 승인 규칙 추가
+    func addAutoApprovalRule(_ rule: AutoApprovalRule) {
+        company.autoApprovalRules.append(rule)
+        saveCompany()
+    }
+
+    /// 자동 승인 규칙 업데이트
+    func updateAutoApprovalRule(_ ruleId: UUID, update: (inout AutoApprovalRule) -> Void) {
+        guard let index = company.autoApprovalRules.firstIndex(where: { $0.id == ruleId }) else { return }
+        update(&company.autoApprovalRules[index])
+        saveCompany()
+    }
+
+    /// 자동 승인 규칙 삭제
+    func removeAutoApprovalRule(_ ruleId: UUID) {
+        company.autoApprovalRules.removeAll { $0.id == ruleId }
+        saveCompany()
+    }
+
+    /// 모든 자동 승인 규칙
+    var autoApprovalRules: [AutoApprovalRule] {
+        company.autoApprovalRules
     }
 }

@@ -27,19 +27,26 @@ struct SettingsView: View {
                 }
                 .tag(2)
 
+            // Autonomous Communication
+            AutonomousCommunicationSettingsView()
+                .tabItem {
+                    Label("자율 소통", systemImage: "person.2.fill")
+                }
+                .tag(3)
+
             // Data Management
             DataManagementView()
                 .tabItem {
                     Label("데이터 관리", systemImage: "externaldrive.fill")
                 }
-                .tag(3)
+                .tag(4)
 
             // About
             AboutView()
                 .tabItem {
                     Label("정보", systemImage: "info.circle.fill")
                 }
-                .tag(4)
+                .tag(5)
         }
         .frame(minWidth: 600, minHeight: 400)
         .padding()
@@ -543,23 +550,158 @@ struct DataManagementView: View {
     }
 }
 
+struct AutonomousCommunicationSettingsView: View {
+    @ObservedObject private var autonomousService = AutonomousCommunicationService.shared
+    @State private var selectedInterval: TimeInterval = 3600  // 1시간
+
+    let intervalOptions: [(String, TimeInterval)] = [
+        ("30분", 1800),
+        ("1시간", 3600),
+        ("2시간", 7200),
+        ("4시간", 14400),
+        ("12시간", 43200),
+        ("24시간", 86400)
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Header
+            VStack(alignment: .leading, spacing: 8) {
+                Text("자율 소통 설정")
+                    .font(.title2.bold())
+                Text("직원들이 랜덤하게 소통하고 인사이트를 생성합니다")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
+
+            Form {
+                Section("기본 설정") {
+                    Toggle("자율 소통 활성화", isOn: $autonomousService.isEnabled)
+                        .onChange(of: autonomousService.isEnabled) { _, enabled in
+                            if enabled {
+                                autonomousService.startCommunicationTimer()
+                            } else {
+                                autonomousService.stopCommunicationTimer()
+                            }
+                        }
+
+                    if autonomousService.isEnabled {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("소통 주기")
+                                .font(.headline)
+
+                            Picker("", selection: $selectedInterval) {
+                                ForEach(intervalOptions, id: \.1) { option in
+                                    Text(option.0).tag(option.1)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .onChange(of: selectedInterval) { _, newValue in
+                                autonomousService.updateInterval(newValue)
+                            }
+
+                            Text("선택한 주기마다 두 명의 직원이 랜덤으로 만나 대화합니다")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Section("수동 실행") {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("지금 바로 소통 시작")
+                                .font(.headline)
+                            Text("타이머와 무관하게 즉시 한 번 실행합니다")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Button {
+                            autonomousService.triggerRandomCommunication()
+                        } label: {
+                            Label("소통 시작", systemImage: "play.fill")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+
+                Section("안내") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        InfoRow(
+                            icon: "person.2.fill",
+                            title: "자율 소통이란?",
+                            description: "직원들이 자동으로 서로 만나 업무에 대해 이야기하고 유용한 인사이트를 도출합니다."
+                        )
+
+                        InfoRow(
+                            icon: "lightbulb.fill",
+                            title: "어디서 볼 수 있나요?",
+                            description: "생성된 인사이트는 커뮤니티 탭에 '자율소통' 태그와 함께 게시됩니다."
+                        )
+
+                        InfoRow(
+                            icon: "clock.fill",
+                            title: "언제 실행되나요?",
+                            description: "설정한 주기마다 자동으로 실행되며, 수동으로도 언제든 실행할 수 있습니다."
+                        )
+                    }
+                }
+            }
+            .formStyle(.grouped)
+        }
+        .padding()
+        .onAppear {
+            selectedInterval = autonomousService.communicationInterval
+        }
+    }
+}
+
+struct InfoRow: View {
+    let icon: String
+    let title: String
+    let description: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(.orange)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.callout.weight(.medium))
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
 struct AboutView: View {
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "building.2.fill")
                 .font(.system(size: 60))
                 .foregroundStyle(Color.accentColor)
-            
+
             Text("Pixel Office")
                 .font(.largeTitle.bold())
-            
+
             Text("버전 1.0.0")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            
+
             Divider()
                 .frame(width: 200)
-            
+
             VStack(spacing: 8) {
                 Text("AI 에이전트를 시각화하고 관리하는")
                 Text("픽셀아트 스타일의 회사 시뮬레이션 앱")
@@ -567,9 +709,9 @@ struct AboutView: View {
             .font(.callout)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
-            
+
             Spacer()
-            
+
             Text("Made with ❤️ by Leeo")
                 .font(.callout)
                 .foregroundStyle(.secondary)

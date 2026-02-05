@@ -208,7 +208,7 @@ class WikiService {
 
             guard let files = try? fileManager.contentsOfDirectory(atPath: categoryPath) else { continue }
 
-            for fileName in files where fileName.hasSuffix(".md") {
+            for fileName in files where fileName.hasSuffix(".md") || fileName.hasSuffix(".html") {
                 let filePath = (categoryPath as NSString).appendingPathComponent(fileName)
 
                 if let content = try? String(contentsOfFile: filePath, encoding: .utf8) {
@@ -217,13 +217,16 @@ class WikiService {
                         .replacingOccurrences(of: "-", with: " ")
                         .replacingOccurrences(of: "_", with: " ")
 
+                    let fileType: WikiDocumentType = fileName.hasSuffix(".html") ? .html : .markdown
+
                     let document = WikiDocument(
                         title: title,
                         content: content,
                         category: category,
                         createdBy: "외부 파일",
                         tags: [],
-                        fileName: fileName
+                        fileName: fileName,
+                        fileType: fileType
                     )
                     documents.append(document)
                 }
@@ -232,7 +235,7 @@ class WikiService {
 
         // 루트 폴더의 .md 파일도 스캔 (README.md 제외)
         if let rootFiles = try? fileManager.contentsOfDirectory(atPath: wikiPath) {
-            for fileName in rootFiles where fileName.hasSuffix(".md") && fileName != "README.md" {
+            for fileName in rootFiles where (fileName.hasSuffix(".md") || fileName.hasSuffix(".html")) && fileName != "README.md" {
                 let filePath = (wikiPath as NSString).appendingPathComponent(fileName)
 
                 if let content = try? String(contentsOfFile: filePath, encoding: .utf8) {
@@ -240,16 +243,166 @@ class WikiService {
                         .replacingOccurrences(of: "-", with: " ")
                         .replacingOccurrences(of: "_", with: " ")
 
+                    let fileType: WikiDocumentType = fileName.hasSuffix(".html") ? .html : .markdown
+
                     let document = WikiDocument(
                         title: title,
                         content: content,
                         category: .reference,  // 루트 파일은 참고자료로 분류
                         createdBy: "외부 파일",
                         tags: [],
-                        fileName: fileName
+                        fileName: fileName,
+                        fileType: fileType
                     )
                     documents.append(document)
                 }
+            }
+        }
+
+        return documents
+    }
+
+    /// 프로젝트 전체에서 모든 .md 문서 스캔
+    func scanAllDocuments() -> [WikiDocument] {
+        print("📚 [WikiService] 전체 문서 스캔 시작")
+        var allDocuments: [WikiDocument] = []
+        let basePath = DataPathService.shared.basePath
+
+        // 1. _shared/wiki 스캔
+        let sharedWikiPath = "\(DataPathService.shared.sharedPath)/wiki"
+        print("📂 [WikiService] _shared/wiki 스캔: \(sharedWikiPath)")
+        let sharedWikiDocs = scanDirectory(at: sharedWikiPath, category: .reference, source: "전사 공용", departmentName: nil, projectName: nil)
+        allDocuments.append(contentsOf: sharedWikiDocs)
+        print("   ✅ 발견: \(sharedWikiDocs.count)개")
+
+        // 2. _shared/documents 스캔
+        let sharedDocsPath = "\(DataPathService.shared.sharedPath)/documents"
+        print("📂 [WikiService] _shared/documents 스캔: \(sharedDocsPath)")
+        let sharedDocs = scanDirectory(at: sharedDocsPath, category: .companyInfo, source: "전사 공용", departmentName: nil, projectName: nil)
+        allDocuments.append(contentsOf: sharedDocs)
+        print("   ✅ 발견: \(sharedDocs.count)개")
+
+        // 3. 각 프로젝트의 wiki와 documents 스캔
+        guard let projectDirs = try? fileManager.contentsOfDirectory(atPath: basePath) else {
+            print("❌ [WikiService] basePath 읽기 실패: \(basePath)")
+            return allDocuments
+        }
+
+        for projectDir in projectDirs {
+            // _shared는 이미 스캔했으므로 스킵
+            if projectDir.hasPrefix("_") || projectDir.hasPrefix(".") {
+                continue
+            }
+
+            let projectPath = "\(basePath)/\(projectDir)"
+
+            // 프로젝트가 디렉토리인지 확인
+            var isDirectory: ObjCBool = false
+            guard fileManager.fileExists(atPath: projectPath, isDirectory: &isDirectory),
+                  isDirectory.boolValue else {
+                continue
+            }
+
+            print("📁 [WikiService] 프로젝트 스캔: \(projectDir)")
+
+            // 3-1. 프로젝트/wiki 스캔
+            let projectWikiPath = "\(projectPath)/wiki"
+            let projectWikiDocs = scanDirectory(at: projectWikiPath, category: .projectDocs, source: projectDir, departmentName: nil, projectName: projectDir)
+            allDocuments.append(contentsOf: projectWikiDocs)
+            if !projectWikiDocs.isEmpty {
+                print("   📄 wiki: \(projectWikiDocs.count)개")
+            }
+
+            // 3-2. 프로젝트/[부서]/documents 스캔
+            guard let deptDirs = try? fileManager.contentsOfDirectory(atPath: projectPath) else {
+                continue
+            }
+
+            for deptDir in deptDirs {
+                // wiki, _shared 등 특수 디렉토리 스킵
+                if deptDir.hasPrefix("_") || deptDir.hasPrefix(".") || deptDir == "wiki" {
+                    continue
+                }
+
+                let deptPath = "\(projectPath)/\(deptDir)"
+                var isDeptDirectory: ObjCBool = false
+                guard fileManager.fileExists(atPath: deptPath, isDirectory: &isDeptDirectory),
+                      isDeptDirectory.boolValue else {
+                    continue
+                }
+
+                // 부서명을 한글로 변환 (기획, 디자인, 개발 등)
+                let departmentName = deptDir
+
+                // 부서/documents 스캔
+                let deptDocsPath = "\(deptPath)/documents"
+                let deptDocs = scanDirectory(at: deptDocsPath, category: .guidelines, source: "\(departmentName)팀", departmentName: departmentName, projectName: projectDir)
+                allDocuments.append(contentsOf: deptDocs)
+                if !deptDocs.isEmpty {
+                    print("   📄 \(deptDir)/documents: \(deptDocs.count)개")
+                }
+            }
+        }
+
+        print("📊 [WikiService] 전체 문서 스캔 완료: 총 \(allDocuments.count)개")
+        return allDocuments
+    }
+
+    /// 특정 디렉토리의 .md 및 .html 파일 스캔
+    private func scanDirectory(at path: String, category: WikiCategory, source: String, departmentName: String?, projectName: String?) -> [WikiDocument] {
+        var documents: [WikiDocument] = []
+
+        guard fileManager.fileExists(atPath: path) else {
+            return documents
+        }
+
+        // 재귀적으로 하위 디렉토리도 스캔
+        guard let enumerator = fileManager.enumerator(atPath: path) else {
+            return documents
+        }
+
+        while let fileName = enumerator.nextObject() as? String {
+            // .md 또는 .html 파일만 처리
+            let isMarkdown = fileName.hasSuffix(".md")
+            let isHTML = fileName.hasSuffix(".html")
+            guard isMarkdown || isHTML else { continue }
+
+            // README.md는 스킵
+            if fileName.contains("README.md") {
+                continue
+            }
+
+            let filePath = "\(path)/\(fileName)"
+
+            if let content = try? String(contentsOfFile: filePath, encoding: .utf8) {
+                // 파일명에서 제목 추출
+                let baseName = (fileName as NSString).lastPathComponent
+                let title = (baseName as NSString).deletingPathExtension
+                    .replacingOccurrences(of: "-", with: " ")
+                    .replacingOccurrences(of: "_", with: " ")
+
+                // 태그 구성: [프로젝트명, 부서명] (있는 경우만)
+                var tags: [String] = []
+                if let proj = projectName {
+                    tags.append(proj)
+                }
+                if let dept = departmentName {
+                    tags.append("\(dept)팀")
+                }
+
+                let fileType: WikiDocumentType = isHTML ? .html : .markdown
+
+                let document = WikiDocument(
+                    title: title,
+                    content: content,
+                    category: category,
+                    createdBy: source,  // "기획팀", "개발팀", "전사 공용" 등
+                    tags: tags,
+                    fileName: baseName,
+                    filePath: filePath,  // 전체 경로 저장
+                    fileType: fileType
+                )
+                documents.append(document)
             }
         }
 
