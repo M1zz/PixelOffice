@@ -16,6 +16,7 @@ struct ProjectTask: Codable, Identifiable, Hashable {
     var estimatedHours: Double?
     var actualHours: Double?
     var prompt: String
+    var sprintId: UUID?  // 스프린트 할당
 
     // 워크플로우 관련
     var workflowHistory: [WorkflowTransition]
@@ -24,7 +25,7 @@ struct ProjectTask: Codable, Identifiable, Hashable {
     enum CodingKeys: String, CodingKey {
         case id, title, description, status, assigneeId, departmentType
         case conversation, outputs, createdAt, updatedAt, completedAt
-        case estimatedHours, actualHours, prompt, workflowHistory, parentTaskId
+        case estimatedHours, actualHours, prompt, workflowHistory, parentTaskId, sprintId
     }
 
     init(
@@ -43,7 +44,8 @@ struct ProjectTask: Codable, Identifiable, Hashable {
         actualHours: Double? = nil,
         prompt: String = "",
         workflowHistory: [WorkflowTransition] = [],
-        parentTaskId: UUID? = nil
+        parentTaskId: UUID? = nil,
+        sprintId: UUID? = nil
     ) {
         self.id = id
         self.title = title
@@ -61,6 +63,7 @@ struct ProjectTask: Codable, Identifiable, Hashable {
         self.prompt = prompt
         self.workflowHistory = workflowHistory
         self.parentTaskId = parentTaskId
+        self.sprintId = sprintId
     }
 
     // 기존 저장 파일 호환성
@@ -83,6 +86,7 @@ struct ProjectTask: Codable, Identifiable, Hashable {
         // 새 필드는 없으면 기본값
         workflowHistory = try container.decodeIfPresent([WorkflowTransition].self, forKey: .workflowHistory) ?? []
         parentTaskId = try container.decodeIfPresent(UUID.self, forKey: .parentTaskId)
+        sprintId = try container.decodeIfPresent(UUID.self, forKey: .sprintId)
     }
     
     static func == (lhs: ProjectTask, rhs: ProjectTask) -> Bool {

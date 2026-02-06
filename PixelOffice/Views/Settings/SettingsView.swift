@@ -573,10 +573,10 @@ struct DebateSettingsView: View {
                     Text("토론 진행 구조")
                         .font(.callout.weight(.semibold))
 
-                    InfoRow(icon: "doc.text.fill", title: "Phase 1: 주제 제시", description: "토론 주제와 배경 정보를 정리합니다")
-                    InfoRow(icon: "person.fill.questionmark", title: "Phase 2: 독립 의견", description: "각 직원이 독립적으로 의견을 제출합니다 (병렬 처리)")
-                    InfoRow(icon: "arrow.triangle.2.circlepath", title: "Phase 3: 교차 검토", description: "다른 직원의 의견에 대해 반박/보완합니다")
-                    InfoRow(icon: "lightbulb.max.fill", title: "Phase 4: 종합", description: "합의점, 쟁점, 액션 아이템을 도출합니다")
+                    DebateInfoRow(icon: "doc.text.fill", title: "Phase 1: 주제 제시", description: "토론 주제와 배경 정보를 정리합니다")
+                    DebateInfoRow(icon: "person.fill.questionmark", title: "Phase 2: 독립 의견", description: "각 직원이 독립적으로 의견을 제출합니다 (병렬 처리)")
+                    DebateInfoRow(icon: "arrow.triangle.2.circlepath", title: "Phase 3: 교차 검토", description: "다른 직원의 의견에 대해 반박/보완합니다")
+                    DebateInfoRow(icon: "lightbulb.max.fill", title: "Phase 4: 종합", description: "합의점, 쟁점, 액션 아이템을 도출합니다")
                 }
 
                 Divider()
@@ -618,7 +618,7 @@ struct DebateSettingsView: View {
 }
 
 
-struct InfoRow: View {
+struct DebateInfoRow: View {
     let icon: String
     let title: String
     let description: String

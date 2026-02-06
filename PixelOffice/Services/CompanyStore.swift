@@ -478,4 +478,55 @@ class CompanyStore: ObservableObject, StoreCoordinator {
     var pendingTasks: Int {
         company.projects.flatMap { $0.tasks }.filter { $0.status == .todo }.count
     }
+
+    // MARK: - Sprint Management
+
+    func addSprint(_ sprint: Sprint, toProject projectId: UUID) {
+        guard let projectIndex = company.projects.firstIndex(where: { $0.id == projectId }) else { return }
+        company.projects[projectIndex].sprints.append(sprint)
+        saveCompany()
+    }
+
+    func updateSprint(_ sprint: Sprint, inProject projectId: UUID) {
+        guard let projectIndex = company.projects.firstIndex(where: { $0.id == projectId }),
+              let sprintIndex = company.projects[projectIndex].sprints.firstIndex(where: { $0.id == sprint.id }) else { return }
+        company.projects[projectIndex].sprints[sprintIndex] = sprint
+        saveCompany()
+    }
+
+    func removeSprint(_ sprintId: UUID, fromProject projectId: UUID) {
+        guard let projectIndex = company.projects.firstIndex(where: { $0.id == projectId }) else { return }
+        company.projects[projectIndex].sprints.removeAll { $0.id == sprintId }
+        // 해당 스프린트에 배정된 태스크들의 sprintId를 nil로
+        for taskIndex in company.projects[projectIndex].tasks.indices {
+            if company.projects[projectIndex].tasks[taskIndex].sprintId == sprintId {
+                company.projects[projectIndex].tasks[taskIndex].sprintId = nil
+            }
+        }
+        saveCompany()
+    }
+
+    func activateSprint(_ sprintId: UUID, inProject projectId: UUID) {
+        guard let projectIndex = company.projects.firstIndex(where: { $0.id == projectId }) else { return }
+        // 모든 스프린트 비활성화 후 해당 스프린트만 활성화
+        for i in company.projects[projectIndex].sprints.indices {
+            company.projects[projectIndex].sprints[i].isActive = (company.projects[projectIndex].sprints[i].id == sprintId)
+        }
+        saveCompany()
+    }
+
+    func assignTaskToSprint(taskId: UUID, sprintId: UUID?, projectId: UUID) {
+        guard let projectIndex = company.projects.firstIndex(where: { $0.id == projectId }),
+              let taskIndex = company.projects[projectIndex].tasks.firstIndex(where: { $0.id == taskId }) else { return }
+        company.projects[projectIndex].tasks[taskIndex].sprintId = sprintId
+        saveCompany()
+    }
+
+    func getSprints(forProject projectId: UUID) -> [Sprint] {
+        company.projects.first { $0.id == projectId }?.sprints ?? []
+    }
+
+    func getActiveSprint(forProject projectId: UUID) -> Sprint? {
+        company.projects.first { $0.id == projectId }?.activeSprint
+    }
 }

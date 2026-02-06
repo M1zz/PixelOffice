@@ -417,7 +417,7 @@ struct StatCard: View {
         aiType: .claude,
         departmentType: .planning,
         departmentName: "기획팀",
-        jobRoles: [.strategist, .productManager],
+        jobRoles: [.servicePlanner, .productManager],
         personality: "전략적이고 분석적인 성향",
         strengths: ["데이터 분석", "전략 수립", "문제 해결"],
         workStyle: "체계적이고 계획적인 업무 스타일",

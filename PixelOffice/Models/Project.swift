@@ -13,6 +13,12 @@ struct Project: Codable, Identifiable, Hashable {
     var tags: [String]
     var priority: ProjectPriority
     var departments: [ProjectDepartment]  // 프로젝트별 부서 및 직원
+    var sprints: [Sprint]  // 스프린트 목록
+
+    /// 현재 활성 스프린트
+    var activeSprint: Sprint? {
+        sprints.first { $0.isActive }
+    }
 
     init(
         id: UUID = UUID(),
@@ -25,7 +31,8 @@ struct Project: Codable, Identifiable, Hashable {
         deadline: Date? = nil,
         tags: [String] = [],
         priority: ProjectPriority = .medium,
-        departments: [ProjectDepartment] = ProjectDepartment.defaultProjectDepartments
+        departments: [ProjectDepartment] = ProjectDepartment.defaultProjectDepartments,
+        sprints: [Sprint] = []
     ) {
         self.id = id
         self.name = name
@@ -38,12 +45,13 @@ struct Project: Codable, Identifiable, Hashable {
         self.tags = tags
         self.priority = priority
         self.departments = departments
+        self.sprints = sprints
     }
 
     // MARK: - Codable (하위 호환성)
 
     enum CodingKeys: String, CodingKey {
-        case id, name, description, status, tasks, createdAt, updatedAt, deadline, tags, priority, departments
+        case id, name, description, status, tasks, createdAt, updatedAt, deadline, tags, priority, departments, sprints
     }
 
     init(from decoder: Decoder) throws {
@@ -61,6 +69,8 @@ struct Project: Codable, Identifiable, Hashable {
         // 기존 데이터 호환: departments가 없으면 기본값 사용
         departments = try container.decodeIfPresent([ProjectDepartment].self, forKey: .departments)
             ?? ProjectDepartment.defaultProjectDepartments
+        // 기존 데이터 호환: sprints가 없으면 빈 배열 사용
+        sprints = try container.decodeIfPresent([Sprint].self, forKey: .sprints) ?? []
     }
     
     static func == (lhs: Project, rhs: Project) -> Bool {

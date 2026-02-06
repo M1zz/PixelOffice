@@ -48,6 +48,16 @@
 		039 /* EmployeeThinking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 154 /* EmployeeThinking.swift */; };
 		040 /* JobRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 155 /* JobRole.swift */; };
 		041 /* OfficeDecoration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 156 /* OfficeDecoration.swift */; };
+		042 /* Sprint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 157 /* Sprint.swift */; };
+		043 /* AutoApprovalRulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 158 /* AutoApprovalRulesView.swift */; };
+		044 /* PermissionRequestDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 159 /* PermissionRequestDetailView.swift */; };
+		045 /* PermissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160 /* PermissionsView.swift */; };
+		046 /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 161 /* FlowLayout.swift */; };
+		047 /* EmployeeDirectoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 162 /* EmployeeDirectoryView.swift */; };
+		048 /* EmployeeIDCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 163 /* EmployeeIDCardView.swift */; };
+		049 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 164 /* PermissionManager.swift */; };
+		050 /* PermissionRequestCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 165 /* PermissionRequestCard.swift */; };
+		051 /* PermissionRequestHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 166 /* PermissionRequestHistoryView.swift */; };
 		137 /* DepartmentSkills.swift in Sources */ = {isa = PBXBuildFile; fileRef = 138 /* DepartmentSkills.swift */; };
 		139 /* EmployeeWorkLogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 140 /* EmployeeWorkLogService.swift */; };
 		141 /* DepartmentSkillsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142 /* DepartmentSkillsView.swift */; };
@@ -55,13 +65,11 @@
 		145 /* DataPathService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 146 /* DataPathService.swift */; };
 		147 /* WalkingCharacter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149 /* WalkingCharacter.swift */; };
 		148 /* WalkingEmployeesLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 150 /* WalkingEmployeesLayer.swift */; };
-		581566062F33844B00B03B5A /* ProjectRecoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 581566052F33844B00B03B5A /* ProjectRecoveryService.swift */; };
-		5815660A2F33AC1A00B03B5A /* AITool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 581566092F33AC1A00B03B5A /* AITool.swift */; };
-		5815660B2F33AC1A00B03B5A /* AIActionGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 581566072F33AC1A00B03B5A /* AIActionGuide.swift */; };
-		5815660C2F33AC1A00B03B5A /* AIActionParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 581566082F33AC1A00B03B5A /* AIActionParser.swift */; };
+		170 /* AITool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 167 /* AITool.swift */; };
+		171 /* AIActionGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 168 /* AIActionGuide.swift */; };
+		172 /* AIActionParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 169 /* AIActionParser.swift */; };
+		173 /* ProjectRecoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 174 /* ProjectRecoveryService.swift */; };
 		705 /* PermissionRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 704 /* PermissionRequest.swift */; };
-		707 /* PermissionRequestHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 706 /* PermissionRequestHistoryView.swift */; };
-		9C1EADD52F342C7E00CB151B /* PermissionRequestCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C1EADD42F342C7E00CB151B /* PermissionRequestCard.swift */; };
 		9C1EAE1D2F3483EC00CB151B /* Repositories.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C1EAE1C2F3483EC00CB151B /* Repositories.swift */; };
 		9C1EAE312F34903F00CB151B /* CollaborationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C1EAE292F34903F00CB151B /* CollaborationStore.swift */; };
 		9C1EAE322F34903F00CB151B /* StoreCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C1EAE2F2F34903F00CB151B /* StoreCoordinator.swift */; };
@@ -138,13 +146,21 @@
 		154 /* EmployeeThinking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeThinking.swift; sourceTree = "<group>"; };
 		155 /* JobRole.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobRole.swift; sourceTree = "<group>"; };
 		156 /* OfficeDecoration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeDecoration.swift; sourceTree = "<group>"; };
-		581566052F33844B00B03B5A /* ProjectRecoveryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectRecoveryService.swift; sourceTree = "<group>"; };
-		581566072F33AC1A00B03B5A /* AIActionGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIActionGuide.swift; sourceTree = "<group>"; };
-		581566082F33AC1A00B03B5A /* AIActionParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIActionParser.swift; sourceTree = "<group>"; };
-		581566092F33AC1A00B03B5A /* AITool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITool.swift; sourceTree = "<group>"; };
+		157 /* Sprint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sprint.swift; sourceTree = "<group>"; };
+		158 /* AutoApprovalRulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoApprovalRulesView.swift; sourceTree = "<group>"; };
+		159 /* PermissionRequestDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequestDetailView.swift; sourceTree = "<group>"; };
+		160 /* PermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsView.swift; sourceTree = "<group>"; };
+		161 /* FlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
+		162 /* EmployeeDirectoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeDirectoryView.swift; sourceTree = "<group>"; };
+		163 /* EmployeeIDCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeIDCardView.swift; sourceTree = "<group>"; };
+		164 /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
+		165 /* PermissionRequestCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequestCard.swift; sourceTree = "<group>"; };
+		166 /* PermissionRequestHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequestHistoryView.swift; sourceTree = "<group>"; };
+		167 /* AITool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITool.swift; sourceTree = "<group>"; };
+		168 /* AIActionGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIActionGuide.swift; sourceTree = "<group>"; };
+		169 /* AIActionParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIActionParser.swift; sourceTree = "<group>"; };
+		174 /* ProjectRecoveryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectRecoveryService.swift; sourceTree = "<group>"; };
 		704 /* PermissionRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequest.swift; sourceTree = "<group>"; };
-		706 /* PermissionRequestHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequestHistoryView.swift; sourceTree = "<group>"; };
-		9C1EADD42F342C7E00CB151B /* PermissionRequestCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequestCard.swift; sourceTree = "<group>"; };
 		9C1EAE1C2F3483EC00CB151B /* Repositories.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repositories.swift; sourceTree = "<group>"; };
 		9C1EAE292F34903F00CB151B /* CollaborationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollaborationStore.swift; sourceTree = "<group>"; };
 		9C1EAE2A2F34903F00CB151B /* CommunityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityStore.swift; sourceTree = "<group>"; };
@@ -184,7 +200,6 @@
 		300 = {
 			isa = PBXGroup;
 			children = (
-				9C1EAE1C2F3483EC00CB151B /* Repositories.swift */,
 				301 /* PixelOffice */,
 				302 /* Products */,
 			);
@@ -193,10 +208,6 @@
 		301 /* PixelOffice */ = {
 			isa = PBXGroup;
 			children = (
-				581566072F33AC1A00B03B5A /* AIActionGuide.swift */,
-				581566082F33AC1A00B03B5A /* AIActionParser.swift */,
-				581566092F33AC1A00B03B5A /* AITool.swift */,
-				581566052F33844B00B03B5A /* ProjectRecoveryService.swift */,
 				101 /* PixelOfficeApp.swift */,
 				102 /* ContentView.swift */,
 				303 /* Models */,
@@ -220,6 +231,8 @@
 		303 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				167 /* AITool.swift */,
+				168 /* AIActionGuide.swift */,
 				9C1EAE392F34909900CB151B /* Debate.swift */,
 				104 /* Company.swift */,
 				105 /* Department.swift */,
@@ -229,6 +242,7 @@
 				107 /* Project.swift */,
 				9C615BAD2F30862A00A5BC73 /* ProjectEmployee.swift */,
 				9C615BAC2F30862A00A5BC73 /* ProjectDepartment.swift */,
+				157 /* Sprint.swift */,
 				108 /* Task.swift */,
 				128 /* Message.swift */,
 				127 /* APIConfiguration.swift */,
@@ -244,7 +258,6 @@
 		304 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				9C1EAE3F2F3490CE00CB151B /* DebateView.swift */,
 				120 /* SidebarView.swift */,
 				307 /* Office */,
 				308 /* Projects */,
@@ -256,14 +269,54 @@
 				314 /* Community */,
 				315 /* Kanban */,
 				316 /* Collaboration */,
+				318 /* Permissions */,
+				319 /* Debate */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		319 /* Debate */ = {
+			isa = PBXGroup;
+			children = (
+				9C1EAE3F2F3490CE00CB151B /* DebateView.swift */,
+			);
+			path = Debate;
+			sourceTree = "<group>";
+		};
+		318 /* Permissions */ = {
+			isa = PBXGroup;
+			children = (
+				158 /* AutoApprovalRulesView.swift */,
+				159 /* PermissionRequestDetailView.swift */,
+				160 /* PermissionsView.swift */,
+			);
+			path = Permissions;
 			sourceTree = "<group>";
 		};
 		305 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				169 /* AIActionParser.swift */,
+				174 /* ProjectRecoveryService.swift */,
 				9C1EAE3D2F3490BE00CB151B /* StructuredDebateService.swift */,
+				9C1EAE1C2F3483EC00CB151B /* Repositories.swift */,
+				317 /* Stores */,
+				117 /* ClaudeService.swift */,
+				136 /* ClaudeCodeService.swift */,
+				118 /* DataManager.swift */,
+				146 /* DataPathService.swift */,
+				119 /* CompanyStore.swift */,
+				140 /* EmployeeWorkLogService.swift */,
+				132 /* WikiService.swift */,
+				164 /* PermissionManager.swift */,
+				9C615C1F2F31999800A5BC73 /* ToastManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		317 /* Stores */ = {
+			isa = PBXGroup;
+			children = (
 				9C1EAE292F34903F00CB151B /* CollaborationStore.swift */,
 				9C1EAE2A2F34903F00CB151B /* CommunityStore.swift */,
 				9C1EAE2B2F34903F00CB151B /* EmployeeStore.swift */,
@@ -272,16 +325,8 @@
 				9C1EAE2E2F34903F00CB151B /* SettingsStore.swift */,
 				9C1EAE2F2F34903F00CB151B /* StoreCoordinator.swift */,
 				9C1EAE302F34903F00CB151B /* WikiStore.swift */,
-				117 /* ClaudeService.swift */,
-				136 /* ClaudeCodeService.swift */,
-				118 /* DataManager.swift */,
-				146 /* DataPathService.swift */,
-				119 /* CompanyStore.swift */,
-				140 /* EmployeeWorkLogService.swift */,
-				132 /* WikiService.swift */,
-				9C615C1F2F31999800A5BC73 /* ToastManager.swift */,
 			);
-			path = Services;
+			path = Stores;
 			sourceTree = "<group>";
 		};
 		306 /* Utilities */ = {
@@ -339,6 +384,7 @@
 				121 /* AddEmployeeView.swift */,
 				9C615BB42F30865800A5BC73 /* AddProjectEmployeeView.swift */,
 				151 /* EmployeeBadgeView.swift */,
+				161 /* FlowLayout.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -363,10 +409,10 @@
 		313 /* Chat */ = {
 			isa = PBXGroup;
 			children = (
-				9C1EADD42F342C7E00CB151B /* PermissionRequestCard.swift */,
-				706 /* PermissionRequestHistoryView.swift */,
 				135 /* EmployeeChatView.swift */,
 				9C615BB62F30866400A5BC73 /* ProjectEmployeeChatView.swift */,
+				165 /* PermissionRequestCard.swift */,
+				166 /* PermissionRequestHistoryView.swift */,
 			);
 			path = Chat;
 			sourceTree = "<group>";
@@ -375,6 +421,8 @@
 			isa = PBXGroup;
 			children = (
 				152 /* CommunityView.swift */,
+				162 /* EmployeeDirectoryView.swift */,
+				163 /* EmployeeIDCardView.swift */,
 			);
 			path = Community;
 			sourceTree = "<group>";
@@ -474,8 +522,6 @@
 				007 /* Project.swift in Sources */,
 				008 /* Task.swift in Sources */,
 				9C615BB52F30865800A5BC73 /* AddProjectEmployeeView.swift in Sources */,
-				9C1EADD52F342C7E00CB151B /* PermissionRequestCard.swift in Sources */,
-				707 /* PermissionRequestHistoryView.swift in Sources */,
 				009 /* OfficeView.swift in Sources */,
 				010 /* DepartmentView.swift in Sources */,
 				9C615BB22F30864D00A5BC73 /* ProjectDepartmentView.swift in Sources */,
@@ -523,10 +569,10 @@
 				9C1EAE3A2F34909900CB151B /* Debate.swift in Sources */,
 				137 /* DepartmentSkills.swift in Sources */,
 				139 /* EmployeeWorkLogService.swift in Sources */,
-				5815660A2F33AC1A00B03B5A /* AITool.swift in Sources */,
-				5815660B2F33AC1A00B03B5A /* AIActionGuide.swift in Sources */,
-				5815660C2F33AC1A00B03B5A /* AIActionParser.swift in Sources */,
-				581566062F33844B00B03B5A /* ProjectRecoveryService.swift in Sources */,
+				170 /* AITool.swift in Sources */,
+				171 /* AIActionGuide.swift in Sources */,
+				172 /* AIActionParser.swift in Sources */,
+				173 /* ProjectRecoveryService.swift in Sources */,
 				141 /* DepartmentSkillsView.swift in Sources */,
 				9C1EAE3E2F3490BE00CB151B /* StructuredDebateService.swift in Sources */,
 				143 /* EmployeeWorkLogView.swift in Sources */,
@@ -539,6 +585,16 @@
 				039 /* EmployeeThinking.swift in Sources */,
 				040 /* JobRole.swift in Sources */,
 				041 /* OfficeDecoration.swift in Sources */,
+				042 /* Sprint.swift in Sources */,
+				043 /* AutoApprovalRulesView.swift in Sources */,
+				044 /* PermissionRequestDetailView.swift in Sources */,
+				045 /* PermissionsView.swift in Sources */,
+				046 /* FlowLayout.swift in Sources */,
+				047 /* EmployeeDirectoryView.swift in Sources */,
+				048 /* EmployeeIDCardView.swift in Sources */,
+				049 /* PermissionManager.swift in Sources */,
+				050 /* PermissionRequestCard.swift in Sources */,
+				051 /* PermissionRequestHistoryView.swift in Sources */,
 				705 /* PermissionRequest.swift in Sources */,
 				A1B2C3D42F35000000000001 /* MarkdownToHTMLConverter.swift in Sources */,
 			);

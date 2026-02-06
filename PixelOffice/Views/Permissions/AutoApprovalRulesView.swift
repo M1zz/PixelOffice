@@ -124,11 +124,7 @@ struct AutoApprovalRuleRow: View {
                     }
 
                     if let maxSize = rule.maxFileSize {
-                        let formatter = ByteCountFormatter()
-                        formatter.allowedUnits = [.useKB, .useMB]
-                        formatter.countStyle = .file
-                        let sizeStr = formatter.string(fromByteCount: Int64(maxSize))
-                        Text("최대 크기: \(sizeStr)")
+                        Text("최대 크기: \(formatFileSize(maxSize))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -255,6 +251,14 @@ struct AddAutoApprovalRuleView: View {
         .padding(24)
         .frame(width: 500)
     }
+}
+
+// MARK: - Helper Functions
+private func formatFileSize(_ bytes: Int) -> String {
+    let formatter = ByteCountFormatter()
+    formatter.allowedUnits = [.useKB, .useMB]
+    formatter.countStyle = .file
+    return formatter.string(fromByteCount: Int64(bytes))
 }
 
 #Preview {
