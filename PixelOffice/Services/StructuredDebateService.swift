@@ -16,7 +16,159 @@ class StructuredDebateService: ObservableObject {
     private let claudeCodeService = ClaudeCodeService()
     private weak var companyStore: CompanyStore?
 
-    private init() {}
+    /// 토론 저장 경로
+    private var debatesDirectoryPath: String {
+        "\(DataPathService.shared.basePath)/_shared/debates"
+    }
+
+    private init() {
+        loadDebates()
+    }
+
+    // MARK: - 파일 저장/로드
+
+    /// 모든 토론 불러오기
+    private func loadDebates() {
+        let fileManager = FileManager.default
+        let directoryPath = debatesDirectoryPath
+
+        // 디렉토리 없으면 생성
+        if !fileManager.fileExists(atPath: directoryPath) {
+            try? fileManager.createDirectory(atPath: directoryPath, withIntermediateDirectories: true)
+            print("📁 [토론] 토론 디렉토리 생성: \(directoryPath)")
+        }
+
+        // debates.json 파일 로드
+        let filePath = "\(directoryPath)/debates.json"
+        guard fileManager.fileExists(atPath: filePath),
+              let data = fileManager.contents(atPath: filePath) else {
+            print("📂 [토론] 저장된 토론 없음")
+            return
+        }
+
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let savedDebates = try decoder.decode(DebatesData.self, from: data)
+            self.activeDebates = savedDebates.activeDebates
+            self.debateHistory = savedDebates.debateHistory
+            print("✅ [토론] 토론 로드 완료 — 진행 중: \(activeDebates.count), 완료: \(debateHistory.count)")
+        } catch {
+            print("❌ [토론] 토론 로드 실패: \(error)")
+        }
+    }
+
+    /// 모든 토론 저장
+    private func saveDebates() {
+        let fileManager = FileManager.default
+        let directoryPath = debatesDirectoryPath
+
+        // 디렉토리 없으면 생성
+        if !fileManager.fileExists(atPath: directoryPath) {
+            try? fileManager.createDirectory(atPath: directoryPath, withIntermediateDirectories: true)
+        }
+
+        let filePath = "\(directoryPath)/debates.json"
+
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+
+            let savedDebates = DebatesData(
+                activeDebates: activeDebates,
+                debateHistory: debateHistory
+            )
+            let data = try encoder.encode(savedDebates)
+            try data.write(to: URL(fileURLWithPath: filePath))
+            print("💾 [토론] 토론 저장 완료: \(filePath)")
+        } catch {
+            print("❌ [토론] 토론 저장 실패: \(error)")
+        }
+    }
+
+    /// 토론을 마크다운 파일로도 저장
+    private func saveDebateAsMarkdown(_ debate: Debate) {
+        let fileName = "\(debate.createdAt.formatted(.iso8601.year().month().day()))-\(sanitizeFileName(debate.topic)).md"
+        let filePath = "\(debatesDirectoryPath)/\(fileName)"
+
+        let markdown = generateDebateMarkdown(debate)
+
+        do {
+            try markdown.write(toFile: filePath, atomically: true, encoding: .utf8)
+            print("📝 [토론] 마크다운 저장: \(fileName)")
+        } catch {
+            print("❌ [토론] 마크다운 저장 실패: \(error)")
+        }
+    }
+
+    private func sanitizeFileName(_ name: String) -> String {
+        let invalidChars = CharacterSet(charactersIn: "/\\:*?\"<>|")
+        return name.components(separatedBy: invalidChars).joined(separator: "-")
+            .replacingOccurrences(of: " ", with: "-")
+            .prefix(50)
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    private func generateDebateMarkdown(_ debate: Debate) -> String {
+        var md = "# \(debate.topic)\n\n"
+        md += "- **상태**: \(debate.status.rawValue)\n"
+        md += "- **생성일**: \(debate.createdAt.formatted())\n"
+        md += "- **참여자**: \(debate.participants.map { $0.employeeName }.joined(separator: ", "))\n\n"
+
+        if !debate.context.isEmpty {
+            md += "## 배경\n\n\(debate.context)\n\n"
+        }
+
+        // 페이즈별 의견
+        for phase in debate.phases {
+            md += "## \(phase.type.rawValue)\n\n"
+            for opinion in phase.opinions {
+                md += "### \(opinion.employeeName) (\(opinion.departmentType.rawValue))\n\n"
+                md += "\(opinion.content)\n\n"
+            }
+        }
+
+        // 종합 결과
+        if let synthesis = debate.synthesis {
+            md += "## 종합 결과\n\n"
+            md += "### 요약\n\n\(synthesis.summary)\n\n"
+
+            if !synthesis.agreements.isEmpty {
+                md += "### 합의 사항\n\n"
+                for item in synthesis.agreements {
+                    md += "- \(item)\n"
+                }
+                md += "\n"
+            }
+
+            if !synthesis.disagreements.isEmpty {
+                md += "### 쟁점\n\n"
+                for item in synthesis.disagreements {
+                    md += "- \(item)\n"
+                }
+                md += "\n"
+            }
+
+            if !synthesis.actionItems.isEmpty {
+                md += "### 액션 아이템\n\n"
+                for item in synthesis.actionItems {
+                    md += "- [\(item.priority.rawValue)] \(item.title): \(item.description)\n"
+                }
+                md += "\n"
+            }
+
+            if !synthesis.keyInsights.isEmpty {
+                md += "### 핵심 인사이트\n\n"
+                for item in synthesis.keyInsights {
+                    md += "- \(item)\n"
+                }
+                md += "\n"
+            }
+        }
+
+        return md
+    }
 
     /// CompanyStore 설정 (앱 시작 시 호출)
     func setCompanyStore(_ store: CompanyStore) {
@@ -46,6 +198,7 @@ class StructuredDebateService: ObservableObject {
         )
 
         activeDebates.append(debate)
+        saveDebates()
         print("📋 [토론] 새 토론 생성: \"\(topic)\" — 참여자 \(participants.count)명")
         return debate
     }
@@ -579,6 +732,7 @@ class StructuredDebateService: ObservableObject {
     private func updateDebate(_ debate: Debate) {
         if let index = activeDebates.firstIndex(where: { $0.id == debate.id }) {
             activeDebates[index] = debate
+            saveDebates()
         }
     }
 
@@ -590,7 +744,12 @@ class StructuredDebateService: ObservableObject {
             if status == .completed || status == .failed || status == .cancelled {
                 let debate = activeDebates.remove(at: index)
                 debateHistory.append(debate)
+                // 완료된 토론은 마크다운으로도 저장
+                if status == .completed {
+                    saveDebateAsMarkdown(debate)
+                }
             }
+            saveDebates()
         }
     }
 
@@ -726,4 +885,12 @@ class StructuredDebateService: ObservableObject {
         let synthOutput = debate.synthesis?.outputTokens ?? 0
         return (opinionInput + synthInput, opinionOutput + synthOutput)
     }
+}
+
+// MARK: - 토론 저장 데이터 구조
+
+/// 토론 저장용 래퍼
+struct DebatesData: Codable {
+    var activeDebates: [Debate]
+    var debateHistory: [Debate]
 }

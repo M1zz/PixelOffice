@@ -1,0 +1,188 @@
+{
+  "activeDebates": [],
+  "debateHistory": [
+    {
+      "id": "A1B2C3D4-E5F6-7890-ABCD-EF1234567890",
+      "topic": "PixelOffice MVP 기능 우선순위 결정",
+      "context": "PixelOffice 1.0 출시를 위한 핵심 기능 우선순위를 정해야 합니다. 리소스가 제한되어 있어 3개의 핵심 기능만 선택해야 합니다.",
+      "projectId": null,
+      "participants": [
+        {
+          "id": "11111111-1111-1111-1111-111111111111",
+          "employeeId": "AAAA1111-1111-1111-1111-111111111111",
+          "employeeName": "리이오",
+          "departmentType": "기획",
+          "aiType": "Claude",
+          "personality": "전략적이고 분석적인 성향",
+          "strengths": ["시장 분석", "제품 전략", "우선순위 결정"],
+          "isProjectEmployee": false,
+          "projectId": null
+        },
+        {
+          "id": "22222222-2222-2222-2222-222222222222",
+          "employeeId": "BBBB2222-2222-2222-2222-222222222222",
+          "employeeName": "마이클",
+          "departmentType": "개발",
+          "aiType": "Claude",
+          "personality": "논리적이고 체계적인 성향",
+          "strengths": ["시스템 설계", "기술 구현", "성능 최적화"],
+          "isProjectEmployee": false,
+          "projectId": null
+        },
+        {
+          "id": "33333333-3333-3333-3333-333333333333",
+          "employeeId": "CCCC3333-3333-3333-3333-333333333333",
+          "employeeName": "제니",
+          "departmentType": "디자인",
+          "aiType": "Claude",
+          "personality": "창의적이고 사용자 중심적 성향",
+          "strengths": ["UI/UX 설계", "사용자 리서치", "프로토타이핑"],
+          "isProjectEmployee": false,
+          "projectId": null
+        }
+      ],
+      "phases": [
+        {
+          "id": "PHASE1-1111-1111-1111-111111111111",
+          "type": "주제 제시",
+          "opinions": [],
+          "startedAt": "2024-02-05T10:00:00Z",
+          "completedAt": "2024-02-05T10:01:00Z"
+        },
+        {
+          "id": "PHASE2-2222-2222-2222-222222222222",
+          "type": "독립 의견",
+          "opinions": [
+            {
+              "id": "OP1-1111-1111-1111-111111111111",
+              "participantId": "11111111-1111-1111-1111-111111111111",
+              "employeeId": "AAAA1111-1111-1111-1111-111111111111",
+              "employeeName": "리이오",
+              "departmentType": "기획",
+              "content": "## 핵심 기능 우선순위 제안\n\n### 1순위: AI 직원 대화 시스템\n사용자가 AI 직원과 자연스럽게 대화할 수 있는 기능이 PixelOffice의 핵심 가치입니다.\n\n### 2순위: 프로젝트 관리\n칸반 보드와 태스크 관리는 실제 업무 효율을 보여주는 핵심입니다.\n\n### 3순위: 부서별 전문성\n각 부서(기획, 디자인, 개발, QA, 마케팅)의 전문가 역할이 차별화 포인트입니다.",
+              "phase": "독립 의견",
+              "referencedOpinionIds": [],
+              "inputTokens": 150,
+              "outputTokens": 200,
+              "createdAt": "2024-02-05T10:05:00Z"
+            },
+            {
+              "id": "OP2-2222-2222-2222-222222222222",
+              "participantId": "22222222-2222-2222-2222-222222222222",
+              "employeeId": "BBBB2222-2222-2222-2222-222222222222",
+              "employeeName": "마이클",
+              "departmentType": "개발",
+              "content": "## 기술적 관점에서의 우선순위\n\n### 1순위: 데이터 영속성\n앱 재설치 후에도 데이터가 유지되어야 합니다. 현재 이 부분이 취약합니다.\n\n### 2순위: Claude Code 연동\nAPI 없이 Claude Code CLI를 활용하는 것이 기술적 차별점입니다.\n\n### 3순위: 오프라인 지원\n로컬 데이터 저장으로 네트워크 없이도 기본 기능 사용 가능해야 합니다.",
+              "phase": "독립 의견",
+              "referencedOpinionIds": [],
+              "inputTokens": 160,
+              "outputTokens": 210,
+              "createdAt": "2024-02-05T10:06:00Z"
+            },
+            {
+              "id": "OP3-3333-3333-3333-333333333333",
+              "participantId": "33333333-3333-3333-3333-333333333333",
+              "employeeId": "CCCC3333-3333-3333-3333-333333333333",
+              "employeeName": "제니",
+              "departmentType": "디자인",
+              "content": "## 사용자 경험 관점 우선순위\n\n### 1순위: 픽셀 캐릭터 시스템\n귀여운 픽셀 캐릭터가 사용자 감성을 자극합니다. 이게 없으면 그냥 챗봇이에요.\n\n### 2순위: 직관적인 오피스 뷰\n가상 오피스 공간에서 직원들이 움직이는 모습이 몰입감을 줍니다.\n\n### 3순위: 사원증 시스템\n각 직원의 개성과 통계를 볼 수 있는 사원증이 캐릭터 애착을 높입니다.",
+              "phase": "독립 의견",
+              "referencedOpinionIds": [],
+              "inputTokens": 140,
+              "outputTokens": 190,
+              "createdAt": "2024-02-05T10:07:00Z"
+            }
+          ],
+          "startedAt": "2024-02-05T10:02:00Z",
+          "completedAt": "2024-02-05T10:10:00Z"
+        },
+        {
+          "id": "PHASE3-3333-3333-3333-333333333333",
+          "type": "교차 검토",
+          "opinions": [
+            {
+              "id": "CR1-1111-1111-1111-111111111111",
+              "participantId": "11111111-1111-1111-1111-111111111111",
+              "employeeId": "AAAA1111-1111-1111-1111-111111111111",
+              "employeeName": "리이오",
+              "departmentType": "기획",
+              "content": "## 다른 의견에 대한 검토\n\n마이클의 데이터 영속성 지적에 전적으로 동의합니다. 아무리 좋은 기능도 데이터가 날아가면 무용지물입니다.\n\n제니의 픽셀 캐릭터 의견도 타당합니다. 감성적 요소가 없으면 차별화가 어렵습니다.\n\n### 수정된 제안\n1. 데이터 영속성 (기반)\n2. AI 대화 + 픽셀 캐릭터 (핵심 경험)\n3. 프로젝트 관리 (실용성)",
+              "phase": "교차 검토",
+              "referencedOpinionIds": ["OP2-2222-2222-2222-222222222222", "OP3-3333-3333-3333-333333333333"],
+              "inputTokens": 180,
+              "outputTokens": 220,
+              "createdAt": "2024-02-05T10:15:00Z"
+            }
+          ],
+          "startedAt": "2024-02-05T10:11:00Z",
+          "completedAt": "2024-02-05T10:20:00Z"
+        },
+        {
+          "id": "PHASE4-4444-4444-4444-444444444444",
+          "type": "종합",
+          "opinions": [],
+          "startedAt": "2024-02-05T10:21:00Z",
+          "completedAt": "2024-02-05T10:25:00Z"
+        }
+      ],
+      "currentPhaseType": "종합",
+      "synthesis": {
+        "summary": "PixelOffice MVP의 3대 핵심 기능으로 (1) 데이터 영속성, (2) AI 대화 + 픽셀 캐릭터 시스템, (3) 기본 프로젝트 관리를 선정했습니다. 기술적 안정성을 기반으로 감성적 차별화와 실용적 가치를 모두 제공하는 방향입니다.",
+        "agreements": [
+          "데이터 영속성은 모든 기능의 기반이 되어야 함",
+          "픽셀 캐릭터가 PixelOffice의 핵심 차별화 요소임",
+          "AI 대화 기능은 핵심 가치 제안의 중심"
+        ],
+        "disagreements": [
+          "프로젝트 관리 vs 오피스 뷰 중 어느 것이 더 중요한지",
+          "Claude Code 연동의 우선순위"
+        ],
+        "actionItems": [
+          {
+            "id": "ACTION1-1111-1111-1111-111111111111",
+            "title": "데이터 저장 시스템 구축",
+            "description": "datas 폴더에 모든 데이터를 JSON/MD로 저장하여 앱 재설치에도 데이터 유지",
+            "assignedDepartment": "개발",
+            "priority": "높음"
+          },
+          {
+            "id": "ACTION2-2222-2222-2222-222222222222",
+            "title": "픽셀 캐릭터 다양화",
+            "description": "더 많은 캐릭터 외형과 애니메이션 추가",
+            "assignedDepartment": "디자인",
+            "priority": "보통"
+          },
+          {
+            "id": "ACTION3-3333-3333-3333-333333333333",
+            "title": "AI 대화 품질 개선",
+            "description": "부서별 전문가 프롬프트 고도화",
+            "assignedDepartment": "기획",
+            "priority": "높음"
+          }
+        ],
+        "risks": [
+          "데이터 마이그레이션 시 기존 데이터 손실 가능성",
+          "픽셀 캐릭터 제작에 시간이 많이 소요될 수 있음"
+        ],
+        "keyInsights": [
+          "기술적 안정성과 감성적 차별화의 균형이 중요",
+          "사용자가 캐릭터에 애착을 느끼면 자연스럽게 재방문",
+          "데이터가 보존되어야 장기 사용자 확보 가능"
+        ],
+        "inputTokens": 300,
+        "outputTokens": 400,
+        "createdAt": "2024-02-05T10:25:00Z"
+      },
+      "status": "완료",
+      "settings": {
+        "crossReviewRounds": 1,
+        "maxTokensPerOpinion": 2048,
+        "includeWebSearch": false,
+        "autoPostToCommunity": true,
+        "saveToWiki": true
+      },
+      "createdAt": "2024-02-05T10:00:00Z",
+      "updatedAt": "2024-02-05T10:25:00Z"
+    }
+  ]
+}
