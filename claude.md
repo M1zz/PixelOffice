@@ -1,5 +1,38 @@
 # PixelOffice - AI 직원 역할 가이드
 
+---
+
+## 🔴 핵심 경로 정보 (필독)
+
+**Claude가 파일을 탐색할 때 반드시 이 경로를 기준으로 해야 합니다.**
+
+| 항목 | 경로 |
+|------|------|
+| **프로젝트 루트** | `/Users/hyunholee/Documents/workspace/code/PixelOffice/` |
+| **데이터 폴더** | `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/` |
+| **전사 공용** | `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/_shared/` |
+
+### 프로젝트별 주요 파일
+
+```
+datas/[프로젝트명]/
+├── PROJECT.md          ← 프로젝트 정보 (기술스택, 비전, 가이드 등)
+├── README.md           ← 프로젝트 개요
+├── 기획/documents/     ← 기획 문서
+├── 디자인/documents/   ← 디자인 문서
+├── 개발/documents/     ← 기술 문서
+├── QA/documents/       ← QA 문서
+└── 마케팅/documents/   ← 마케팅 문서
+```
+
+### 경로 탐색 규칙
+
+1. **상대경로가 주어지면** → 프로젝트 루트를 앞에 붙여서 절대경로로 변환
+2. **프로젝트 정보 필요시** → `datas/[프로젝트명]/PROJECT.md` 먼저 확인
+3. **문서 탐색시** → 해당 부서의 `documents/` 폴더 확인
+
+---
+
 ## 개요
 
 PixelOffice는 가상 오피스에서 AI 직원들과 협업하는 macOS 앱입니다.
@@ -194,12 +227,12 @@ PixelOffice/
 ### 기본 원칙
 
 1. **프로젝트 디렉토리 외부에 파일 생성 금지**
-   - 절대 `/Users/leeo/Documents/code/PixelOffice/` 바깥에 파일을 만들지 않음
+   - 절대 `/Users/hyunholee/Documents/workspace/code/PixelOffice/` 바깥에 파일을 만들지 않음
    - `~/Documents/`, `~/Desktop/`, `/tmp/` 등 외부 경로 사용 금지
    - 모든 데이터, 문서, 설정 파일은 프로젝트 디렉토리 내에 저장
 
 2. **모든 데이터는 프로젝트 디렉토리 내에 저장**
-   - 저장 위치: `/Users/leeo/Documents/code/PixelOffice/datas/`
+   - 저장 위치: `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/`
    - 앱 데이터, 업무 기록, 위키 문서 모두 이 경로 사용
 
 3. **모든 작업은 파일로 기록**
@@ -298,7 +331,7 @@ class DataPathService {
 
     var basePath: String {
         // 프로젝트 디렉토리 내 datas 폴더
-        return "/Users/leeo/Documents/code/PixelOffice/datas"
+        return "/Users/hyunholee/Documents/workspace/code/PixelOffice/datas"
     }
 
     func projectPath(_ projectName: String) -> String {
