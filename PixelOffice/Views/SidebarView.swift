@@ -35,6 +35,14 @@ struct SidebarView: View {
                 ) {
                     selectedTab = .debate
                 }
+
+                SidebarButton(
+                    label: "위키",
+                    icon: "book.fill",
+                    isSelected: selectedTab == .wiki
+                ) {
+                    selectedTab = .wiki
+                }
             }
 
 //            Section {

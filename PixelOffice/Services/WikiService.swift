@@ -305,47 +305,117 @@ class WikiService {
 
             print("📁 [WikiService] 프로젝트 스캔: \(projectDir)")
 
-            // 3-1. 프로젝트/wiki 스캔
-            let projectWikiPath = "\(projectPath)/wiki"
-            let projectWikiDocs = scanDirectory(at: projectWikiPath, category: .projectDocs, source: projectDir, departmentName: nil, projectName: projectDir)
-            allDocuments.append(contentsOf: projectWikiDocs)
-            if !projectWikiDocs.isEmpty {
-                print("   📄 wiki: \(projectWikiDocs.count)개")
-            }
-
-            // 3-2. 프로젝트/[부서]/documents 스캔
-            guard let deptDirs = try? fileManager.contentsOfDirectory(atPath: projectPath) else {
-                continue
-            }
-
-            for deptDir in deptDirs {
-                // wiki, _shared 등 특수 디렉토리 스킵
-                if deptDir.hasPrefix("_") || deptDir.hasPrefix(".") || deptDir == "wiki" {
-                    continue
-                }
-
-                let deptPath = "\(projectPath)/\(deptDir)"
-                var isDeptDirectory: ObjCBool = false
-                guard fileManager.fileExists(atPath: deptPath, isDirectory: &isDeptDirectory),
-                      isDeptDirectory.boolValue else {
-                    continue
-                }
-
-                // 부서명을 한글로 변환 (기획, 디자인, 개발 등)
-                let departmentName = deptDir
-
-                // 부서/documents 스캔
-                let deptDocsPath = "\(deptPath)/documents"
-                let deptDocs = scanDirectory(at: deptDocsPath, category: .guidelines, source: "\(departmentName)팀", departmentName: departmentName, projectName: projectDir)
-                allDocuments.append(contentsOf: deptDocs)
-                if !deptDocs.isEmpty {
-                    print("   📄 \(deptDir)/documents: \(deptDocs.count)개")
-                }
+            // 프로젝트 전체를 재귀적으로 스캔 (people 폴더 제외)
+            let projectDocs = scanProjectDirectory(at: projectPath, projectName: projectDir)
+            allDocuments.append(contentsOf: projectDocs)
+            if !projectDocs.isEmpty {
+                print("   📄 전체: \(projectDocs.count)개 문서")
             }
         }
 
         print("📊 [WikiService] 전체 문서 스캔 완료: 총 \(allDocuments.count)개")
         return allDocuments
+    }
+
+    /// 프로젝트 디렉토리 전체를 스캔 (people 폴더 제외)
+    func scanProjectDirectory(at projectPath: String, projectName: String) -> [WikiDocument] {
+        var documents: [WikiDocument] = []
+
+        guard fileManager.fileExists(atPath: projectPath) else {
+            print("   ⚠️ 프로젝트 경로 없음: \(projectPath)")
+            return documents
+        }
+
+        // 재귀적으로 모든 하위 디렉토리 스캔
+        guard let enumerator = fileManager.enumerator(atPath: projectPath) else {
+            print("   ⚠️ enumerator 생성 실패: \(projectPath)")
+            return documents
+        }
+
+        var scannedFiles = 0
+        var skippedFiles = 0
+
+        while let relativePath = enumerator.nextObject() as? String {
+            // .md 또는 .html 파일만 처리
+            let isMarkdown = relativePath.hasSuffix(".md")
+            let isHTML = relativePath.hasSuffix(".html")
+            guard isMarkdown || isHTML else { continue }
+
+            scannedFiles += 1
+
+            // README.md는 스킵
+            if relativePath.contains("README.md") {
+                print("   🚫 스킵 (README): \(relativePath)")
+                skippedFiles += 1
+                continue
+            }
+
+            // people 폴더의 파일은 스킵
+            if relativePath.contains("/people/") || relativePath.hasPrefix("people/") {
+                print("   🚫 스킵 (people): \(relativePath)")
+                skippedFiles += 1
+                continue
+            }
+
+            print("   📄 발견: \(relativePath)")
+            let filePath = "\(projectPath)/\(relativePath)"
+
+            if let content = try? String(contentsOfFile: filePath, encoding: .utf8) {
+                // 파일명에서 제목 추출
+                let fileName = (relativePath as NSString).lastPathComponent
+                let title = (fileName as NSString).deletingPathExtension
+                    .replacingOccurrences(of: "-", with: " ")
+                    .replacingOccurrences(of: "_", with: " ")
+
+                // 경로에서 부서명 추출 (경로에 기획, 디자인, 개발, QA, 마케팅이 포함되어 있으면)
+                var departmentName: String?
+                var source = projectName
+
+                for dept in DepartmentType.allCases where dept != .general {
+                    if relativePath.contains("/\(dept.directoryName)/") {
+                        departmentName = dept.rawValue
+                        source = "\(dept.rawValue)팀"
+                        break
+                    }
+                }
+
+                // 경로에서 카테고리 추론
+                let category: WikiCategory
+                if relativePath.contains("/wiki/") {
+                    category = .projectDocs
+                } else if relativePath.contains("/documents/") {
+                    category = .guidelines
+                } else if relativePath.contains("/meetings/") {
+                    category = .meeting
+                } else {
+                    category = .reference
+                }
+
+                // 태그 구성
+                var tags: [String] = [projectName]
+                if let dept = departmentName {
+                    tags.append("\(dept)팀")
+                }
+
+                let fileType: WikiDocumentType = isHTML ? .html : .markdown
+
+                let document = WikiDocument(
+                    title: title,
+                    content: content,
+                    category: category,
+                    createdBy: source,
+                    tags: tags,
+                    fileName: fileName,
+                    filePath: filePath,
+                    fileType: fileType
+                )
+                documents.append(document)
+                print("   ✅ 추가됨: \(title) (카테고리: \(category.rawValue), 작성자: \(source))")
+            }
+        }
+
+        print("   📊 스캔 완료: 총 \(scannedFiles)개 파일 중 \(documents.count)개 문서 추가, \(skippedFiles)개 스킵")
+        return documents
     }
 
     /// 특정 디렉토리의 .md 및 .html 파일 스캔

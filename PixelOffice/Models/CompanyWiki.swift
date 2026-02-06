@@ -73,7 +73,7 @@ struct WikiDocument: Codable, Identifiable, Hashable {
     /// 마크다운 파일 내용 생성
     func toMarkdown() -> String {
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
 
         var md = """
         # \(title)

@@ -9,6 +9,7 @@ struct ProjectOfficeView: View {
     @State private var selectedEmployee: ProjectEmployee?
     @State private var zoomLevel: Double = 1.0
     @State private var floorSize: CGSize = .zero
+    @State private var showingProjectContext = false
 
     let columns = 2
 
@@ -49,6 +50,9 @@ struct ProjectOfficeView: View {
                                 },
                                 onOpenCollaboration: {
                                     openWindow(id: "collaboration", value: projectId)
+                                },
+                                onOpenProjectContext: {
+                                    showingProjectContext = true
                                 }
                             )
 
@@ -156,6 +160,10 @@ struct ProjectOfficeView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingProjectContext) {
+                ProjectContextEditorView(projectId: projectId)
+                    .environmentObject(companyStore)
+            }
         } else {
             Text("프로젝트를 찾을 수 없습니다")
         }
@@ -167,6 +175,7 @@ struct ProjectOfficeHeader: View {
     let onOpenKanban: () -> Void
     let onOpenWiki: () -> Void
     let onOpenCollaboration: () -> Void
+    let onOpenProjectContext: () -> Void
 
     var body: some View {
         HStack {
@@ -185,6 +194,14 @@ struct ProjectOfficeHeader: View {
                 }
             }
             Spacer()
+
+            // 프로젝트 정보 버튼
+            Button {
+                onOpenProjectContext()
+            } label: {
+                Label("프로젝트 정보", systemImage: "info.circle")
+            }
+            .buttonStyle(.bordered)
 
             // 칸반 보드 버튼
             Button {

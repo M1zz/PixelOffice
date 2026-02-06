@@ -88,22 +88,24 @@
 ## 진행 중
 
 - [ ] **서비스 단위 분리 및 리팩토링** (2026-02-05 시작)
-  - [ ] **Phase 1: Repository Layer** (우선순위: P0)
+  - [x] **Phase 1: Repository Layer** (우선순위: P0) ✅ 완료 (2026-02-06)
     - [x] RepositoryProtocol.swift 생성
     - [x] FileRepository.swift 생성 (Thread-safe actor)
     - [x] EmployeeRepository.swift 생성
     - [x] ProjectRepository.swift 생성
     - [x] TaskRepository.swift 생성
     - [x] WikiRepository.swift 생성
-    - [ ] Xcode 프로젝트에 파일 추가 (수동, REPOSITORY_SETUP.md 참고)
-    - [ ] 빌드 테스트
-  - [ ] **Phase 2: Models 정리** (우선순위: P1)
-    - [ ] Employee.swift 순수 데이터 모델로 변환 (689줄 → 150줄)
-    - [ ] Department.swift 순수 데이터 모델로 변환 (357줄 → 60줄)
-    - [ ] EmployeeProtocol.swift 생성
-    - [ ] EmployeeFactory.swift 생성 (생성 로직 분리)
-    - [ ] DepartmentPromptBuilder.swift 생성
-    - [ ] Presentation 폴더 생성 (UI 속성 분리)
+    - [x] 모든 Repository를 Repositories.swift로 통합
+    - [x] Xcode 프로젝트에 파일 추가 (Tuist 자동 인식)
+    - [x] 빌드 테스트 성공 (Tuist 적용)
+  - [x] **Phase 2: Models 정리** (우선순위: P1) ✅ 완료 (2026-02-06)
+    - [x] Employee.swift 순수 데이터 모델로 변환 (689줄 → 200줄)
+    - [x] Department.swift 순수 데이터 모델로 변환 (357줄 → 140줄)
+    - [x] EmployeeProtocol 생성 (Employee.swift에 통합)
+    - [x] EmployeeFactory.swift 생성 (생성 로직 분리)
+    - [x] DepartmentPromptBuilder.swift 생성
+    - [x] Presentation 폴더 생성 (UI 속성 분리)
+    - [x] CharacterAppearance.swift, EmployeeStatistics.swift 분리
   - [ ] **Phase 3: Services 분리** (우선순위: P0)
     - [ ] EventBus.swift 생성
     - [ ] 8개 Store 생성 (CompanyStore 분해)
@@ -127,6 +129,36 @@
 - [ ] 권한 요청 시스템 테스트 및 검증
 - [ ] 온보딩 질문 답변 UI 구현
 - [ ] 프로젝트/태스크 워크플로우 진행 UI
+
+## 최근 완료 (2024-02-06)
+
+- [x] 모든 생각과 토론 MD 파일 기록 시스템
+  - RecordService.swift 생성 (통합 기록 관리 서비스)
+  - EmployeeThinking → MD 파일 저장 (사고 과정, 인사이트, 결론)
+  - CommunityPost → MD 파일 저장 (게시글, 댓글, 태그)
+  - Debate → MD 파일 저장 (토론 주제, 참여자, 페이즈별 의견, 종합 결과)
+  - CollaborationRecord → MD 파일 저장 (협업 요청/응답, 부서 간 소통)
+  - 저장 경로: datas/_shared/{thoughts, community, debates, collaborations}
+  - 프로젝트별 토론은 datas/[프로젝트]/debates/에 저장
+  - 각 Store에서 자동 기록 (CommunityStore, CollaborationStore, StructuredDebateService, EmployeeChatView)
+
+- [x] 대화 창 이미지 첨부 기능
+  - Message.swift에 AttachedImage 구조체 및 attachedImages 필드 추가
+  - ImageAttachmentView.swift 생성 (이미지 선택, 미리보기, 드래그앤드롭)
+  - MessageImageView.swift로 대화 목록에 이미지 표시
+  - EmployeeChatView에 이미지 첨부 UI 통합
+  - ProjectEmployeeChatView에도 기본 지원 추가
+  - ClaudeService.swift에서 이미지를 base64로 인코딩하여 API 전송
+  - 대화 기록에 이미지 저장 및 로드 기능
+
+- [x] 오피스 레이아웃 커스터마이징 시스템
+  - OfficeLayout.swift 모델 생성 (그리드/커스텀 모드)
+  - OfficeLayoutEditor.swift 뷰 생성 (드래그앤드롭 편집)
+  - Company.swift에 officeLayout 필드 추가
+  - OfficeView.swift에 레이아웃 모드 통합 (그리드/커스텀 전환)
+  - 부서 위치 자유 배치 및 그리드 스냅 기능
+  - 부서 추가/제거, 최대 인원 설정, 프리셋 리셋 기능
+  - 툴바에 "레이아웃 편집" 버튼 추가
 
 ## 최근 완료 (2024-02-04)
 

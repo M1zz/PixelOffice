@@ -81,6 +81,43 @@ struct WikiView: View {
         DepartmentType.allCases.filter { $0 != .general }
     }
 
+    /// 위키 문서 새로고침
+    private func refreshWikiDocuments() {
+        print("🔄 [WikiView] 수동 새로고침 시작")
+
+        // 전체 프로젝트에서 .md 파일 스캔하여 추가
+        print("🔍 [WikiView] 위키 문서 스캔 시작")
+        let scannedDocuments = WikiService.shared.scanAllDocuments()
+        print("📊 [WikiView] 스캔 완료: \(scannedDocuments.count)개 문서 발견")
+
+        // 기존 문서와 중복되지 않도록 추가
+        var addedCount = 0
+        for doc in scannedDocuments {
+            // filePath 또는 fileName으로 중복 체크
+            let isDuplicate = companyStore.company.wikiDocuments.contains { existing in
+                if let docPath = doc.filePath, let existingPath = existing.filePath {
+                    return docPath == existingPath
+                }
+                return existing.fileName == doc.fileName && existing.title == doc.title
+            }
+
+            if !isDuplicate {
+                print("➕ [WikiView] 새 문서 추가: \(doc.title)")
+                companyStore.addWikiDocument(doc)
+                addedCount += 1
+            } else {
+                print("⏭️ [WikiView] 중복 스킵: \(doc.title)")
+            }
+        }
+        print("✅ [WikiView] \(addedCount)개 문서 추가 완료")
+
+        // 새로 추가된 문서가 있으면 저장
+        if addedCount > 0 {
+            companyStore.saveCompany()
+            print("💾 [WikiView] 위키 문서 저장 완료")
+        }
+    }
+
     var body: some View {
         GeometryReader { geometry in
             HStack(spacing: 0) {
@@ -147,6 +184,12 @@ struct WikiView: View {
         .toolbar {
             ToolbarItemGroup {
                 Button {
+                    refreshWikiDocuments()
+                } label: {
+                    Label("새로고침", systemImage: "arrow.clockwise")
+                }
+
+                Button {
                     showingNewDocument = true
                 } label: {
                     Label("새 문서", systemImage: "doc.badge.plus")
@@ -173,28 +216,8 @@ struct WikiView: View {
                 companyStore.updateWikiPath(wikiPath)
             }
 
-            // 전체 프로젝트에서 .md 파일 스캔하여 추가
-            print("🔍 [WikiView] 위키 문서 스캔 시작")
-            let scannedDocuments = WikiService.shared.scanAllDocuments()
-            print("📊 [WikiView] 스캔 완료: \(scannedDocuments.count)개 문서 발견")
-
-            // 기존 문서와 중복되지 않도록 추가
-            var addedCount = 0
-            for doc in scannedDocuments {
-                // filePath 또는 fileName으로 중복 체크
-                let isDuplicate = companyStore.company.wikiDocuments.contains { existing in
-                    if let docPath = doc.filePath, let existingPath = existing.filePath {
-                        return docPath == existingPath
-                    }
-                    return existing.fileName == doc.fileName && existing.title == doc.title
-                }
-
-                if !isDuplicate {
-                    companyStore.addWikiDocument(doc)
-                    addedCount += 1
-                }
-            }
-            print("✅ [WikiView] \(addedCount)개 문서 추가 완료")
+            // 문서 스캔
+            refreshWikiDocuments()
         }
     }
 }
@@ -239,9 +262,9 @@ struct WikiFilterBar: View {
 
             // 하단: 부서 필터 칩 + 정렬
             HStack(spacing: 8) {
-                // 전체 버튼
+                // 전체 팀 버튼
                 WikiDepartmentChip(
-                    label: "전체",
+                    label: "전체 팀",
                     icon: "building.2",
                     color: .gray,
                     isSelected: selectedDepartment == nil
@@ -252,7 +275,7 @@ struct WikiFilterBar: View {
                 // 부서별 칩
                 ForEach(departments, id: \.self) { dept in
                     WikiDepartmentChip(
-                        label: dept.rawValue,
+                        label: "\(dept.rawValue)팀",
                         icon: dept.icon,
                         color: dept.color,
                         isSelected: selectedDepartment == dept
@@ -546,11 +569,50 @@ struct WikiDocumentView: View {
         self.onUpdate = onUpdate
     }
 
+    /// 시간 포맷 (초 단위까지)
+    func formatDateTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter.string(from: date)
+    }
+
+    /// 문서에서 부서 타입 추출
+    func extractDepartmentType(from doc: WikiDocument) -> DepartmentType? {
+        let createdBy = doc.createdBy
+        for dept in DepartmentType.allCases {
+            if createdBy.contains(dept.rawValue) {
+                return dept
+            }
+        }
+        for tag in doc.tags {
+            for dept in DepartmentType.allCases {
+                if tag.contains(dept.rawValue) {
+                    return dept
+                }
+            }
+        }
+        return nil
+    }
+
+    /// 문서에서 작성자(직원명) 추출
+    func extractAuthorName(from doc: WikiDocument) -> String? {
+        let createdBy = doc.createdBy
+        for dept in DepartmentType.allCases {
+            if createdBy == dept.rawValue || createdBy == "\(dept.rawValue)팀" {
+                return nil
+            }
+        }
+        if createdBy == "전사 공용" || createdBy == "시스템" || createdBy == "외부 파일" || createdBy == "CEO" {
+            return nil
+        }
+        return createdBy
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 8) {
                     if isEditing {
                         // 편집 모드: 카테고리 선택
                         Picker("카테고리", selection: $editedCategory) {
@@ -572,11 +634,11 @@ struct WikiDocumentView: View {
                     }
                     if isEditing {
                         TextField("제목", text: $editedTitle)
-                            .font(.title2.bold())
+                            .font(.largeTitle.bold())
                             .textFieldStyle(.plain)
                     } else {
                         Text(document.title)
-                            .font(.title2.bold())
+                            .font(.largeTitle.bold())
                     }
                 }
 
@@ -653,12 +715,49 @@ struct WikiDocumentView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // Metadata & Tags (SwiftUI)
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 16) {
-                            Label(document.createdBy, systemImage: "person")
-                            Label(document.createdAt.formatted(date: .abbreviated, time: .standard), systemImage: "calendar")
+                        HStack(spacing: 20) {
+                            // 작성자 (직원명)
+                            if let authorName = extractAuthorName(from: document) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "person.fill")
+                                        .foregroundStyle(.blue)
+                                    Text(authorName)
+                                        .font(.body.weight(.semibold))
+                                }
+                            } else {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "person")
+                                        .foregroundStyle(.secondary)
+                                    Text(document.createdBy)
+                                        .font(.callout)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+
+                            // 부서/팀
+                            if let dept = extractDepartmentType(from: document) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: dept.icon)
+                                        .font(.callout)
+                                    Text(dept.rawValue)
+                                        .font(.callout.weight(.medium))
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(dept.color.opacity(0.15))
+                                .foregroundStyle(dept.color)
+                                .clipShape(Capsule())
+                            }
+
+                            // 수정일시 (초 단위까지)
+                            HStack(spacing: 6) {
+                                Image(systemName: "clock")
+                                    .foregroundStyle(.secondary)
+                                Text(formatDateTime(document.updatedAt))
+                                    .font(.callout.monospacedDigit())
+                            }
+                            .foregroundStyle(.secondary)
                         }
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
 
                         if !document.tags.isEmpty {
                             HStack(spacing: 8) {
@@ -793,13 +892,10 @@ struct NewWikiDocumentView: View {
                 TextField("제목", text: $title)
 
                 Picker("파일 타입", selection: $fileType) {
-                    ForEach([WikiDocumentType.markdown, WikiDocumentType.html], id: \.self) { type in
-                        HStack(spacing: 4) {
-                            Image(systemName: type.icon)
-                            Text(type.rawValue)
-                        }
-                        .tag(type)
-                    }
+                    Text(WikiDocumentType.markdown.rawValue)
+                        .tag(WikiDocumentType.markdown)
+                    Text(WikiDocumentType.html.rawValue)
+                        .tag(WikiDocumentType.html)
                 }
                 .pickerStyle(.segmented)
 

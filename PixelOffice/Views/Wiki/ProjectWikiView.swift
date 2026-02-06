@@ -132,6 +132,12 @@ struct ProjectWikiView: View {
             .toolbar {
                 ToolbarItemGroup {
                     Button {
+                        initializeProjectWiki()
+                    } label: {
+                        Label("새로고침", systemImage: "arrow.clockwise")
+                    }
+
+                    Button {
                         showingNewDocument = true
                     } label: {
                         Label("새 문서", systemImage: "doc.badge.plus")
@@ -160,6 +166,8 @@ struct ProjectWikiView: View {
     }
 
     private func initializeProjectWiki() {
+        guard let project = project else { return }
+
         // 위키 폴더 초기화
         if !FileManager.default.fileExists(atPath: wikiPath) {
             try? WikiService.shared.initializeWiki(at: wikiPath)
@@ -168,8 +176,11 @@ struct ProjectWikiView: View {
         // 프로젝트 README 생성 (없으면)
         createProjectWikiReadme()
 
-        // 기존 .md 파일 스캔
-        documents = WikiService.shared.scanExistingDocuments(at: wikiPath)
+        // 프로젝트 전체 디렉토리에서 .md, .html 파일 스캔 (people 폴더 제외)
+        let projectPath = DataPathService.shared.projectPath(project.name)
+        documents = WikiService.shared.scanProjectDirectory(at: projectPath, projectName: project.name)
+
+        print("📊 [ProjectWikiView] \(project.name) 프로젝트 문서 스캔 완료: \(documents.count)개")
     }
 
     private func createProjectWikiReadme() {
@@ -310,6 +321,13 @@ struct ProjectWikiTableView: View {
         else { return .secondary }
     }
 
+    /// 시간 포맷 (초 단위까지)
+    func formatDateTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M/d HH:mm:ss"
+        return formatter.string(from: date)
+    }
+
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
@@ -321,8 +339,8 @@ struct ProjectWikiTableView: View {
                         .frame(width: 140, alignment: .leading)
                     Text("직원")
                         .frame(width: 120, alignment: .leading)
-                    Text("수정일")
-                        .frame(width: 80, alignment: .leading)
+                    Text("수정일시")
+                        .frame(width: 110, alignment: .leading)
                 }
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -388,11 +406,11 @@ struct ProjectWikiTableView: View {
                                     .frame(width: 120, alignment: .leading)
                             }
 
-                            // 수정일
-                            Text(doc.updatedAt.formatted(date: .abbreviated, time: .omitted))
-                                .font(.caption)
+                            // 수정일시 (초 단위까지)
+                            Text(formatDateTime(doc.updatedAt))
+                                .font(.caption.monospacedDigit())
                                 .foregroundStyle(.secondary)
-                                .frame(width: 80, alignment: .leading)
+                                .frame(width: 110, alignment: .leading)
                         }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 12)
