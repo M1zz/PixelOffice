@@ -189,29 +189,32 @@ struct WorkflowTransition: Codable, Identifiable, Hashable {
 }
 
 enum TaskStatus: String, Codable, CaseIterable {
-    case todo = "할 일"
-    case inProgress = "진행 중"
-    case review = "검토"
+    case backlog = "백로그"
+    case todo = "할일"
+    case inProgress = "진행중"
     case done = "완료"
-    case blocked = "차단됨"
-    
+    case needsReview = "검토필요"
+    case rejected = "반려됨"
+
     var color: Color {
         switch self {
+        case .backlog: return .secondary
         case .todo: return .gray
         case .inProgress: return .blue
-        case .review: return .purple
         case .done: return .green
-        case .blocked: return .red
+        case .needsReview: return .orange
+        case .rejected: return .red
         }
     }
-    
+
     var icon: String {
         switch self {
+        case .backlog: return "tray"
         case .todo: return "circle"
         case .inProgress: return "circle.lefthalf.filled"
-        case .review: return "eye.circle"
         case .done: return "checkmark.circle.fill"
-        case .blocked: return "xmark.circle"
+        case .needsReview: return "eye.circle"
+        case .rejected: return "xmark.circle"
         }
     }
 }

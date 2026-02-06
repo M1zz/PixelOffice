@@ -202,7 +202,7 @@ struct TaskBoardView: View {
     @Binding var selectedTask: ProjectTask?
     @Binding var showingConversation: Bool
     
-    let columns: [TaskStatus] = [.todo, .inProgress, .review, .done]
+    let columns: [TaskStatus] = [.backlog, .todo, .inProgress, .done, .needsReview, .rejected]
     
     var body: some View {
         ScrollView(.horizontal) {
