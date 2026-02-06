@@ -151,10 +151,7 @@ struct CommunityView: View {
 
     @ViewBuilder
     private var employeesSection: some View {
-        // EmployeeDirectoryView()
-        Text("사원 디렉토리 기능 준비 중")
-            .foregroundColor(.secondary)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        EmployeeDirectoryView()
     }
 
     // MARK: - Guides Section
