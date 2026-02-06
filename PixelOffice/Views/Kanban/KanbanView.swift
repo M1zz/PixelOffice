@@ -219,62 +219,77 @@ struct SprintFilterBar: View {
     let onManageSprints: () -> Void
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                // 전체
-                SprintFilterChip(
-                    label: "전체",
-                    icon: "tray.full",
-                    count: allTaskCount,
-                    isSelected: sprintFilter == .all
-                ) {
-                    sprintFilter = .all
+        HStack(spacing: 0) {
+            // 스프린트 관리 버튼 (왼쪽에 배치)
+            Button {
+                onManageSprints()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "flag.fill")
+                        .font(.body)
+                    Text("스프린트")
+                        .font(.subheadline.weight(.semibold))
+                    Image(systemName: "chevron.down")
+                        .font(.caption2)
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.orange.opacity(0.1))
+                .foregroundStyle(.orange)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+            .padding(.leading, 12)
 
-                // 백로그
-                SprintFilterChip(
-                    label: "백로그",
-                    icon: "tray",
-                    count: backlogTaskCount,
-                    isSelected: sprintFilter == .backlog
-                ) {
-                    sprintFilter = .backlog
-                }
+            Divider()
+                .frame(height: 24)
+                .padding(.horizontal, 12)
 
-                if !sprints.isEmpty {
-                    Divider()
-                        .frame(height: 20)
-                }
-
-                // 각 스프린트
-                ForEach(sprints) { sprint in
+            // 필터 탭들
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    // 전체
                     SprintFilterChip(
-                        label: sprint.name,
-                        icon: sprint.isActive ? "flag.fill" : "flag",
-                        count: nil,
-                        isActive: sprint.isActive,
-                        isSelected: sprintFilter == .sprint(sprint.id)
+                        label: "전체",
+                        icon: "tray.full",
+                        count: allTaskCount,
+                        isSelected: sprintFilter == .all
                     ) {
-                        sprintFilter = .sprint(sprint.id)
+                        sprintFilter = .all
+                    }
+
+                    // 백로그
+                    SprintFilterChip(
+                        label: "백로그",
+                        icon: "tray",
+                        count: backlogTaskCount,
+                        isSelected: sprintFilter == .backlog
+                    ) {
+                        sprintFilter = .backlog
+                    }
+
+                    if !sprints.isEmpty {
+                        Divider()
+                            .frame(height: 20)
+                    }
+
+                    // 각 스프린트
+                    ForEach(sprints) { sprint in
+                        SprintFilterChip(
+                            label: sprint.name,
+                            icon: sprint.isActive ? "flag.fill" : "flag",
+                            count: nil,
+                            isActive: sprint.isActive,
+                            isSelected: sprintFilter == .sprint(sprint.id)
+                        ) {
+                            sprintFilter = .sprint(sprint.id)
+                        }
                     }
                 }
-
-                Divider()
-                    .frame(height: 20)
-
-                // 스프린트 관리 버튼
-                Button {
-                    onManageSprints()
-                } label: {
-                    Image(systemName: "gearshape")
-                        .font(.caption)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
+                .padding(.trailing, 12)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 6)
         }
+        .padding(.vertical, 6)
         .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
     }
 }

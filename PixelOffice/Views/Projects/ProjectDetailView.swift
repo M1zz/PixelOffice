@@ -64,23 +64,32 @@ struct ProjectHeader: View {
     let project: Project
     @EnvironmentObject var companyStore: CompanyStore
     @State private var isEditingStatus = false
-    
+    @State private var showingProjectInfo = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(project.name)
                         .font(.title.bold())
-                    
+
                     if !project.description.isEmpty {
                         Text(project.description)
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
                 }
-                
+
                 Spacer()
-                
+
+                // 프로젝트 정보 버튼
+                Button {
+                    showingProjectInfo = true
+                } label: {
+                    Label("프로젝트 정보", systemImage: "info.circle")
+                }
+                .buttonStyle(.bordered)
+
                 // Status Picker
                 Menu {
                     ForEach(ProjectStatus.allCases, id: \.self) { status in
@@ -161,6 +170,9 @@ struct ProjectHeader: View {
         }
         .padding()
         .background(.ultraThinMaterial)
+        .sheet(isPresented: $showingProjectInfo) {
+            ProjectInfoEditorView(projectName: project.name, isPresented: $showingProjectInfo)
+        }
     }
 }
 

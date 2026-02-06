@@ -6,11 +6,14 @@ import SwiftUI
 class DataPathService {
     static let shared = DataPathService()
 
+    /// 캐시된 프로젝트 루트 경로
+    private var cachedProjectRoot: String?
+
     /// 기본 데이터 저장 경로 (프로젝트 디렉토리 내)
     var basePath: String {
         let fileManager = FileManager.default
 
-        // 1. 현재 실행 파일의 위치에서 프로젝트 루트 찾기
+        // 프로젝트 루트 찾기
         if let projectRoot = findProjectRoot() {
             let datasPath = "\(projectRoot)/datas"
             // datas 폴더가 없으면 생성
@@ -20,42 +23,125 @@ class DataPathService {
             return datasPath
         }
 
-        // 2. Fallback: 현재 프로젝트 위치 (하드코딩)
-        let homePath = NSHomeDirectory()
-        let projectPath = "\(homePath)/Documents/code/PixelOffice/datas"
+        // Fallback: 앱 지원 디렉토리 사용
+        let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let fallbackPath = appSupport.appendingPathComponent("PixelOffice/datas").path
 
-        if !fileManager.fileExists(atPath: projectPath) {
-            try? fileManager.createDirectory(atPath: projectPath, withIntermediateDirectories: true)
+        if !fileManager.fileExists(atPath: fallbackPath) {
+            try? fileManager.createDirectory(atPath: fallbackPath, withIntermediateDirectories: true)
         }
-        return projectPath
+        print("⚠️ [DataPathService] 프로젝트 루트를 찾지 못해 fallback 경로 사용: \(fallbackPath)")
+        return fallbackPath
     }
 
-    /// 프로젝트 루트 디렉토리 찾기 (.xcodeproj 파일이 있는 위치)
+    /// 프로젝트 루트 디렉토리 찾기
     private func findProjectRoot() -> String? {
+        // 캐시된 경로가 있으면 반환
+        if let cached = cachedProjectRoot {
+            return cached
+        }
+
         let fileManager = FileManager.default
 
-        // 현재 실행 파일 위치
+        // 1. 실행 파일 위치에서 상위로 탐색 (최우선)
         let executablePath = Bundle.main.bundlePath
         var currentPath = (executablePath as NSString).deletingLastPathComponent
 
-        // 최대 10단계까지 상위 디렉토리 탐색
-        for _ in 0..<10 {
-            // .xcodeproj 파일이 있는지 확인
-            let contents = try? fileManager.contentsOfDirectory(atPath: currentPath)
-            if let contents = contents {
-                for item in contents {
-                    if item.hasSuffix(".xcodeproj") {
-                        return currentPath
-                    }
-                }
+        for _ in 0..<15 {
+            // PixelOffice.xcodeproj 또는 Project.swift(Tuist) 확인
+            let xcodeprojPath = "\(currentPath)/PixelOffice.xcodeproj"
+            let tuistPath = "\(currentPath)/Project.swift"
+            let datasPath = "\(currentPath)/datas"
+
+            if fileManager.fileExists(atPath: xcodeprojPath) ||
+               fileManager.fileExists(atPath: tuistPath) ||
+               fileManager.fileExists(atPath: datasPath) {
+                cachedProjectRoot = currentPath
+                return currentPath
             }
 
-            // 한 단계 위로
             let parentPath = (currentPath as NSString).deletingLastPathComponent
             if parentPath == currentPath {
-                break  // 루트에 도달
+                break
             }
             currentPath = parentPath
+        }
+
+        // 2. DerivedData에서 실행 중이면 소스 디렉토리 찾기
+        if let bundlePath = Bundle.main.resourcePath {
+            var checkPath = (bundlePath as NSString).deletingLastPathComponent
+            // .app 번들 밖으로 나가기
+            while checkPath.hasSuffix(".app") || checkPath.contains(".app/") {
+                checkPath = (checkPath as NSString).deletingLastPathComponent
+            }
+
+            if checkPath.contains("DerivedData") {
+                if let sourceRoot = findSourceProjectFromDerivedData(checkPath) {
+                    cachedProjectRoot = sourceRoot
+                    return sourceRoot
+                }
+            }
+        }
+
+        // 3. 환경변수에서 프로젝트 경로 확인
+        if let envPath = ProcessInfo.processInfo.environment["PIXELOFFICE_PROJECT_ROOT"] {
+            if fileManager.fileExists(atPath: envPath) {
+                cachedProjectRoot = envPath
+                return envPath
+            }
+        }
+
+        // 4. 일반적인 개발 경로 패턴 탐색
+        let homePath = NSHomeDirectory()
+        let commonPaths = [
+            "\(homePath)/Documents/workspace/code/PixelOffice",
+            "\(homePath)/Documents/code/PixelOffice",
+            "\(homePath)/Developer/PixelOffice",
+            "\(homePath)/Projects/PixelOffice",
+            "\(homePath)/Code/PixelOffice"
+        ]
+
+        for path in commonPaths {
+            let datasPath = "\(path)/datas"
+            if fileManager.fileExists(atPath: datasPath) {
+                cachedProjectRoot = path
+                return path
+            }
+        }
+
+        return nil
+    }
+
+    /// DerivedData 경로에서 소스 프로젝트 경로 찾기
+    private func findSourceProjectFromDerivedData(_ derivedDataPath: String) -> String? {
+        // DerivedData/PixelOffice-xxx/ 형태에서 프로젝트명 추출
+        let components = derivedDataPath.components(separatedBy: "/")
+
+        guard let derivedDataIndex = components.firstIndex(of: "DerivedData"),
+              derivedDataIndex + 1 < components.count else {
+            return nil
+        }
+
+        let projectFolder = components[derivedDataIndex + 1]
+        // PixelOffice-gpojubmxexpovxbfrzofqltohtpo -> PixelOffice
+        let projectName = projectFolder.components(separatedBy: "-").first ?? projectFolder
+
+        // 일반적인 소스 경로 패턴 확인
+        let homePath = NSHomeDirectory()
+        let possiblePaths = [
+            "\(homePath)/Documents/workspace/code/\(projectName)",
+            "\(homePath)/Documents/code/\(projectName)",
+            "\(homePath)/Developer/\(projectName)",
+            "\(homePath)/Projects/\(projectName)"
+        ]
+
+        let fileManager = FileManager.default
+        for path in possiblePaths {
+            if fileManager.fileExists(atPath: "\(path)/datas") ||
+               fileManager.fileExists(atPath: "\(path)/Project.swift") ||
+               fileManager.fileExists(atPath: "\(path)/\(projectName).xcodeproj") {
+                return path
+            }
         }
 
         return nil

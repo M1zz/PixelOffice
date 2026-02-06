@@ -8,10 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		0065A64B88102789CA6B9D6B /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F30F23ABD8AD50705DBDFB /* Message.swift */; };
-		014772B986F46729C14578A4 /* ImageAttachmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79E8BB263FF0F0C09CF68B46 /* ImageAttachmentView.swift */; };
 		02515BA00F7D3019D07932D0 /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0989B97043D4D9B65446C072 /* DataManager.swift */; };
 		049BDE6760D270EA57D33BF5 /* CollaborationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 998D9A599169ABCC53770C8C /* CollaborationStore.swift */; };
-		060BE42559D4045162735C3A /* CharacterAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F28F523791A7674136DFD4E /* CharacterAppearance.swift */; };
 		076F1B8A36223F023902B253 /* MarkdownToHTMLConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990B7831A8D81B3F719FA740 /* MarkdownToHTMLConverter.swift */; };
 		08B35536085DD48C8CDFF90D /* EmployeeWorkLogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E1FF4577CBC233335B25160 /* EmployeeWorkLogService.swift */; };
 		0B1ACB3F81DB8D1BBC7A52A8 /* CommunityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9423358B6E193D0F1CAE6B0D /* CommunityStore.swift */; };
@@ -19,7 +17,6 @@
 		12471A366FE6C1BD62AA517B /* Company.swift in Sources */ = {isa = PBXBuildFile; fileRef = C021B1E59B0CDD3DC2719478 /* Company.swift */; };
 		17ACE1524FD733889FDCED2B /* Debate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EADF7602C22ED8A3D1C37EE5 /* Debate.swift */; };
 		184A13552113C918363A6F18 /* EmployeeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A04A26D6533370EFE23AF6 /* EmployeeStore.swift */; };
-		1CD97CE5B9C6611D76E24C7E /* EmployeeFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F89A3E72F1B8AEBEAAB2FEDE /* EmployeeFactory.swift */; };
 		1E5DE610A3056ACC4CEB7184 /* ProjectListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79F563540545CE12A8062E30 /* ProjectListView.swift */; };
 		201578F656EAC9B5F752069C /* TuistBundle+PixelOffice.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7DCC804C1608534FD8081C7 /* TuistBundle+PixelOffice.swift */; };
 		209B283173F75850D220567E /* StoreCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D99F25149E017D17D22291A /* StoreCoordinator.swift */; };
@@ -27,7 +24,6 @@
 		2D91C93E0FBC1E0EBD8C30C5 /* ProjectContextEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 057BCE3E50B6351D2234CEF0 /* ProjectContextEditorView.swift */; };
 		31D176D798278468AEDBBE8F /* EmployeeWorkLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D6EA2E38C3E5D61E594F3D /* EmployeeWorkLogView.swift */; };
 		34076C73A96217EB82047681 /* AIActionParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD4F5F95D922420AEAF29B2 /* AIActionParser.swift */; };
-		35B49BF5BE1613CC142867C9 /* AITypePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384627C51A6120BB22C6702D /* AITypePresentation.swift */; };
 		35E4316698C0EB635F6B251E /* AITool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49497933A19EE14A481767B5 /* AITool.swift */; };
 		3A126060347A419FA3DC6BF0 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF46BF6A7622BC53436F1A66 /* SidebarView.swift */; };
 		40E410AB479A8686218FC73F /* ProjectWikiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F79895E6E7A87B64E077DFE /* ProjectWikiView.swift */; };
@@ -39,7 +35,6 @@
 		4A34F9B36EEB7C7DF95ED99C /* AddTaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F06F09BFEBCC94CAA3C7AF /* AddTaskView.swift */; };
 		4B4CAADE30D64909105BB8F8 /* OfficeLayoutEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B99B1C37E52942DC30A3B262 /* OfficeLayoutEditor.swift */; };
 		4F1718CF7751867202640293 /* TuistAssets+PixelOffice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BD28884ED96234431FA522 /* TuistAssets+PixelOffice.swift */; };
-		523866F33368A59C1D8EC919 /* DepartmentTypePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EC4B5BBDCE9C2BAAAAFF8B8 /* DepartmentTypePresentation.swift */; };
 		565EB8C3999BAD1617793FA1 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C06D7612B318BA375B90A981 /* SettingsStore.swift */; };
 		5763DA0C4AD6063250A3B035 /* OfficeDecoration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E22EBAA40F9B133389F7068 /* OfficeDecoration.swift */; };
 		5E04F7F1530049FA6C6D0A38 /* ConversationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD59245CF61CEBA8ABA83C2E /* ConversationView.swift */; };
@@ -64,6 +59,7 @@
 		937EA7703AFAE82657BC0D11 /* JobRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDA3901B33F5B536492B4792 /* JobRole.swift */; };
 		94E1211399F8973A73C8171C /* DebateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3893F261FD2045CF78BF6500 /* DebateView.swift */; };
 		97A9DE8BCE5D53FF1F3D02AD /* CollaborationRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8737E4C5D2F5F71AABE06EE3 /* CollaborationRecord.swift */; };
+		99D33F4F7D3224B48CC40049 /* ProjectInfoEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC92880BF2983E73F91E288A /* ProjectInfoEditorView.swift */; };
 		9A645D88956CEF23F89B058B /* EmployeeBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9083E6C5D2149547A85AD1 /* EmployeeBadgeView.swift */; };
 		9C41C61F1C75C9A2101A5207 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25AE95CF1FA5EB7163AD72D1 /* OnboardingView.swift */; };
 		9FFDAE61027D3D3E3A227499 /* DepartmentSkills.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0BD33957A8CD4FAEB868D26 /* DepartmentSkills.swift */; };
@@ -71,19 +67,15 @@
 		A743E1521AC43CAFC49F65B8 /* EmployeeDirectoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 015FA461CDC31087F17CB505 /* EmployeeDirectoryView.swift */; };
 		A794F1E894F0CCF403AC41F6 /* PermissionRequestHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAFA7A174A015164C2EE6E3E /* PermissionRequestHistoryView.swift */; };
 		A863D7F27BB6761B199197D0 /* OfficeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B33C3BEAD234726621167D0 /* OfficeView.swift */; };
-		AA32A414249B588CC6E94912 /* EventBus.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB0D6F99244BF9DEA863137 /* EventBus.swift */; };
 		AF3B5D221545FB4B87682B9A /* TaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 368C7FAB7726C3215EBDFD3D /* TaskView.swift */; };
-		B08E10AF24BD886BB3C96FC7 /* DepartmentPromptBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB4346B869A5410F49EBD34 /* DepartmentPromptBuilder.swift */; };
 		B3A4579B42C7C21784789759 /* PixelCharacter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FFC5016FB454DD616398DC1 /* PixelCharacter.swift */; };
 		B3D9A8931E2DE5DF8CB5DF4D /* AIActionGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ACAE60E9E7C0A0661981EF6 /* AIActionGuide.swift */; };
 		B418930899C1AB3BF0D14173 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9CD1626097C533A9E24CB5 /* PermissionManager.swift */; };
 		B48FFB9D579B9D0557DD6C9F /* Department.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C484404A467617FB6A22ABC /* Department.swift */; };
-		B50A3567D16EEF6D16E2A610 /* RecordService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B242FD48CABC568CB71F3E4B /* RecordService.swift */; };
 		B6E842784708842933F6D07F /* ProjectOfficeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FED6BC0E75B4DFC21B77D73D /* ProjectOfficeView.swift */; };
 		B8EC71304109012CF6B4820A /* EmployeeChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53E5CAF7CDBA09EF8807235 /* EmployeeChatView.swift */; };
 		BB1650770BE0B2A5C4F79092 /* ProjectDepartmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C286E5F6E71F6323519811A5 /* ProjectDepartmentView.swift */; };
 		BBC8DA9BE799625FF59527DA /* AddProjectEmployeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D3B759A95E28BD198B9B96 /* AddProjectEmployeeView.swift */; };
-		BD65190CB74EA00B6BBC5D18 /* EmployeeStatusPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA79C6EEC0C6EA6E97D939B /* EmployeeStatusPresentation.swift */; };
 		C07014AA88B1538F2E1C6686 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8ED370B96B952FFB1C9EED7A /* Assets.xcassets */; };
 		C70E0F7C5B59DD681E2D3405 /* DataPathService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 278DBFF64525307C7513CEAF /* DataPathService.swift */; };
 		C8E199E4AF1DF89665050F88 /* PermissionRequestCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 122E5D64E27E17B9DD3254D6 /* PermissionRequestCard.swift */; };
@@ -92,15 +84,14 @@
 		CDDC9A4678C2B0837C009034 /* ToastManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F838A6D789B8AB73EF47C5 /* ToastManager.swift */; };
 		CE27CCDB534A4A12A92A8B14 /* PermissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4887307B5BFD66BE8E330FEF /* PermissionsView.swift */; };
 		CE8190B467F3170CAA08950A /* CollaborationHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89233A2D0D786D13FCED9B85 /* CollaborationHistoryView.swift */; };
-		CEDA29C174581683A40BD652 /* CharacterAppearancePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D74EFB49F375C1D4D228C09A /* CharacterAppearancePresentation.swift */; };
 		D0E4763E1B75B3D3B40959D7 /* WikiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CC0ACACE5D7F45661BA5823 /* WikiService.swift */; };
 		D1E737B92DA7E23FE439BF3E /* DepartmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 412B9F5BCFE7561BB639409B /* DepartmentView.swift */; };
 		D28FCCA3CD0B57919830DAAA /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55108A5D91AA7D25C1ACDD8E /* SettingsView.swift */; };
-		D359D35BAEF9EEA063A80D43 /* EmployeeStatistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE0BA36A3F7AD8D9B929982 /* EmployeeStatistics.swift */; };
 		D65596A9A9B849DA41B13DE7 /* WalkingEmployeesLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 543818918AD8C6AACB739670 /* WalkingEmployeesLayer.swift */; };
 		D8FF292ECB9F35EFA4AE315E /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC41F04EE419D424CB4912B4 /* CommunityView.swift */; };
 		DA349F89DD1F4C3884A1358B /* PermissionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73047683B9B6475A0850F255 /* PermissionStore.swift */; };
 		DECACD9CB459D62A3813382B /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DC5FCC05AC6B73BD575A75 /* FlowLayout.swift */; };
+		EA56ED14748C038069752767 /* ProjectInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42F2671EDFF69007794A9653 /* ProjectInfo.swift */; };
 		EDBFD7CA1E6169D43C06D8E3 /* ProjectDepartment.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA68AEA61B457C0F18E964BB /* ProjectDepartment.swift */; };
 		F10FB68314779E83524571E4 /* Task.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB48699183B51913A755E728 /* Task.swift */; };
 		F7D194DBFCDD5C92C18C98C1 /* AddProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A76E7D2DCC4ED3ABBEE486 /* AddProjectView.swift */; };
@@ -134,25 +125,21 @@
 		0C3A0B8EC19D6C81E19ED058 /* Employee.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Employee.swift; sourceTree = "<group>"; };
 		0C484404A467617FB6A22ABC /* Department.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Department.swift; sourceTree = "<group>"; };
 		122E5D64E27E17B9DD3254D6 /* PermissionRequestCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequestCard.swift; sourceTree = "<group>"; };
-		1AB4346B869A5410F49EBD34 /* DepartmentPromptBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartmentPromptBuilder.swift; sourceTree = "<group>"; };
 		1DC521E8BDA27062502FD747 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1E22EBAA40F9B133389F7068 /* OfficeDecoration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeDecoration.swift; sourceTree = "<group>"; };
-		1F28F523791A7674136DFD4E /* CharacterAppearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterAppearance.swift; sourceTree = "<group>"; };
 		1F79895E6E7A87B64E077DFE /* ProjectWikiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWikiView.swift; sourceTree = "<group>"; };
 		25AE95CF1FA5EB7163AD72D1 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		278DBFF64525307C7513CEAF /* DataPathService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataPathService.swift; sourceTree = "<group>"; };
 		27C3A4332527434675DFEBCD /* DepartmentSkillsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartmentSkillsView.swift; sourceTree = "<group>"; };
 		290DF008621301A4FC3570E4 /* StructuredDebateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StructuredDebateService.swift; sourceTree = "<group>"; };
 		2A894491391AC7AE7F2DE303 /* ProjectStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStore.swift; sourceTree = "<group>"; };
-		2EA79C6EEC0C6EA6E97D939B /* EmployeeStatusPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeStatusPresentation.swift; sourceTree = "<group>"; };
 		33D4C6EC96F804DF4F889233 /* PixelArtRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelArtRenderer.swift; sourceTree = "<group>"; };
 		368C7FAB7726C3215EBDFD3D /* TaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskView.swift; sourceTree = "<group>"; };
-		384627C51A6120BB22C6702D /* AITypePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITypePresentation.swift; sourceTree = "<group>"; };
 		3893F261FD2045CF78BF6500 /* DebateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebateView.swift; sourceTree = "<group>"; };
 		3BCC43784DA4624A85A7F488 /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
 		3CC0ACACE5D7F45661BA5823 /* WikiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiService.swift; sourceTree = "<group>"; };
-		3EC4B5BBDCE9C2BAAAAFF8B8 /* DepartmentTypePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartmentTypePresentation.swift; sourceTree = "<group>"; };
 		412B9F5BCFE7561BB639409B /* DepartmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartmentView.swift; sourceTree = "<group>"; };
+		42F2671EDFF69007794A9653 /* ProjectInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectInfo.swift; sourceTree = "<group>"; };
 		4887307B5BFD66BE8E330FEF /* PermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsView.swift; sourceTree = "<group>"; };
 		48B30F23EF3CDD8A9FFD7DA1 /* Sprint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sprint.swift; sourceTree = "<group>"; };
 		49497933A19EE14A481767B5 /* AITool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITool.swift; sourceTree = "<group>"; };
@@ -161,11 +148,9 @@
 		5D99F25149E017D17D22291A /* StoreCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreCoordinator.swift; sourceTree = "<group>"; };
 		60AF703FA7A7789328BEC671 /* Project.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project.swift; sourceTree = "<group>"; };
 		6ACAE60E9E7C0A0661981EF6 /* AIActionGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIActionGuide.swift; sourceTree = "<group>"; };
-		6BE0BA36A3F7AD8D9B929982 /* EmployeeStatistics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeStatistics.swift; sourceTree = "<group>"; };
 		6E1AB37A14A087DDBCB7F477 /* EmployeeIDCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeIDCardView.swift; sourceTree = "<group>"; };
 		6FFC5016FB454DD616398DC1 /* PixelCharacter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelCharacter.swift; sourceTree = "<group>"; };
 		73047683B9B6475A0850F255 /* PermissionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStore.swift; sourceTree = "<group>"; };
-		79E8BB263FF0F0C09CF68B46 /* ImageAttachmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageAttachmentView.swift; sourceTree = "<group>"; };
 		79F563540545CE12A8062E30 /* ProjectListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectListView.swift; sourceTree = "<group>"; };
 		7AA72A5FA0C47A7414D8FD79 /* EmployeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeView.swift; sourceTree = "<group>"; };
 		7EBB211B28DB610C2B466B57 /* PermissionRequestDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequestDetailView.swift; sourceTree = "<group>"; };
@@ -192,7 +177,6 @@
 		AB48699183B51913A755E728 /* Task.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Task.swift; sourceTree = "<group>"; };
 		B0BD33957A8CD4FAEB868D26 /* DepartmentSkills.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartmentSkills.swift; sourceTree = "<group>"; };
 		B1B1493F5F9C5543D6EB54B9 /* ProjectDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDetailView.swift; sourceTree = "<group>"; };
-		B242FD48CABC568CB71F3E4B /* RecordService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordService.swift; sourceTree = "<group>"; };
 		B5D6EA2E38C3E5D61E594F3D /* EmployeeWorkLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeWorkLogView.swift; sourceTree = "<group>"; };
 		B79B879D6AEDC7C03D58C88C /* EmployeeThinking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeThinking.swift; sourceTree = "<group>"; };
 		B7DCC804C1608534FD8081C7 /* TuistBundle+PixelOffice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TuistBundle+PixelOffice.swift"; sourceTree = "<group>"; };
@@ -200,7 +184,6 @@
 		B99B1C37E52942DC30A3B262 /* OfficeLayoutEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeLayoutEditor.swift; sourceTree = "<group>"; };
 		BA68AEA61B457C0F18E964BB /* ProjectDepartment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDepartment.swift; sourceTree = "<group>"; };
 		BA87F1D95AEE3005E7BFE7B3 /* CompanyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanyStore.swift; sourceTree = "<group>"; };
-		BAB0D6F99244BF9DEA863137 /* EventBus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventBus.swift; sourceTree = "<group>"; };
 		BDA3901B33F5B536492B4792 /* JobRole.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobRole.swift; sourceTree = "<group>"; };
 		C021B1E59B0CDD3DC2719478 /* Company.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Company.swift; sourceTree = "<group>"; };
 		C06D7612B318BA375B90A981 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
@@ -209,9 +192,9 @@
 		C7D3B759A95E28BD198B9B96 /* AddProjectEmployeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddProjectEmployeeView.swift; sourceTree = "<group>"; };
 		C8A04A26D6533370EFE23AF6 /* EmployeeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeStore.swift; sourceTree = "<group>"; };
 		CA9CD1626097C533A9E24CB5 /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
+		CC92880BF2983E73F91E288A /* ProjectInfoEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectInfoEditorView.swift; sourceTree = "<group>"; };
 		CF46BF6A7622BC53436F1A66 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		D1A76E7D2DCC4ED3ABBEE486 /* AddProjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddProjectView.swift; sourceTree = "<group>"; };
-		D74EFB49F375C1D4D228C09A /* CharacterAppearancePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterAppearancePresentation.swift; sourceTree = "<group>"; };
 		DA9083E6C5D2149547A85AD1 /* EmployeeBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeBadgeView.swift; sourceTree = "<group>"; };
 		DC6B079A3FDF151282A2BD0C /* Repositories.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repositories.swift; sourceTree = "<group>"; };
 		DD59245CF61CEBA8ABA83C2E /* ConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationView.swift; sourceTree = "<group>"; };
@@ -225,7 +208,6 @@
 		F12A16590245AE8254851087 /* OfficeLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeLayout.swift; sourceTree = "<group>"; };
 		F1F6C163C8361A9A8935D6C6 /* PixelOffice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PixelOffice.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F62E8C7D9D13EA8D4D44D0D4 /* AddEmployeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEmployeeView.swift; sourceTree = "<group>"; };
-		F89A3E72F1B8AEBEAAB2FEDE /* EmployeeFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeFactory.swift; sourceTree = "<group>"; };
 		FC41F04EE419D424CB4912B4 /* CommunityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
 		FED6BC0E75B4DFC21B77D73D /* ProjectOfficeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectOfficeView.swift; sourceTree = "<group>"; };
 		FED6DCD81E70C45C54DA0453 /* CompanyWiki.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanyWiki.swift; sourceTree = "<group>"; };
@@ -258,15 +240,6 @@
 			path = InfoPlists;
 			sourceTree = "<group>";
 		};
-		1E3945C04DCF0963BB6BC343 /* Supporting */ = {
-			isa = PBXGroup;
-			children = (
-				1F28F523791A7674136DFD4E /* CharacterAppearance.swift */,
-				6BE0BA36A3F7AD8D9B929982 /* EmployeeStatistics.swift */,
-			);
-			path = Supporting;
-			sourceTree = "<group>";
-		};
 		2C589FA17CC9305930A96A13 /* Office */ = {
 			isa = PBXGroup;
 			children = (
@@ -282,17 +255,6 @@
 				543818918AD8C6AACB739670 /* WalkingEmployeesLayer.swift */,
 			);
 			path = Office;
-			sourceTree = "<group>";
-		};
-		30C2BE85264B2AC3DAF45869 /* Presentation */ = {
-			isa = PBXGroup;
-			children = (
-				384627C51A6120BB22C6702D /* AITypePresentation.swift */,
-				D74EFB49F375C1D4D228C09A /* CharacterAppearancePresentation.swift */,
-				3EC4B5BBDCE9C2BAAAAFF8B8 /* DepartmentTypePresentation.swift */,
-				2EA79C6EEC0C6EA6E97D939B /* EmployeeStatusPresentation.swift */,
-			);
-			path = Presentation;
 			sourceTree = "<group>";
 		};
 		3FEFA1AD6D8629E3EC98C81E /* Sources */ = {
@@ -317,7 +279,6 @@
 		60A26D351888278DC571F9B8 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				1E3945C04DCF0963BB6BC343 /* Supporting */,
 				6ACAE60E9E7C0A0661981EF6 /* AIActionGuide.swift */,
 				49497933A19EE14A481767B5 /* AITool.swift */,
 				C1BF96E15C6187C71C37BE89 /* APIConfiguration.swift */,
@@ -337,6 +298,7 @@
 				60AF703FA7A7789328BEC671 /* Project.swift */,
 				BA68AEA61B457C0F18E964BB /* ProjectDepartment.swift */,
 				A6777D6D9A271E2A52533A66 /* ProjectEmployee.swift */,
+				42F2671EDFF69007794A9653 /* ProjectInfo.swift */,
 				48B30F23EF3CDD8A9FFD7DA1 /* Sprint.swift */,
 				AB48699183B51913A755E728 /* Task.swift */,
 			);
@@ -360,18 +322,11 @@
 				DD59245CF61CEBA8ABA83C2E /* ConversationView.swift */,
 				057BCE3E50B6351D2234CEF0 /* ProjectContextEditorView.swift */,
 				B1B1493F5F9C5543D6EB54B9 /* ProjectDetailView.swift */,
+				CC92880BF2983E73F91E288A /* ProjectInfoEditorView.swift */,
 				79F563540545CE12A8062E30 /* ProjectListView.swift */,
 				368C7FAB7726C3215EBDFD3D /* TaskView.swift */,
 			);
 			path = Projects;
-			sourceTree = "<group>";
-		};
-		8DD2B2B904583068D1DAC284 /* AI */ = {
-			isa = PBXGroup;
-			children = (
-				1AB4346B869A5410F49EBD34 /* DepartmentPromptBuilder.swift */,
-			);
-			path = AI;
 			sourceTree = "<group>";
 		};
 		951473606C637970C0D47690 /* Kanban */ = {
@@ -394,9 +349,7 @@
 		A2AEAA2EC79EAA3DBA7A1591 /* PixelOffice */ = {
 			isa = PBXGroup;
 			children = (
-				EB6B54C907EC4B74A60ECC32 /* Infrastructure */,
 				60A26D351888278DC571F9B8 /* Models */,
-				30C2BE85264B2AC3DAF45869 /* Presentation */,
 				E6D5C0C366E4C32AB62074C1 /* Services */,
 				E13511E38DF5A288823FB91B /* Utilities */,
 				BBEC653EF5F344FFA7E074E2 /* Views */,
@@ -518,7 +471,6 @@
 		E6D5C0C366E4C32AB62074C1 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				8DD2B2B904583068D1DAC284 /* AI */,
 				D6E0ECA122FD85E4440177FE /* Stores */,
 				9DD4F5F95D922420AEAF29B2 /* AIActionParser.swift */,
 				80A9376C646173A9E4FECA71 /* ClaudeCodeService.swift */,
@@ -526,25 +478,15 @@
 				BA87F1D95AEE3005E7BFE7B3 /* CompanyStore.swift */,
 				0989B97043D4D9B65446C072 /* DataManager.swift */,
 				278DBFF64525307C7513CEAF /* DataPathService.swift */,
-				F89A3E72F1B8AEBEAAB2FEDE /* EmployeeFactory.swift */,
 				8E1FF4577CBC233335B25160 /* EmployeeWorkLogService.swift */,
 				CA9CD1626097C533A9E24CB5 /* PermissionManager.swift */,
 				97A9CB482FD52C7CC52CFCB7 /* ProjectRecoveryService.swift */,
-				B242FD48CABC568CB71F3E4B /* RecordService.swift */,
 				DC6B079A3FDF151282A2BD0C /* Repositories.swift */,
 				290DF008621301A4FC3570E4 /* StructuredDebateService.swift */,
 				A3F838A6D789B8AB73EF47C5 /* ToastManager.swift */,
 				3CC0ACACE5D7F45661BA5823 /* WikiService.swift */,
 			);
 			path = Services;
-			sourceTree = "<group>";
-		};
-		EB6B54C907EC4B74A60ECC32 /* Infrastructure */ = {
-			isa = PBXGroup;
-			children = (
-				BAB0D6F99244BF9DEA863137 /* EventBus.swift */,
-			);
-			path = Infrastructure;
 			sourceTree = "<group>";
 		};
 		F0EC5A2A72CDFB09CD1F297C /* Settings */ = {
@@ -560,7 +502,6 @@
 			isa = PBXGroup;
 			children = (
 				E53E5CAF7CDBA09EF8807235 /* EmployeeChatView.swift */,
-				79E8BB263FF0F0C09CF68B46 /* ImageAttachmentView.swift */,
 				122E5D64E27E17B9DD3254D6 /* PermissionRequestCard.swift */,
 				EAFA7A174A015164C2EE6E3E /* PermissionRequestHistoryView.swift */,
 				9C00E505A2DE858128473D24 /* ProjectEmployeeChatView.swift */,
@@ -638,7 +579,6 @@
 				4F1718CF7751867202640293 /* TuistAssets+PixelOffice.swift in Sources */,
 				201578F656EAC9B5F752069C /* TuistBundle+PixelOffice.swift in Sources */,
 				8EEF6F0A432DC14A217FB8C3 /* ContentView.swift in Sources */,
-				AA32A414249B588CC6E94912 /* EventBus.swift in Sources */,
 				B3D9A8931E2DE5DF8CB5DF4D /* AIActionGuide.swift in Sources */,
 				35E4316698C0EB635F6B251E /* AITool.swift in Sources */,
 				FF470AFA9365C78B7F5CE14D /* APIConfiguration.swift in Sources */,
@@ -658,27 +598,19 @@
 				7B096B068534CA1CE399EE12 /* Project.swift in Sources */,
 				EDBFD7CA1E6169D43C06D8E3 /* ProjectDepartment.swift in Sources */,
 				46F403778857089CF64C0A5D /* ProjectEmployee.swift in Sources */,
+				EA56ED14748C038069752767 /* ProjectInfo.swift in Sources */,
 				A31866CB34D6AD5AEF5F0C2C /* Sprint.swift in Sources */,
-				060BE42559D4045162735C3A /* CharacterAppearance.swift in Sources */,
-				D359D35BAEF9EEA063A80D43 /* EmployeeStatistics.swift in Sources */,
 				F10FB68314779E83524571E4 /* Task.swift in Sources */,
 				CB649400DE36DD989197A5EA /* PixelOfficeApp.swift in Sources */,
-				35B49BF5BE1613CC142867C9 /* AITypePresentation.swift in Sources */,
-				CEDA29C174581683A40BD652 /* CharacterAppearancePresentation.swift in Sources */,
-				523866F33368A59C1D8EC919 /* DepartmentTypePresentation.swift in Sources */,
-				BD65190CB74EA00B6BBC5D18 /* EmployeeStatusPresentation.swift in Sources */,
-				B08E10AF24BD886BB3C96FC7 /* DepartmentPromptBuilder.swift in Sources */,
 				34076C73A96217EB82047681 /* AIActionParser.swift in Sources */,
 				7B770B6398A3CFD05727C3EE /* ClaudeCodeService.swift in Sources */,
 				FA27168132E3A6BBCA8D39FE /* ClaudeService.swift in Sources */,
 				5E9B11B72F0703A54AC1046E /* CompanyStore.swift in Sources */,
 				02515BA00F7D3019D07932D0 /* DataManager.swift in Sources */,
 				C70E0F7C5B59DD681E2D3405 /* DataPathService.swift in Sources */,
-				1CD97CE5B9C6611D76E24C7E /* EmployeeFactory.swift in Sources */,
 				08B35536085DD48C8CDFF90D /* EmployeeWorkLogService.swift in Sources */,
 				B418930899C1AB3BF0D14173 /* PermissionManager.swift in Sources */,
 				49F70D04B201AFD7CF0A1FC5 /* ProjectRecoveryService.swift in Sources */,
-				B50A3567D16EEF6D16E2A610 /* RecordService.swift in Sources */,
 				908760EAD693C2A23F102EC8 /* Repositories.swift in Sources */,
 				049BDE6760D270EA57D33BF5 /* CollaborationStore.swift in Sources */,
 				0B1ACB3F81DB8D1BBC7A52A8 /* CommunityStore.swift in Sources */,
@@ -694,7 +626,6 @@
 				076F1B8A36223F023902B253 /* MarkdownToHTMLConverter.swift in Sources */,
 				8FD9E900FA7857385378DAD2 /* PixelArtRenderer.swift in Sources */,
 				B8EC71304109012CF6B4820A /* EmployeeChatView.swift in Sources */,
-				014772B986F46729C14578A4 /* ImageAttachmentView.swift in Sources */,
 				C8E199E4AF1DF89665050F88 /* PermissionRequestCard.swift in Sources */,
 				A794F1E894F0CCF403AC41F6 /* PermissionRequestHistoryView.swift in Sources */,
 				237F7D328F0E31F79E7096B0 /* ProjectEmployeeChatView.swift in Sources */,
@@ -729,6 +660,7 @@
 				5E04F7F1530049FA6C6D0A38 /* ConversationView.swift in Sources */,
 				2D91C93E0FBC1E0EBD8C30C5 /* ProjectContextEditorView.swift in Sources */,
 				416E58D53B7F9D4EA769EF73 /* ProjectDetailView.swift in Sources */,
+				99D33F4F7D3224B48CC40049 /* ProjectInfoEditorView.swift in Sources */,
 				1E5DE610A3056ACC4CEB7184 /* ProjectListView.swift in Sources */,
 				AF3B5D221545FB4B87682B9A /* TaskView.swift in Sources */,
 				43F1EA1F7C590FFE97F733F0 /* DepartmentSkillsView.swift in Sources */,

@@ -161,8 +161,7 @@ struct ProjectOfficeView: View {
                 }
             }
             .sheet(isPresented: $showingProjectContext) {
-                ProjectContextEditorView(projectId: projectId)
-                    .environmentObject(companyStore)
+                ProjectInfoEditorView(projectName: project.name, isPresented: $showingProjectContext)
             }
         } else {
             Text("프로젝트를 찾을 수 없습니다")
