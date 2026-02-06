@@ -617,7 +617,14 @@ struct EmployeeStatistics: Codable, Hashable {
     }
 
     /// 토큰 사용량 기록 추가
-    mutating func addTokenUsage(input: Int, output: Int) {
+    mutating func addTokenUsage(
+        input: Int,
+        output: Int,
+        cacheRead: Int = 0,
+        cacheCreation: Int = 0,
+        costUSD: Double = 0,
+        model: String = "unknown"
+    ) {
         let total = input + output
         totalTokensUsed += total
         inputTokens += input
@@ -627,7 +634,11 @@ struct EmployeeStatistics: Codable, Hashable {
             timestamp: Date(),
             tokens: total,
             inputTokens: input,
-            outputTokens: output
+            outputTokens: output,
+            cacheReadInputTokens: cacheRead,
+            cacheCreationInputTokens: cacheCreation,
+            costUSD: costUSD,
+            model: model
         )
         tokenUsageHistory.append(record)
 
@@ -671,18 +682,49 @@ struct TokenUsageRecord: Codable, Hashable, Identifiable {
     var tokens: Int
     var inputTokens: Int
     var outputTokens: Int
+    var cacheReadInputTokens: Int
+    var cacheCreationInputTokens: Int
+    var costUSD: Double
+    var model: String
 
     init(
         id: UUID = UUID(),
         timestamp: Date,
         tokens: Int,
         inputTokens: Int,
-        outputTokens: Int
+        outputTokens: Int,
+        cacheReadInputTokens: Int = 0,
+        cacheCreationInputTokens: Int = 0,
+        costUSD: Double = 0,
+        model: String = "unknown"
     ) {
         self.id = id
         self.timestamp = timestamp
         self.tokens = tokens
         self.inputTokens = inputTokens
         self.outputTokens = outputTokens
+        self.cacheReadInputTokens = cacheReadInputTokens
+        self.cacheCreationInputTokens = cacheCreationInputTokens
+        self.costUSD = costUSD
+        self.model = model
+    }
+
+    /// 기존 데이터 호환성
+    enum CodingKeys: String, CodingKey {
+        case id, timestamp, tokens, inputTokens, outputTokens
+        case cacheReadInputTokens, cacheCreationInputTokens, costUSD, model
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        timestamp = try container.decode(Date.self, forKey: .timestamp)
+        tokens = try container.decode(Int.self, forKey: .tokens)
+        inputTokens = try container.decode(Int.self, forKey: .inputTokens)
+        outputTokens = try container.decode(Int.self, forKey: .outputTokens)
+        cacheReadInputTokens = try container.decodeIfPresent(Int.self, forKey: .cacheReadInputTokens) ?? 0
+        cacheCreationInputTokens = try container.decodeIfPresent(Int.self, forKey: .cacheCreationInputTokens) ?? 0
+        costUSD = try container.decodeIfPresent(Double.self, forKey: .costUSD) ?? 0
+        model = try container.decodeIfPresent(String.self, forKey: .model) ?? "unknown"
     }
 }

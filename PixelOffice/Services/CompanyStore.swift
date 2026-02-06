@@ -139,8 +139,24 @@ class CompanyStore: ObservableObject, StoreCoordinator {
         employeeStore.getEmployeeStatus(employeeId)
     }
 
-    func updateEmployeeTokenUsage(_ employeeId: UUID, inputTokens: Int, outputTokens: Int) {
-        employeeStore.updateEmployeeTokenUsage(employeeId, inputTokens: inputTokens, outputTokens: outputTokens)
+    func updateEmployeeTokenUsage(
+        _ employeeId: UUID,
+        inputTokens: Int,
+        outputTokens: Int,
+        cacheRead: Int = 0,
+        cacheCreation: Int = 0,
+        costUSD: Double = 0,
+        model: String = "unknown"
+    ) {
+        employeeStore.updateEmployeeTokenUsage(
+            employeeId,
+            inputTokens: inputTokens,
+            outputTokens: outputTokens,
+            cacheRead: cacheRead,
+            cacheCreation: cacheCreation,
+            costUSD: costUSD,
+            model: model
+        )
     }
 
     func getEmployee(byId id: UUID) -> Employee? {

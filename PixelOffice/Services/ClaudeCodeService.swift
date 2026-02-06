@@ -64,7 +64,183 @@ actor ClaudeCodeService {
         return findClaudeCodePath() != nil
     }
 
-    /// Claude Code를 사용하여 메시지 전송
+    /// 실제 토큰 사용량 결과
+    struct TokenUsage: Codable {
+        let response: String
+        let inputTokens: Int
+        let outputTokens: Int
+        let cacheReadInputTokens: Int
+        let cacheCreationInputTokens: Int
+        let totalCostUSD: Double
+        let model: String
+        let timestamp: Date
+
+        /// 총 입력 토큰 (캐시 포함)
+        var totalInputTokens: Int {
+            inputTokens + cacheReadInputTokens + cacheCreationInputTokens
+        }
+    }
+
+    /// Claude Code JSON 응답 파싱용 구조체
+    private struct ClaudeCodeResponse: Codable {
+        let type: String
+        let result: String?
+        let is_error: Bool
+        let total_cost_usd: Double?
+        let usage: Usage?
+        let modelUsage: [String: ModelUsage]?
+
+        struct Usage: Codable {
+            let input_tokens: Int?
+            let output_tokens: Int?
+            let cache_read_input_tokens: Int?
+            let cache_creation_input_tokens: Int?
+        }
+
+        struct ModelUsage: Codable {
+            let inputTokens: Int?
+            let outputTokens: Int?
+            let cacheReadInputTokens: Int?
+            let cacheCreationInputTokens: Int?
+            let costUSD: Double?
+        }
+    }
+
+    /// Claude Code를 사용하여 메시지 전송 (실제 토큰 사용량 반환)
+    /// - Parameters:
+    ///   - content: 현재 사용자 메시지
+    ///   - systemPrompt: 시스템 프롬프트
+    ///   - conversationHistory: 이전 대화 히스토리 (Message 배열)
+    /// - Returns: TokenUsage (응답 + 실제 토큰 사용량)
+    func sendMessageWithTokens(
+        _ content: String,
+        systemPrompt: String? = nil,
+        conversationHistory: [Message] = []
+    ) async throws -> TokenUsage {
+        let jsonResponse = try await sendMessageJSON(content, systemPrompt: systemPrompt, conversationHistory: conversationHistory)
+        return jsonResponse
+    }
+
+    /// Claude Code를 사용하여 메시지 전송 (JSON 응답으로 토큰 사용량 포함)
+    private func sendMessageJSON(
+        _ content: String,
+        systemPrompt: String? = nil,
+        conversationHistory: [Message] = []
+    ) async throws -> TokenUsage {
+        log("=== 새 요청 시작 (JSON 모드) ===")
+        log("사용자 메시지: \(content)")
+
+        guard let claudePath = findClaudeCodePath() else {
+            log("ERROR: Claude Code가 설치되어 있지 않음")
+            throw ClaudeCodeError.notInstalled
+        }
+
+        // 전체 프롬프트 구성
+        var fullPrompt = ""
+        if let system = systemPrompt {
+            fullPrompt = "System: \(system)\n\n"
+        }
+        if !conversationHistory.isEmpty {
+            fullPrompt += "=== 이전 대화 내용 ===\n"
+            for message in conversationHistory {
+                let role = message.role == .user ? "User" : "Assistant"
+                let content = message.content.count > 500
+                    ? String(message.content.prefix(500)) + "..."
+                    : message.content
+                fullPrompt += "\(role): \(content)\n\n"
+            }
+            fullPrompt += "=== 현재 대화 ===\n"
+        }
+        fullPrompt += "User: \(content)"
+
+        // Claude Code CLI 실행 (--output-format json)
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: claudePath)
+        process.arguments = [
+            "--print",
+            "--output-format", "json",
+            "--allowedTools", "WebSearch,WebFetch,Read,Glob,Grep"
+        ]
+
+        let inputPipe = Pipe()
+        let outputPipe = Pipe()
+        let errorPipe = Pipe()
+        process.standardInput = inputPipe
+        process.standardOutput = outputPipe
+        process.standardError = errorPipe
+
+        var environment = ProcessInfo.processInfo.environment
+        environment["HOME"] = NSHomeDirectory()
+        environment["PATH"] = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:\(NSHomeDirectory())/.local/bin"
+        process.environment = environment
+
+        return try await withCheckedThrowingContinuation { [self] continuation in
+            do {
+                try process.run()
+                log("프로세스 시작됨 (JSON 모드)")
+
+                if let promptData = fullPrompt.data(using: .utf8) {
+                    inputPipe.fileHandleForWriting.write(promptData)
+                }
+                inputPipe.fileHandleForWriting.closeFile()
+
+                DispatchQueue.global().async { [self] in
+                    process.waitUntilExit()
+
+                    let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
+                    let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+                    let errorString = String(data: errorData, encoding: .utf8) ?? ""
+
+                    Task {
+                        await self.log("종료 코드: \(process.terminationStatus)")
+                        if !errorString.isEmpty {
+                            await self.log("STDERR: \(errorString)")
+                        }
+                    }
+
+                    if process.terminationStatus == 0 {
+                        do {
+                            let decoder = JSONDecoder()
+                            let response = try decoder.decode(ClaudeCodeResponse.self, from: outputData)
+
+                            let resultText = response.result ?? ""
+                            let usage = response.usage
+                            let modelName = response.modelUsage?.keys.first ?? "unknown"
+
+                            let tokenUsage = TokenUsage(
+                                response: resultText,
+                                inputTokens: usage?.input_tokens ?? 0,
+                                outputTokens: usage?.output_tokens ?? 0,
+                                cacheReadInputTokens: usage?.cache_read_input_tokens ?? 0,
+                                cacheCreationInputTokens: usage?.cache_creation_input_tokens ?? 0,
+                                totalCostUSD: response.total_cost_usd ?? 0,
+                                model: modelName,
+                                timestamp: Date()
+                            )
+
+                            Task {
+                                await self.log("📊 토큰 사용량: 입력=\(tokenUsage.inputTokens), 출력=\(tokenUsage.outputTokens), 캐시읽기=\(tokenUsage.cacheReadInputTokens), 비용=$\(String(format: "%.4f", tokenUsage.totalCostUSD))")
+                                await self.log("=== 요청 완료 (JSON 성공) ===")
+                            }
+
+                            continuation.resume(returning: tokenUsage)
+                        } catch {
+                            Task { await self.log("ERROR: JSON 파싱 실패 - \(error.localizedDescription)") }
+                            continuation.resume(throwing: ClaudeCodeError.executionFailed("JSON 파싱 실패: \(error.localizedDescription)"))
+                        }
+                    } else {
+                        Task { await self.log("ERROR: 실행 실패 - \(errorString)") }
+                        continuation.resume(throwing: ClaudeCodeError.executionFailed(errorString))
+                    }
+                }
+            } catch {
+                Task { await self.log("ERROR: 프로세스 시작 실패 - \(error.localizedDescription)") }
+                continuation.resume(throwing: ClaudeCodeError.executionFailed(error.localizedDescription))
+            }
+        }
+    }
+
+    /// Claude Code를 사용하여 메시지 전송 (텍스트 응답만)
     /// - Parameters:
     ///   - content: 현재 사용자 메시지
     ///   - systemPrompt: 시스템 프롬프트

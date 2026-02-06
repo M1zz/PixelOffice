@@ -411,15 +411,27 @@ struct EmployeeChatView: View {
                 let response: String
                 var inputTokens = 0
                 var outputTokens = 0
+                var cacheReadTokens = 0
+                var cacheCreationTokens = 0
+                var costUSD: Double = 0
+                var modelName = "unknown"
 
                 // Claude 타입이면 Claude Code CLI 먼저 시도
                 if hasClaudeCode {
-                    response = try await claudeCodeService.sendMessage(
+                    let result = try await claudeCodeService.sendMessageWithTokens(
                         messageToSend,
                         systemPrompt: systemPrompt,
                         conversationHistory: employee.conversationHistory
                     )
-                    // ClaudeCodeService는 아직 토큰 정보를 반환하지 않음
+                    response = result.response
+                    inputTokens = result.inputTokens
+                    outputTokens = result.outputTokens
+                    cacheReadTokens = result.cacheReadInputTokens
+                    cacheCreationTokens = result.cacheCreationInputTokens
+                    costUSD = result.totalCostUSD
+                    modelName = result.model
+                    // 실제 토큰 사용량 로그
+                    print("📊 실제 토큰: 입력=\(inputTokens), 출력=\(outputTokens), 캐시읽기=\(cacheReadTokens), 비용=$\(String(format: "%.4f", costUSD)), 모델=\(modelName)")
                 } else if let config = apiConfig, config.isConfigured {
                     // 그 외에는 직접 API 호출
                     let result = try await claudeService.sendMessage(
@@ -504,9 +516,17 @@ struct EmployeeChatView: View {
                     isLoading = false
                     companyStore.updateEmployeeStatus(employee.id, status: .idle)
 
-                    // 토큰 사용량 업데이트 (API 직접 호출인 경우만)
+                    // 토큰 사용량 업데이트
                     if inputTokens > 0 || outputTokens > 0 {
-                        companyStore.updateEmployeeTokenUsage(employee.id, inputTokens: inputTokens, outputTokens: outputTokens)
+                        companyStore.updateEmployeeTokenUsage(
+                            employee.id,
+                            inputTokens: inputTokens,
+                            outputTokens: outputTokens,
+                            cacheRead: cacheReadTokens,
+                            cacheCreation: cacheCreationTokens,
+                            costUSD: costUSD,
+                            model: modelName
+                        )
                     }
 
                     // 대화 기록 저장

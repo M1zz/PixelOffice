@@ -935,82 +935,84 @@ struct KanbanTaskCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // 제목 + 중요도
-            HStack(alignment: .top, spacing: 6) {
-                // 중요도 아이콘
-                Image(systemName: task.priority.icon)
-                    .font(.caption)
-                    .foregroundStyle(task.priority.color)
+        HStack(spacing: 0) {
+            // 왼쪽 중요도 색상 바
+            RoundedRectangle(cornerRadius: 2)
+                .fill(task.priority.color)
+                .frame(width: 4)
 
+            VStack(alignment: .leading, spacing: 8) {
+                // 제목
                 Text(task.title)
                     .font(.body)
                     .fontWeight(.medium)
                     .lineLimit(2)
-            }
 
-            // 설명 (있는 경우)
-            if !task.description.isEmpty {
-                Text(task.description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-
-            Divider()
-
-            // 메타 정보
-            HStack {
-                // 부서
-                HStack(spacing: 4) {
-                    Image(systemName: task.departmentType.icon)
-                        .font(.caption2)
-                    Text(task.departmentType.rawValue)
-                        .font(.caption)
-                }
-                .foregroundStyle(task.departmentType.color)
-
-                // 중요도 뱃지 (높음/긴급일 경우만)
-                if task.priority == .high || task.priority == .critical {
-                    Text(task.priority.rawValue)
-                        .font(.caption2)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(task.priority.color.opacity(0.2))
-                        .foregroundStyle(task.priority.color)
-                        .clipShape(RoundedRectangle(cornerRadius: 3))
-                }
-
-                Spacer()
-
-                // 담당자
-                if let assignee = assignee {
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(assignee.status.color)
-                            .frame(width: 6, height: 6)
-                        Text(assignee.name)
-                            .font(.caption)
-                    }
-                } else {
-                    Text("미배정")
+                // 설명 (있는 경우)
+                if !task.description.isEmpty {
+                    Text(task.description)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(2)
                 }
-            }
 
-            // 워크플로우 진행 상황 (있는 경우)
-            if !task.workflowHistory.isEmpty {
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.right.circle")
-                        .font(.caption2)
-                    Text("\(task.workflowHistory.count)단계 진행")
-                        .font(.caption)
+                Divider()
+
+                // 메타 정보
+                HStack {
+                    // 부서
+                    HStack(spacing: 4) {
+                        Image(systemName: task.departmentType.icon)
+                            .font(.caption2)
+                        Text(task.departmentType.rawValue)
+                            .font(.caption)
+                    }
+                    .foregroundStyle(task.departmentType.color)
+
+                    // 중요도 뱃지
+                    HStack(spacing: 2) {
+                        Image(systemName: task.priority.icon)
+                            .font(.caption2)
+                        Text(task.priority.rawValue)
+                            .font(.caption2)
+                    }
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(task.priority.color.opacity(0.15))
+                    .foregroundStyle(task.priority.color)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                    Spacer()
+
+                    // 담당자
+                    if let assignee = assignee {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(assignee.status.color)
+                                .frame(width: 6, height: 6)
+                            Text(assignee.name)
+                                .font(.caption)
+                        }
+                    } else {
+                        Text("미배정")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                .foregroundStyle(.purple)
+
+                // 워크플로우 진행 상황 (있는 경우)
+                if !task.workflowHistory.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.right.circle")
+                            .font(.caption2)
+                        Text("\(task.workflowHistory.count)단계 진행")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.purple)
+                }
             }
+            .padding(12)
         }
-        .padding(12)
         .background(Color(NSColor.textBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .shadow(color: .black.opacity(0.05), radius: 2, y: 1)

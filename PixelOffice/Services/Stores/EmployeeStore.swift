@@ -46,28 +46,28 @@ final class EmployeeStore {
 
     /// 직원 추가
     func addEmployee(_ employee: Employee, toDepartment departmentId: UUID) {
-        // 🐛 디버그: 저장 전 직원 외모 확인
-        print("💾 [EmployeeStore] 저장 전 직원 \(employee.name)의 외모:")
-        print("   피부색: \(employee.characterAppearance.skinTone)")
-        print("   헤어스타일: \(employee.characterAppearance.hairStyle)")
-        print("   헤어색: \(employee.characterAppearance.hairColor)")
-        print("   셔츠색: \(employee.characterAppearance.shirtColor)")
-        print("   악세서리: \(employee.characterAppearance.accessory)")
-        print("   표정: \(employee.characterAppearance.expression)")
+        // 저장 전 직원 수 확인
+        let countBefore = coordinator.company.allEmployees.count
+        print("➕ [직원 추가] \(employee.name) → 부서 ID: \(departmentId)")
+        print("   저장 전 직원 수: \(countBefore)명")
 
         coordinator.company.addEmployee(employee, toDepartment: departmentId)
         coordinator.employeeStatuses[employee.id] = employee.status
         coordinator.saveCompany()
 
-        // 🐛 디버그: 저장 후 확인
+        // 저장 후 검증
+        let countAfter = coordinator.company.allEmployees.count
+        if countAfter <= countBefore {
+            print("⚠️ [경고] 직원 추가 후 직원 수가 증가하지 않음! \(countBefore) → \(countAfter)")
+        } else {
+            print("✅ [직원 추가 완료] \(employee.name), 총 직원: \(countAfter)명")
+        }
+
+        // 직원이 정상적으로 저장되었는지 확인
         if let savedEmployee = findEmployee(byId: employee.id) {
-            print("✅ [EmployeeStore] 저장 후 직원 \(savedEmployee.name)의 외모:")
-            print("   피부색: \(savedEmployee.characterAppearance.skinTone)")
-            print("   헤어스타일: \(savedEmployee.characterAppearance.hairStyle)")
-            print("   헤어색: \(savedEmployee.characterAppearance.hairColor)")
-            print("   셔츠색: \(savedEmployee.characterAppearance.shirtColor)")
-            print("   악세서리: \(savedEmployee.characterAppearance.accessory)")
-            print("   표정: \(savedEmployee.characterAppearance.expression)")
+            print("   ✓ 저장 확인: \(savedEmployee.name)")
+        } else {
+            print("   ⚠️ 저장 확인 실패: 직원을 찾을 수 없음")
         }
 
         // 직원 프로필 파일 생성
@@ -78,8 +78,18 @@ final class EmployeeStore {
 
     /// 직원 제거
     func removeEmployee(_ employeeId: UUID) {
+        let countBefore = coordinator.company.allEmployees.count
+        let employeeName = findEmployee(byId: employeeId)?.name ?? "Unknown"
+
+        print("➖ [직원 제거] \(employeeName) (ID: \(employeeId))")
+        print("   제거 전 직원 수: \(countBefore)명")
+
         coordinator.company.removeEmployee(employeeId)
+        coordinator.employeeStatuses.removeValue(forKey: employeeId)
         coordinator.saveCompany()
+
+        let countAfter = coordinator.company.allEmployees.count
+        print("✅ [직원 제거 완료] 남은 직원: \(countAfter)명")
     }
 
     /// 일반 직원 검색 (부서 순회)
@@ -156,11 +166,26 @@ final class EmployeeStore {
     }
 
     /// 직원 토큰 사용량 업데이트
-    func updateEmployeeTokenUsage(_ employeeId: UUID, inputTokens: Int, outputTokens: Int) {
+    func updateEmployeeTokenUsage(
+        _ employeeId: UUID,
+        inputTokens: Int,
+        outputTokens: Int,
+        cacheRead: Int = 0,
+        cacheCreation: Int = 0,
+        costUSD: Double = 0,
+        model: String = "unknown"
+    ) {
         // 일반 직원에서 찾기
         for deptIndex in coordinator.company.departments.indices {
             if let empIndex = coordinator.company.departments[deptIndex].employees.firstIndex(where: { $0.id == employeeId }) {
-                coordinator.company.departments[deptIndex].employees[empIndex].statistics.addTokenUsage(input: inputTokens, output: outputTokens)
+                coordinator.company.departments[deptIndex].employees[empIndex].statistics.addTokenUsage(
+                    input: inputTokens,
+                    output: outputTokens,
+                    cacheRead: cacheRead,
+                    cacheCreation: cacheCreation,
+                    costUSD: costUSD,
+                    model: model
+                )
                 coordinator.company.departments[deptIndex].employees[empIndex].statistics.conversationCount += 1
                 coordinator.company.departments[deptIndex].employees[empIndex].statistics.lastActiveDate = Date()
                 coordinator.triggerObjectUpdate()
@@ -172,7 +197,14 @@ final class EmployeeStore {
         for projectIndex in coordinator.company.projects.indices {
             for deptIndex in coordinator.company.projects[projectIndex].departments.indices {
                 if let empIndex = coordinator.company.projects[projectIndex].departments[deptIndex].employees.firstIndex(where: { $0.id == employeeId }) {
-                    coordinator.company.projects[projectIndex].departments[deptIndex].employees[empIndex].statistics.addTokenUsage(input: inputTokens, output: outputTokens)
+                    coordinator.company.projects[projectIndex].departments[deptIndex].employees[empIndex].statistics.addTokenUsage(
+                        input: inputTokens,
+                        output: outputTokens,
+                        cacheRead: cacheRead,
+                        cacheCreation: cacheCreation,
+                        costUSD: costUSD,
+                        model: model
+                    )
                     coordinator.company.projects[projectIndex].departments[deptIndex].employees[empIndex].statistics.conversationCount += 1
                     coordinator.company.projects[projectIndex].departments[deptIndex].employees[empIndex].statistics.lastActiveDate = Date()
                     coordinator.triggerObjectUpdate()
