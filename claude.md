@@ -12,6 +12,17 @@
 | **데이터 폴더** | `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/` |
 | **전사 공용** | `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/_shared/` |
 
+### ⭐ PROJECT.md 위치 (반드시 확인!)
+
+**프로젝트 작업 전에 반드시 PROJECT.md를 읽어야 합니다.** 기술스택, 프로젝트 비전, 개발 가이드 등 핵심 정보가 담겨 있습니다.
+
+| 프로젝트 | PROJECT.md 경로 |
+|----------|-----------------|
+| **픽셀-오피스** | `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/픽셀-오피스/PROJECT.md` |
+| **전사 공용** | `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/_shared/일반/documents/PROJECT.md` |
+
+**일반 규칙**: 모든 프로젝트의 PROJECT.md는 `datas/[프로젝트명]/PROJECT.md` 경로에 있습니다.
+
 ### 프로젝트별 주요 파일
 
 ```

@@ -6,6 +6,7 @@ struct ProjectTask: Codable, Identifiable, Hashable {
     var title: String
     var description: String
     var status: TaskStatus
+    var priority: TaskPriority
     var assigneeId: UUID?
     var departmentType: DepartmentType
     var conversation: [Message]
@@ -23,7 +24,7 @@ struct ProjectTask: Codable, Identifiable, Hashable {
     var parentTaskId: UUID?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, description, status, assigneeId, departmentType
+        case id, title, description, status, priority, assigneeId, departmentType
         case conversation, outputs, createdAt, updatedAt, completedAt
         case estimatedHours, actualHours, prompt, workflowHistory, parentTaskId, sprintId
     }
@@ -33,6 +34,7 @@ struct ProjectTask: Codable, Identifiable, Hashable {
         title: String,
         description: String = "",
         status: TaskStatus = .todo,
+        priority: TaskPriority = .medium,
         assigneeId: UUID? = nil,
         departmentType: DepartmentType = .general,
         conversation: [Message] = [],
@@ -51,6 +53,7 @@ struct ProjectTask: Codable, Identifiable, Hashable {
         self.title = title
         self.description = description
         self.status = status
+        self.priority = priority
         self.assigneeId = assigneeId
         self.departmentType = departmentType
         self.conversation = conversation
@@ -73,6 +76,7 @@ struct ProjectTask: Codable, Identifiable, Hashable {
         title = try container.decode(String.self, forKey: .title)
         description = try container.decode(String.self, forKey: .description)
         status = try container.decode(TaskStatus.self, forKey: .status)
+        priority = try container.decodeIfPresent(TaskPriority.self, forKey: .priority) ?? .medium
         assigneeId = try container.decodeIfPresent(UUID.self, forKey: .assigneeId)
         departmentType = try container.decode(DepartmentType.self, forKey: .departmentType)
         conversation = try container.decode([Message].self, forKey: .conversation)
@@ -185,6 +189,40 @@ struct WorkflowTransition: Codable, Identifiable, Hashable {
         self.toDepartment = toDepartment
         self.transitionDate = transitionDate
         self.note = note
+    }
+}
+
+enum TaskPriority: String, Codable, CaseIterable {
+    case low = "낮음"
+    case medium = "보통"
+    case high = "높음"
+    case critical = "긴급"
+
+    var color: Color {
+        switch self {
+        case .low: return .secondary
+        case .medium: return .blue
+        case .high: return .orange
+        case .critical: return .red
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .low: return "arrow.down"
+        case .medium: return "minus"
+        case .high: return "arrow.up"
+        case .critical: return "exclamationmark.2"
+        }
+    }
+
+    var sortOrder: Int {
+        switch self {
+        case .critical: return 0
+        case .high: return 1
+        case .medium: return 2
+        case .low: return 3
+        }
     }
 }
 

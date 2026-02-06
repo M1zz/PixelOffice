@@ -936,11 +936,18 @@ struct KanbanTaskCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // 제목
-            Text(task.title)
-                .font(.body)
-                .fontWeight(.medium)
-                .lineLimit(2)
+            // 제목 + 중요도
+            HStack(alignment: .top, spacing: 6) {
+                // 중요도 아이콘
+                Image(systemName: task.priority.icon)
+                    .font(.caption)
+                    .foregroundStyle(task.priority.color)
+
+                Text(task.title)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .lineLimit(2)
+            }
 
             // 설명 (있는 경우)
             if !task.description.isEmpty {
@@ -962,6 +969,17 @@ struct KanbanTaskCard: View {
                         .font(.caption)
                 }
                 .foregroundStyle(task.departmentType.color)
+
+                // 중요도 뱃지 (높음/긴급일 경우만)
+                if task.priority == .high || task.priority == .critical {
+                    Text(task.priority.rawValue)
+                        .font(.caption2)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(task.priority.color.opacity(0.2))
+                        .foregroundStyle(task.priority.color)
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
 
                 Spacer()
 
@@ -1009,6 +1027,7 @@ struct KanbanAddTaskView: View {
     @State private var title = ""
     @State private var description = ""
     @State private var selectedDepartment: DepartmentType = .planning
+    @State private var selectedPriority: TaskPriority = .medium
     @State private var selectedAssignee: UUID?
     @State private var selectedSprintId: UUID?
 
@@ -1047,6 +1066,17 @@ struct KanbanAddTaskView: View {
 
                     TextField("설명", text: $description, axis: .vertical)
                         .lineLimit(3...6)
+
+                    Picker("중요도", selection: $selectedPriority) {
+                        ForEach(TaskPriority.allCases, id: \.self) { priority in
+                            HStack(spacing: 4) {
+                                Image(systemName: priority.icon)
+                                    .foregroundStyle(priority.color)
+                                Text(priority.rawValue)
+                            }
+                            .tag(priority)
+                        }
+                    }
                 }
 
                 Section("배정") {
@@ -1065,7 +1095,7 @@ struct KanbanAddTaskView: View {
                     }
 
                     Picker("스프린트", selection: $selectedSprintId) {
-                        Text("없음").tag(nil as UUID?)
+                        Text("백로그 (스프린트 없음)").tag(nil as UUID?)
                         ForEach(project?.sprints ?? []) { sprint in
                             HStack {
                                 Text(sprint.name)
@@ -1099,11 +1129,8 @@ struct KanbanAddTaskView: View {
             }
             .padding()
         }
-        .frame(width: 400, height: 450)
-        .onAppear {
-            // 활성 스프린트를 기본값으로 설정
-            selectedSprintId = project?.activeSprint?.id
-        }
+        .frame(width: 400, height: 500)
+        // 기본값은 백로그(nil) - onAppear 제거
     }
 
     private func addTask() {
@@ -1111,6 +1138,7 @@ struct KanbanAddTaskView: View {
             title: title,
             description: description,
             status: .todo,
+            priority: selectedPriority,
             assigneeId: selectedAssignee,
             departmentType: selectedDepartment,
             sprintId: selectedSprintId
@@ -1131,6 +1159,7 @@ struct TaskDetailView: View {
     @State private var editedTitle: String
     @State private var editedDescription: String
     @State private var editedStatus: TaskStatus
+    @State private var editedPriority: TaskPriority
     @State private var editedAssignee: UUID?
     @State private var editedSprintId: UUID?
 
@@ -1148,6 +1177,7 @@ struct TaskDetailView: View {
         _editedTitle = State(initialValue: task.title)
         _editedDescription = State(initialValue: task.description)
         _editedStatus = State(initialValue: task.status)
+        _editedPriority = State(initialValue: task.priority)
         _editedAssignee = State(initialValue: task.assigneeId)
         _editedSprintId = State(initialValue: task.sprintId)
     }
@@ -1217,6 +1247,23 @@ struct TaskDetailView: View {
                             ForEach(TaskStatus.allCases, id: \.self) { status in
                                 Label(status.rawValue, systemImage: status.icon)
                                     .tag(status)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    // 중요도
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("중요도")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Picker("중요도", selection: $editedPriority) {
+                            ForEach(TaskPriority.allCases, id: \.self) { priority in
+                                HStack(spacing: 4) {
+                                    Image(systemName: priority.icon)
+                                    Text(priority.rawValue)
+                                }
+                                .tag(priority)
                             }
                         }
                         .pickerStyle(.segmented)
@@ -1358,6 +1405,7 @@ struct TaskDetailView: View {
         updatedTask.title = editedTitle
         updatedTask.description = editedDescription
         updatedTask.status = editedStatus
+        updatedTask.priority = editedPriority
         updatedTask.assigneeId = editedAssignee
         updatedTask.sprintId = editedSprintId
         updatedTask.updatedAt = Date()
