@@ -153,14 +153,14 @@ struct EmployeeDirectoryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 16)], spacing: 16) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 210), spacing: 20)], spacing: 20) {
                         ForEach(filteredEmployees) { employee in
                             EmployeeDirectoryCard(employee: employee) {
                                 selectedEmployee = employee
                             }
                         }
                     }
-                    .padding()
+                    .padding(20)
                 }
             }
         }
@@ -189,93 +189,317 @@ struct EmployeeInfo: Identifiable, Hashable {
     let statistics: EmployeeStatistics
 }
 
-/// 직원 디렉토리 카드
+/// 플립 가능한 직원 카드
 struct EmployeeDirectoryCard: View {
     let employee: EmployeeInfo
     let onTap: () -> Void
 
+    @State private var isFlipped = false
+    @State private var isHovering = false
+
     var body: some View {
-        Button(action: onTap) {
-            VStack(spacing: 12) {
-                // 캐릭터
-                ZStack(alignment: .topTrailing) {
-                    Circle()
-                        .fill(employee.departmentType.color.opacity(0.2))
-                        .frame(width: 80, height: 80)
+        ZStack {
+            // 뒷면 (통계)
+            CardBackView(employee: employee)
+                .rotation3DEffect(
+                    .degrees(isFlipped ? 0 : 180),
+                    axis: (x: 0, y: 1, z: 0)
+                )
+                .opacity(isFlipped ? 1 : 0)
 
-                    PixelCharacter(
-                        appearance: employee.appearance,
-                        status: employee.status,
-                        aiType: employee.aiType
-                    )
-                    .scaleEffect(0.9)
+            // 앞면 (기본 정보)
+            CardFrontView(employee: employee)
+                .rotation3DEffect(
+                    .degrees(isFlipped ? -180 : 0),
+                    axis: (x: 0, y: 1, z: 0)
+                )
+                .opacity(isFlipped ? 0 : 1)
+        }
+        .frame(width: 200, height: 280)
+        .onTapGesture {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                isFlipped.toggle()
+            }
+        }
+        .onHover { hovering in
+            isHovering = hovering
+        }
+        .scaleEffect(isHovering ? 1.02 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isHovering)
+        .contextMenu {
+            Button {
+                onTap()
+            } label: {
+                Label("사원증 보기", systemImage: "person.text.rectangle")
+            }
 
+            Button {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    isFlipped.toggle()
+                }
+            } label: {
+                Label(isFlipped ? "앞면 보기" : "뒷면 보기", systemImage: "arrow.triangle.2.circlepath")
+            }
+        }
+    }
+}
+
+/// 카드 앞면 - 기본 정보
+struct CardFrontView: View {
+    let employee: EmployeeInfo
+
+    var body: some View {
+        VStack(spacing: 10) {
+            // 상단 헤더 (부서 색상)
+            ZStack {
+                LinearGradient(
+                    colors: [employee.departmentType.color.opacity(0.7), employee.departmentType.color],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .frame(height: 50)
+
+                HStack {
+                    Image(systemName: employee.departmentType.icon)
+                    Text(employee.departmentType.rawValue)
+                    Spacer()
                     // 상태 표시
                     Circle()
                         .fill(employee.status.color)
-                        .frame(width: 14, height: 14)
+                        .frame(width: 10, height: 10)
                         .overlay(
                             Circle()
-                                .strokeBorder(Color.white, lineWidth: 2)
+                                .strokeBorder(Color.white.opacity(0.8), lineWidth: 1.5)
                         )
                 }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+            }
 
-                VStack(spacing: 4) {
-                    // 이름
+            // 캐릭터
+            ZStack {
+                Circle()
+                    .fill(employee.departmentType.color.opacity(0.15))
+                    .frame(width: 70, height: 70)
+
+                PixelCharacter(
+                    appearance: employee.appearance,
+                    status: employee.status,
+                    aiType: employee.aiType
+                )
+                .scaleEffect(0.8)
+            }
+
+            VStack(spacing: 6) {
+                // 이름
+                Text(employee.name)
+                    .font(.headline)
+
+                // 사원번호
+                Text(employee.employeeNumber)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+
+                // AI 유형
+                HStack(spacing: 4) {
+                    Image(systemName: employee.aiType.icon)
+                    Text(employee.aiType.rawValue)
+                }
+                .font(.caption2)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(employee.aiType.color.opacity(0.15))
+                .foregroundStyle(employee.aiType.color)
+                .cornerRadius(6)
+
+                // 프로젝트
+                if let project = employee.projectName {
+                    HStack(spacing: 3) {
+                        Image(systemName: "folder.fill")
+                        Text(project)
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                // 플립 힌트
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                    Text("클릭하여 뒤집기")
+                }
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
+        }
+        .background(Color(nsColor: .controlBackgroundColor))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+    }
+}
+
+/// 카드 뒷면 - 업무 통계
+struct CardBackView: View {
+    let employee: EmployeeInfo
+
+    var body: some View {
+        VStack(spacing: 8) {
+            // 상단 헤더
+            ZStack {
+                LinearGradient(
+                    colors: [employee.departmentType.color, employee.departmentType.color.opacity(0.7)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .frame(height: 40)
+
+                HStack {
                     Text(employee.name)
-                        .font(.headline)
-
-                    // 사원번호
-                    Text(employee.employeeNumber)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-
-                    // 부서 & AI 유형
-                    HStack(spacing: 6) {
-                        HStack(spacing: 3) {
-                            Image(systemName: employee.departmentType.icon)
-                            Text(employee.departmentType.rawValue)
-                        }
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Text("통계")
                         .font(.caption)
                         .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(employee.departmentType.color.opacity(0.15))
-                        .foregroundStyle(employee.departmentType.color)
-                        .cornerRadius(8)
-
-                        Image(systemName: employee.aiType.icon)
-                            .font(.caption)
-                            .foregroundStyle(employee.aiType.color)
-                    }
-
-                    // 프로젝트 (있으면)
-                    if let project = employee.projectName {
-                        HStack(spacing: 3) {
-                            Image(systemName: "folder.fill")
-                            Text(project)
-                        }
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    }
-
-                    Divider()
-                        .padding(.horizontal)
-
-                    // 직무
-                    Text(employee.jobRoles.map { $0.rawValue }.joined(separator: ", "))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.center)
+                        .padding(.vertical, 2)
+                        .background(.white.opacity(0.2))
+                        .cornerRadius(4)
                 }
-                .padding(.horizontal, 8)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
             }
-            .padding()
-            .background(Color(nsColor: .controlBackgroundColor))
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
+
+            // 통계 그리드
+            VStack(spacing: 8) {
+                // 대화
+                CardStatRow(
+                    icon: "bubble.left.and.bubble.right.fill",
+                    label: "대화",
+                    value: "\(employee.statistics.conversationCount)회",
+                    color: .blue
+                )
+
+                // 완료 태스크
+                CardStatRow(
+                    icon: "checkmark.circle.fill",
+                    label: "완료 태스크",
+                    value: "\(employee.statistics.tasksCompleted)개",
+                    color: .green
+                )
+
+                // 작성 문서
+                CardStatRow(
+                    icon: "doc.text.fill",
+                    label: "작성 문서",
+                    value: "\(employee.statistics.documentsCreated)개",
+                    color: .orange
+                )
+
+                // 협업
+                CardStatRow(
+                    icon: "person.2.fill",
+                    label: "협업",
+                    value: "\(employee.statistics.collaborationCount)회",
+                    color: .purple
+                )
+
+                Divider()
+                    .padding(.horizontal)
+
+                // 토큰 사용량
+                VStack(spacing: 4) {
+                    HStack {
+                        Image(systemName: "cpu.fill")
+                            .foregroundStyle(.pink)
+                        Text("토큰 사용")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(formatTokens(employee.statistics.totalTokensUsed))
+                                .font(.title3.bold())
+                            Text("총 사용")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("$\(calculateCost())")
+                                .font(.callout.bold())
+                                .foregroundStyle(.green)
+                            Text("예상 비용")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+
+                Spacer()
+
+                // 입사일
+                HStack {
+                    Image(systemName: "calendar")
+                        .font(.caption2)
+                    Text("입사: \(employee.hireDate.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.caption2)
+                }
+                .foregroundStyle(.tertiary)
+                .padding(.bottom, 8)
+            }
+            .padding(.horizontal, 8)
         }
-        .buttonStyle(.plain)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+    }
+
+    private func formatTokens(_ tokens: Int) -> String {
+        if tokens >= 1_000_000 {
+            return String(format: "%.1fM", Double(tokens) / 1_000_000)
+        } else if tokens >= 1_000 {
+            return String(format: "%.1fK", Double(tokens) / 1_000)
+        } else {
+            return "\(tokens)"
+        }
+    }
+
+    private func calculateCost() -> String {
+        let inputCost = Double(employee.statistics.inputTokens) / 1_000_000.0 * 3.0
+        let outputCost = Double(employee.statistics.outputTokens) / 1_000_000.0 * 15.0
+        let totalCost = inputCost + outputCost
+        return String(format: "%.3f", totalCost)
+    }
+}
+
+/// 카드 통계 행
+struct CardStatRow: View {
+    let icon: String
+    let label: String
+    let value: String
+    let color: Color
+
+    var body: some View {
+        HStack {
+            Image(systemName: icon)
+                .foregroundStyle(color)
+                .frame(width: 20)
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .font(.caption.bold())
+        }
+        .padding(.horizontal)
     }
 }
 
