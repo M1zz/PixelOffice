@@ -126,6 +126,10 @@ struct PipelineRun: Codable, Identifiable {
     /// 현재 실행 중인 태스크 인덱스 (재개 시 사용)
     var currentTaskIndex: Int = 0
 
+    /// 담당자 정보 (모르는 것이 있을 때 질문할 대상)
+    var assignedEmployeeId: UUID?
+    var assignedEmployeeName: String?
+
     /// 총 소요 시간 (초)
     var duration: TimeInterval? {
         guard let start = startedAt else { return nil }

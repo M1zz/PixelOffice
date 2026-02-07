@@ -41,7 +41,11 @@ class PipelineCoordinator: ObservableObject {
     // MARK: - Pipeline Control
 
     /// 파이프라인 시작
-    func startPipeline(requirement: String, project: Project) async {
+    /// - Parameters:
+    ///   - requirement: 요구사항 텍스트
+    ///   - project: 대상 프로젝트
+    ///   - assignedEmployee: 담당자 (모르는 것이 있을 때 질문할 대상)
+    func startPipeline(requirement: String, project: Project, assignedEmployee: ProjectEmployee? = nil) async {
         guard !isRunning else {
             print("[PipelineCoordinator] Pipeline already running")
             return
@@ -57,9 +61,15 @@ class PipelineCoordinator: ObservableObject {
 
         var run = PipelineRun(projectId: project.id, requirement: requirement)
         run.projectName = project.name
+        run.assignedEmployeeId = assignedEmployee?.id
+        run.assignedEmployeeName = assignedEmployee?.name
         run.startedAt = Date()
         run.state = .decomposing
-        run.addLog("파이프라인 시작", level: .info)
+        if let employee = assignedEmployee {
+            run.addLog("파이프라인 시작 (담당자: \(employee.name))", level: .info)
+        } else {
+            run.addLog("파이프라인 시작", level: .info)
+        }
         currentRun = run
         updateAction("파이프라인 초기화 중...")
 

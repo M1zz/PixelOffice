@@ -11,6 +11,7 @@ struct PipelineView: View {
     @State private var showingLogs = false
     @State private var showingHistory = false
     @State private var selectedTab: PipelineTab = .current
+    @State private var selectedEmployeeId: UUID?
 
     enum PipelineTab: String, CaseIterable {
         case current = "현재 실행"
@@ -19,6 +20,16 @@ struct PipelineView: View {
 
     var project: Project? {
         companyStore.company.projects.first { $0.id == projectId }
+    }
+
+    /// 프로젝트의 모든 직원 목록
+    var projectEmployees: [ProjectEmployee] {
+        project?.departments.flatMap { $0.employees } ?? []
+    }
+
+    /// 선택된 담당자
+    var selectedEmployee: ProjectEmployee? {
+        projectEmployees.first { $0.id == selectedEmployeeId }
     }
 
     /// 이 프로젝트의 파이프라인 히스토리
@@ -82,9 +93,11 @@ struct PipelineView: View {
             // 왼쪽: 입력 & 결과
             ScrollView {
                 VStack(spacing: 20) {
-                    // 요구사항 입력
+                    // 요구사항 입력 및 담당자 선택
                     RequirementInputView(
                         requirement: $requirement,
+                        selectedEmployeeId: $selectedEmployeeId,
+                        employees: projectEmployees,
                         isDisabled: coordinator.isRunning
                     )
 
@@ -222,7 +235,11 @@ struct PipelineView: View {
     private func startPipeline() {
         guard let project = project else { return }
         Task {
-            await coordinator.startPipeline(requirement: requirement, project: project)
+            await coordinator.startPipeline(
+                requirement: requirement,
+                project: project,
+                assignedEmployee: selectedEmployee
+            )
         }
     }
 
@@ -369,6 +386,14 @@ struct PipelineHistoryRow: View {
                                 .foregroundStyle(.secondary)
                         }
 
+                        if let employeeName = run.assignedEmployeeName {
+                            Text("•")
+                                .foregroundStyle(.secondary)
+                            Label(employeeName, systemImage: "person.circle")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
                         Text("•")
                             .foregroundStyle(.secondary)
 
@@ -504,28 +529,59 @@ struct PipelineHeaderView: View {
 
 struct RequirementInputView: View {
     @Binding var requirement: String
+    @Binding var selectedEmployeeId: UUID?
+    let employees: [ProjectEmployee]
     let isDisabled: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("요구사항", systemImage: "text.alignleft")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 12) {
+            // 요구사항 입력
+            VStack(alignment: .leading, spacing: 8) {
+                Label("요구사항", systemImage: "text.alignleft")
+                    .font(.headline)
 
-            TextEditor(text: $requirement)
-                .font(.body)
-                .frame(minHeight: 100)
-                .padding(8)
-                .background(Color(NSColor.textBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.secondary.opacity(0.3))
-                )
+                TextEditor(text: $requirement)
+                    .font(.body)
+                    .frame(minHeight: 100)
+                    .padding(8)
+                    .background(Color(NSColor.textBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.secondary.opacity(0.3))
+                    )
+                    .disabled(isDisabled)
+
+                Text("예: 로그인 화면에 소셜 로그인(Google, Apple) 기능을 추가해주세요")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
+
+            // 담당자 선택
+            VStack(alignment: .leading, spacing: 8) {
+                Label("담당자", systemImage: "person.circle")
+                    .font(.headline)
+
+                Picker("담당자 선택", selection: $selectedEmployeeId) {
+                    Text("지정하지 않음").tag(nil as UUID?)
+                    ForEach(employees, id: \.id) { employee in
+                        HStack {
+                            Text(employee.name)
+                            Text("(\(employee.departmentType.rawValue))")
+                                .foregroundStyle(.secondary)
+                        }
+                        .tag(employee.id as UUID?)
+                    }
+                }
+                .pickerStyle(.menu)
                 .disabled(isDisabled)
 
-            Text("예: 로그인 화면에 소셜 로그인(Google, Apple) 기능을 추가해주세요")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text("파이프라인 실행 중 모르는 것이 있을 때 담당자에게 질문합니다")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding()
         .background(Color(NSColor.controlBackgroundColor))
@@ -548,6 +604,16 @@ struct PipelineProgressView: View {
                     .foregroundStyle(run.state.color)
                 Text(run.state.rawValue)
                     .font(.headline)
+
+                // 담당자 표시
+                if let employeeName = run.assignedEmployeeName {
+                    Divider()
+                        .frame(height: 16)
+                    Label(employeeName, systemImage: "person.circle")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
                 Spacer()
                 if let duration = run.duration {
                     Text(formatDuration(duration))
