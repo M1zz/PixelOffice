@@ -548,11 +548,15 @@ extension PipelineCoordinator {
     func loadPipelineHistory() -> [PipelineRun] {
         guard FileManager.default.fileExists(atPath: historyFilePath),
               let data = FileManager.default.contents(atPath: historyFilePath) else {
+            print("[PipelineCoordinator] 히스토리 파일 없음: \(historyFilePath)")
             return []
         }
 
         do {
-            let runs = try JSONDecoder().decode([PipelineRun].self, from: data)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let runs = try decoder.decode([PipelineRun].self, from: data)
+            print("[PipelineCoordinator] 히스토리 로드 성공: \(runs.count)개")
             return runs.sorted { $0.createdAt > $1.createdAt }
         } catch {
             print("[PipelineCoordinator] 히스토리 로드 실패: \(error)")

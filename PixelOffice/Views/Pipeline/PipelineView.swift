@@ -12,6 +12,7 @@ struct PipelineView: View {
     @State private var showingHistory = false
     @State private var selectedTab: PipelineTab = .current
     @State private var selectedEmployeeId: UUID?
+    @State private var historyRefreshId = UUID()  // 히스토리 새로고침용
 
     enum PipelineTab: String, CaseIterable {
         case current = "현재 실행"
@@ -60,6 +61,11 @@ struct PipelineView: View {
             .pickerStyle(.segmented)
             .padding(.horizontal)
             .padding(.vertical, 8)
+            .onChange(of: selectedTab) { _, newTab in
+                if newTab == .history {
+                    historyRefreshId = UUID()  // 히스토리 탭 전환 시 새로고침
+                }
+            }
 
             Divider()
 
@@ -68,6 +74,7 @@ struct PipelineView: View {
                 currentExecutionView
             } else {
                 historyView
+                    .id(historyRefreshId)  // 새로고침 트리거
             }
 
             Divider()
