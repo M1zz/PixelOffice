@@ -19,6 +19,32 @@ class PipelineCoordinator: ObservableObject {
     @Published var currentAction: String = ""  // Claude Code 스타일 현재 작업
     @Published var todoItems: [PipelineTodoItem] = []  // TODO 리스트
 
+    /// 알림 메시지 (일시정지, 완료 등)
+    @Published var notificationMessage: String?
+    @Published var notificationType: NotificationType = .info
+
+    enum NotificationType {
+        case info, success, warning, error
+
+        var color: Color {
+            switch self {
+            case .info: return .blue
+            case .success: return .green
+            case .warning: return .orange
+            case .error: return .red
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .info: return "info.circle.fill"
+            case .success: return "checkmark.circle.fill"
+            case .warning: return "exclamationmark.triangle.fill"
+            case .error: return "xmark.circle.fill"
+            }
+        }
+    }
+
     // MARK: - Private Properties
 
     private weak var companyStore: CompanyStore?
@@ -150,7 +176,7 @@ class PipelineCoordinator: ObservableObject {
             currentRun.addLog(currentRun.isBuildSuccessful ? "파이프라인 완료!" : "파이프라인 실패", level: currentRun.isBuildSuccessful ? .success : .error)
             self.currentRun = currentRun
             progress = 1.0
-            updateAction(currentRun.isBuildSuccessful ? "완료!" : "실패")
+            updateAction(currentRun.isBuildSuccessful ? "✅ 완료!" : "❌ 실패")
             completeTodo(phase: .healing)
 
             // 리포트 생성
@@ -159,18 +185,28 @@ class PipelineCoordinator: ObservableObject {
             // 파이프라인 저장
             savePipelineRun(currentRun)
 
+            // 완료/실패 알림
+            if currentRun.isBuildSuccessful {
+                showNotification("파이프라인이 성공적으로 완료되었습니다!", type: .success)
+            } else {
+                showNotification("파이프라인이 실패했습니다. 로그를 확인하세요.", type: .error)
+            }
+
         } catch {
             run.state = .failed
             run.completedAt = Date()
             run.addLog("오류: \(error.localizedDescription)", level: .error)
             currentRun = run
-            updateAction("오류 발생: \(error.localizedDescription)")
+            updateAction("❌ 오류 발생")
 
             // 실패해도 리포트 생성
             generateReport(for: run, projectName: project.name)
 
             // 파이프라인 저장
             savePipelineRun(run)
+
+            // 오류 알림
+            showNotification("파이프라인 오류: \(error.localizedDescription)", type: .error)
         }
 
         isRunning = false
@@ -192,6 +228,26 @@ class PipelineCoordinator: ObservableObject {
         currentRun = run
         savePipelineRun(run)
         isRunning = false
+        updateAction("⏸️ 일시정지됨")
+        showNotification("파이프라인이 일시정지되었습니다. 히스토리에서 재개할 수 있습니다.", type: .warning)
+    }
+
+    /// 알림 표시
+    func showNotification(_ message: String, type: NotificationType) {
+        notificationMessage = message
+        notificationType = type
+
+        // 5초 후 자동으로 알림 숨김
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+            if self?.notificationMessage == message {
+                self?.notificationMessage = nil
+            }
+        }
+    }
+
+    /// 알림 닫기
+    func dismissNotification() {
+        notificationMessage = nil
     }
 
     /// 리포트 생성
@@ -214,6 +270,8 @@ class PipelineCoordinator: ObservableObject {
         savePipelineRun(run)  // 저장
         currentRun = run
         isRunning = false
+        updateAction("⏸️ 일시정지됨")
+        showNotification("파이프라인이 일시정지되었습니다. 히스토리에서 재개할 수 있습니다.", type: .warning)
     }
 
     // MARK: - Phase 1: Decomposition

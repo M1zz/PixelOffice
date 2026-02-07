@@ -76,6 +76,19 @@ struct PipelineView: View {
             bottomButtons
         }
         .frame(minWidth: 900, minHeight: 650)
+        .overlay(alignment: .top) {
+            // 알림 배너
+            if let message = coordinator.notificationMessage {
+                PipelineNotificationBanner(
+                    message: message,
+                    type: coordinator.notificationType,
+                    onDismiss: { coordinator.dismissNotification() }
+                )
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .animation(.spring(response: 0.3), value: coordinator.notificationMessage)
+                .padding(.top, 50)
+            }
+        }
         .onAppear {
             coordinator.setCompanyStore(companyStore)
         }
@@ -1057,6 +1070,49 @@ struct RecentLogsView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
         }
+    }
+}
+
+// MARK: - Notification Banner
+
+/// 파이프라인 알림 배너
+struct PipelineNotificationBanner: View {
+    let message: String
+    let type: PipelineCoordinator.NotificationType
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: type.icon)
+                .font(.title3)
+                .foregroundStyle(type.color)
+
+            Text(message)
+                .font(.subheadline.weight(.medium))
+
+            Spacer()
+
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(type.color.opacity(0.15))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(type.color.opacity(0.3), lineWidth: 1)
+                }
+        }
+        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
+        .padding(.horizontal, 20)
     }
 }
 
