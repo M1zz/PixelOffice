@@ -157,6 +157,20 @@ struct PixelOfficeApp: App {
         .windowResizability(.contentSize)
         .defaultSize(width: 600, height: 500)
 
+        // 자동 개발 파이프라인 윈도우
+        WindowGroup("파이프라인", id: "pipeline", for: UUID.self) { $projectId in
+            if let projectId = projectId {
+                PipelineView(projectId: projectId)
+                    .environmentObject(companyStore)
+            } else {
+                Text("프로젝트를 찾을 수 없습니다")
+                    .frame(width: 400, height: 300)
+            }
+        }
+        .windowStyle(.automatic)
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 900, height: 700)
+
         Settings {
             SettingsView()
                 .environmentObject(companyStore)

@@ -36,6 +36,7 @@ class CompanyStore: ObservableObject, StoreCoordinator {
     private(set) var settingsStore: SettingsStore!
     private(set) var collaborationStore: CollaborationStore!
     private(set) var permissionStore: PermissionStore!
+    private(set) var pipelineCoordinator: PipelineCoordinator!
 
     // MARK: - Init
 
@@ -79,6 +80,7 @@ class CompanyStore: ObservableObject, StoreCoordinator {
         settingsStore = SettingsStore(coordinator: self)
         collaborationStore = CollaborationStore(coordinator: self)
         permissionStore = PermissionStore(coordinator: self)
+        pipelineCoordinator = PipelineCoordinator(companyStore: self)
     }
 
     private func setupAutoSave() {

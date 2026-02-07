@@ -147,9 +147,11 @@ struct CompanySettings: Codable {
     var notificationsEnabled: Bool
     var wikiSettings: WikiSettings?
     var departmentSkills: DepartmentSkills
+    /// AI 도구 사용 자동 승인 (--dangerously-skip-permissions)
+    var autoApproveAI: Bool
 
     enum CodingKeys: String, CodingKey {
-        case apiConfigurations, autoSaveEnabled, cloudSyncEnabled, notificationsEnabled, wikiSettings, departmentSkills
+        case apiConfigurations, autoSaveEnabled, cloudSyncEnabled, notificationsEnabled, wikiSettings, departmentSkills, autoApproveAI
     }
 
     init(
@@ -158,7 +160,8 @@ struct CompanySettings: Codable {
         cloudSyncEnabled: Bool = false,
         notificationsEnabled: Bool = true,
         wikiSettings: WikiSettings? = WikiSettings(),
-        departmentSkills: DepartmentSkills = DepartmentSkills()
+        departmentSkills: DepartmentSkills = DepartmentSkills(),
+        autoApproveAI: Bool = false
     ) {
         self.apiConfigurations = apiConfigurations
         self.autoSaveEnabled = autoSaveEnabled
@@ -166,6 +169,7 @@ struct CompanySettings: Codable {
         self.notificationsEnabled = notificationsEnabled
         self.wikiSettings = wikiSettings
         self.departmentSkills = departmentSkills
+        self.autoApproveAI = autoApproveAI
     }
 
     // 기존 저장 파일 호환성
@@ -177,5 +181,6 @@ struct CompanySettings: Codable {
         notificationsEnabled = try container.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? true
         wikiSettings = try container.decodeIfPresent(WikiSettings.self, forKey: .wikiSettings)
         departmentSkills = try container.decodeIfPresent(DepartmentSkills.self, forKey: .departmentSkills) ?? DepartmentSkills()
+        autoApproveAI = try container.decodeIfPresent(Bool.self, forKey: .autoApproveAI) ?? false
     }
 }

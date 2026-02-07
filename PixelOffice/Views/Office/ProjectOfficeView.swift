@@ -53,6 +53,9 @@ struct ProjectOfficeView: View {
                                 },
                                 onOpenProjectContext: {
                                     showingProjectContext = true
+                                },
+                                onOpenPipeline: {
+                                    openWindow(id: "pipeline", value: projectId)
                                 }
                             )
 
@@ -154,6 +157,12 @@ struct ProjectOfficeView: View {
                     }
 
                     Button {
+                        openWindow(id: "pipeline", value: projectId)
+                    } label: {
+                        Label("파이프라인", systemImage: "gearshape.arrow.triangle.2.circlepath")
+                    }
+
+                    Button {
                         openWindow(id: "add-project-employee", value: AddProjectEmployeeContext(projectId: projectId, departmentType: nil))
                     } label: {
                         Label("직원 추가", systemImage: "person.badge.plus")
@@ -175,6 +184,7 @@ struct ProjectOfficeHeader: View {
     let onOpenWiki: () -> Void
     let onOpenCollaboration: () -> Void
     let onOpenProjectContext: () -> Void
+    let onOpenPipeline: () -> Void
 
     var body: some View {
         HStack {
@@ -223,6 +233,14 @@ struct ProjectOfficeHeader: View {
                 onOpenCollaboration()
             } label: {
                 Label("협업", systemImage: "bubble.left.and.bubble.right")
+            }
+            .buttonStyle(.bordered)
+
+            // 파이프라인 버튼
+            Button {
+                onOpenPipeline()
+            } label: {
+                Label("파이프라인", systemImage: "gearshape.arrow.triangle.2.circlepath")
             }
             .buttonStyle(.bordered)
 

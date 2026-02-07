@@ -317,7 +317,8 @@ struct ProjectEmployeeChatView: View {
                 if canUseClaudeCode && useClaudeCode {
                     response = try await claudeCodeService.sendMessage(
                         greetingPrompt,
-                        systemPrompt: systemPrompt
+                        systemPrompt: systemPrompt,
+                        autoApprove: companyStore.company.settings.autoApproveAI
                     )
                     // ClaudeCodeService는 아직 토큰 정보를 반환하지 않음
                 } else if let config = apiConfig, config.isConfigured {
@@ -393,7 +394,8 @@ struct ProjectEmployeeChatView: View {
                     response = try await claudeCodeService.sendMessage(
                         messageToSend,
                         systemPrompt: systemPrompt,
-                        conversationHistory: employee?.conversationHistory ?? []
+                        conversationHistory: employee?.conversationHistory ?? [],
+                        autoApprove: companyStore.company.settings.autoApproveAI
                     )
                     // ClaudeCodeService는 아직 토큰 정보를 반환하지 않음
                 } else if let config = apiConfig, config.isConfigured {
@@ -638,7 +640,8 @@ struct ProjectEmployeeChatView: View {
                     if canUseClaudeCode && useClaudeCode {
                         mentionResponse = try await claudeCodeService.sendMessage(
                             requestContent,
-                            systemPrompt: mentionSystemPrompt
+                            systemPrompt: mentionSystemPrompt,
+                            autoApprove: companyStore.company.settings.autoApproveAI
                         )
                     } else if let config = apiConfig, config.isConfigured {
                         let result = try await claudeService.sendMessage(

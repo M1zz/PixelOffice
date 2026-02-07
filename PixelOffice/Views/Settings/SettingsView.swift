@@ -381,14 +381,15 @@ struct CompanySettingsView: View {
     @State private var autoSaveEnabled = true
     @State private var cloudSyncEnabled = false
     @State private var notificationsEnabled = true
-    
+    @State private var autoApproveAI = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("회사 설정")
                 .font(.title2.bold())
-            
+
             Divider()
-            
+
             Form {
                 Section("기본 정보") {
                     TextField("회사 이름", text: $companyName)
@@ -397,29 +398,53 @@ struct CompanySettingsView: View {
                             companyStore.company.name = newValue
                         }
                 }
-                
+
                 Section("저장 설정") {
                     Toggle("자동 저장", isOn: $autoSaveEnabled)
                         .onChange(of: autoSaveEnabled) { _, newValue in
                             companyStore.company.settings.autoSaveEnabled = newValue
                         }
-                    
+
                     Toggle("클라우드 동기화 (준비 중)", isOn: $cloudSyncEnabled)
                         .disabled(true)
                         .onChange(of: cloudSyncEnabled) { _, newValue in
                             companyStore.company.settings.cloudSyncEnabled = newValue
                         }
-                    
+
                     Text("클라우드 동기화는 향후 업데이트에서 지원될 예정입니다")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
-                
+
                 Section("알림") {
                     Toggle("알림 활성화", isOn: $notificationsEnabled)
                         .onChange(of: notificationsEnabled) { _, newValue in
                             companyStore.company.settings.notificationsEnabled = newValue
                         }
+                }
+
+                Section {
+                    Toggle("AI 도구 자동 승인", isOn: $autoApproveAI)
+                        .onChange(of: autoApproveAI) { _, newValue in
+                            companyStore.company.settings.autoApproveAI = newValue
+                            companyStore.saveCompany()
+                        }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("활성화하면 AI가 파일 읽기/쓰기, 명령 실행 등을 물어보지 않고 자동으로 수행합니다.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Text("--dangerously-skip-permissions 플래그와 동일")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                            .padding(.top, 2)
+                    }
+                } header: {
+                    HStack {
+                        Text("AI 권한")
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                    }
                 }
             }
             .formStyle(.grouped)
@@ -430,6 +455,7 @@ struct CompanySettingsView: View {
             autoSaveEnabled = companyStore.company.settings.autoSaveEnabled
             cloudSyncEnabled = companyStore.company.settings.cloudSyncEnabled
             notificationsEnabled = companyStore.company.settings.notificationsEnabled
+            autoApproveAI = companyStore.company.settings.autoApproveAI
         }
     }
 }

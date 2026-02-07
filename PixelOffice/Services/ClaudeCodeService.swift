@@ -115,9 +115,10 @@ actor ClaudeCodeService {
     func sendMessageWithTokens(
         _ content: String,
         systemPrompt: String? = nil,
-        conversationHistory: [Message] = []
+        conversationHistory: [Message] = [],
+        autoApprove: Bool = false
     ) async throws -> TokenUsage {
-        let jsonResponse = try await sendMessageJSON(content, systemPrompt: systemPrompt, conversationHistory: conversationHistory)
+        let jsonResponse = try await sendMessageJSON(content, systemPrompt: systemPrompt, conversationHistory: conversationHistory, autoApprove: autoApprove)
         return jsonResponse
     }
 
@@ -125,7 +126,8 @@ actor ClaudeCodeService {
     private func sendMessageJSON(
         _ content: String,
         systemPrompt: String? = nil,
-        conversationHistory: [Message] = []
+        conversationHistory: [Message] = [],
+        autoApprove: Bool = false
     ) async throws -> TokenUsage {
         log("=== 새 요청 시작 (JSON 모드) ===")
         log("사용자 메시지: \(content)")
@@ -156,11 +158,14 @@ actor ClaudeCodeService {
         // Claude Code CLI 실행 (--output-format json)
         let process = Process()
         process.executableURL = URL(fileURLWithPath: claudePath)
-        process.arguments = [
-            "--print",
-            "--output-format", "json",
-            "--allowedTools", "WebSearch,WebFetch,Read,Glob,Grep"
-        ]
+
+        var args = ["--print", "--output-format", "json"]
+        if autoApprove {
+            args.append("--dangerously-skip-permissions")
+        } else {
+            args.append(contentsOf: ["--allowedTools", "WebSearch,WebFetch,Read,Glob,Grep"])
+        }
+        process.arguments = args
 
         let inputPipe = Pipe()
         let outputPipe = Pipe()
@@ -245,10 +250,12 @@ actor ClaudeCodeService {
     ///   - content: 현재 사용자 메시지
     ///   - systemPrompt: 시스템 프롬프트
     ///   - conversationHistory: 이전 대화 히스토리 (Message 배열)
+    ///   - autoApprove: true면 모든 권한을 자동 허용 (파이프라인용)
     func sendMessage(
         _ content: String,
         systemPrompt: String? = nil,
-        conversationHistory: [Message] = []
+        conversationHistory: [Message] = [],
+        autoApprove: Bool = false
     ) async throws -> String {
         log("=== 새 요청 시작 ===")
         log("사용자 메시지: \(content)")
@@ -291,10 +298,19 @@ actor ClaudeCodeService {
         // Claude Code CLI 실행 (--print 옵션으로 결과만 출력)
         let process = Process()
         process.executableURL = URL(fileURLWithPath: claudePath)
-        process.arguments = [
-            "--print",
-            "--allowedTools", "WebSearch,WebFetch,Read,Glob,Grep"
-        ]
+
+        // 기본 인자
+        var args = ["--print"]
+
+        // autoApprove가 true면 모든 권한 자동 허용 (파이프라인용)
+        if autoApprove {
+            args.append("--dangerously-skip-permissions")
+        } else {
+            // 제한된 도구만 허용
+            args.append(contentsOf: ["--allowedTools", "WebSearch,WebFetch,Read,Glob,Grep"])
+        }
+
+        process.arguments = args
         log("실행 인자: \(process.arguments ?? [])")
 
         // 프롬프트를 stdin으로 전달
