@@ -466,10 +466,15 @@ struct EmployeeChatView: View {
                             actionResults.append("📄 위키 문서 생성: \(title)")
                         case .createTask(let title, _, _, _, _):
                             actionResults.append("✅ 태스크 추가: \(title)")
+                        case .updateTaskStatus(let taskTitle, let newStatus):
+                            let displayTitle = taskTitle.isEmpty ? "현재 태스크" : taskTitle
+                            actionResults.append("🔄 태스크 상태 변경: \(displayTitle) → \(newStatus.rawValue)")
                         case .mention(_, let targetName, _):
                             actionResults.append("🔔 멘션: @\(targetName)")
                         case .createCollaboration(let title, _, _, _):
                             actionResults.append("🤝 협업 기록: \(title)")
+                        case .directMessage(_, let message):
+                            actionResults.append("💬 직접 메시지: \(String(message.prefix(50)))...")
                         }
                     }
                 }
@@ -655,6 +660,12 @@ struct EmployeeChatView: View {
 
                     다른 부서(\(departmentType.rawValue)팀의 \(employee.name))에서 협업 요청이 왔습니다.
                     전문가로서 간결하고 명확하게 답변해주세요.
+
+                    만약 사용자(사장님)에게 직접 전달하고 싶은 중요한 메시지가 있다면:
+                    [DIRECT_MESSAGE]
+                    여기에 사용자에게 직접 전달할 메시지를 작성하세요.
+                    [/DIRECT_MESSAGE]
+                    형식으로 작성하면 사용자에게 직접 전달됩니다.
                     """
 
                     let mentionResponse: String
@@ -687,7 +698,38 @@ struct EmployeeChatView: View {
                         }
                     }
 
-                    let formattedResponse = "📨 **@\(departmentName) (\(targetEmployee.name))의 답변:**\n\(mentionResponse)"
+                    // 직접 메시지 파싱 및 처리
+                    let directMessageActions = await AIActionParser.shared.parseActions(from: mentionResponse)
+                    var cleanMentionResponse = mentionResponse
+                    for action in directMessageActions {
+                        if case .directMessage(_, let directMsg) = action {
+                            // 직접 메시지를 커뮤니티에 게시
+                            await MainActor.run {
+                                let post = CommunityPost(
+                                    employeeId: targetEmployee.id,
+                                    employeeName: targetEmployee.name,
+                                    departmentType: targetDept.type,
+                                    thinkingId: nil,
+                                    title: "💬 \(targetEmployee.name)님이 사장님께 드리는 말씀",
+                                    content: directMsg,
+                                    summary: String(directMsg.prefix(100)),
+                                    tags: ["직접메시지", targetDept.type.rawValue]
+                                )
+                                companyStore.addCommunityPost(post, autoComment: false)
+                            }
+                            // 멘션 응답에서 직접 메시지 태그 제거
+                            cleanMentionResponse = cleanMentionResponse
+                                .replacingOccurrences(of: "[DIRECT_MESSAGE]", with: "")
+                                .replacingOccurrences(of: "[/DIRECT_MESSAGE]", with: "")
+                                .replacingOccurrences(of: directMsg, with: "")
+                                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+                            // 직접 메시지 알림 추가
+                            mentionResponses.append("💬 **\(targetEmployee.name)님이 사장님께 직접 메시지를 보냈습니다.** (커뮤니티에서 확인)")
+                        }
+                    }
+
+                    let formattedResponse = "📨 **@\(departmentName) (\(targetEmployee.name))의 답변:**\n\(cleanMentionResponse)"
                     mentionResponses.append(formattedResponse)
 
                     // 협업 기록 저장

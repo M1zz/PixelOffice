@@ -46,22 +46,89 @@ class DataManager {
     }
     
     // MARK: - Company Persistence
-    
+
+    /// 직원 수 계산 (회사 + 프로젝트 모두)
+    private func countAllEmployees(_ company: Company) -> Int {
+        let companyEmployees = company.departments.flatMap { $0.employees }.count
+        let projectEmployees = company.projects.flatMap { $0.departments.flatMap { $0.employees } }.count
+        return companyEmployees + projectEmployees
+    }
+
     func saveCompany(_ company: Company) {
+        let employeeCountBefore = countAllEmployees(company)
+        print("💾 [저장 시작] 직원 수: \(employeeCountBefore)명")
+
         do {
+            // 1. 저장 전 자동 백업 (기존 파일이 있을 때만)
+            if fileManager.fileExists(atPath: companyFileURL.path) {
+                createAutoBackup()
+            }
+
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .iso8601
             encoder.outputFormatting = .prettyPrinted
             let data = try encoder.encode(company)
 
-            // 1. 프로젝트 디렉토리에 저장
+            // 2. 프로젝트 디렉토리에 저장
             try data.write(to: companyFileURL)
-            print("✅ Company saved to project directory: \(companyFileURL.path)")
 
-            // 2. iCloud에 전체 datas 폴더 동기화
+            // 3. 저장 후 검증
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            if let savedData = try? Data(contentsOf: companyFileURL),
+               let savedCompany = try? decoder.decode(Company.self, from: savedData) {
+                let employeeCountAfter = countAllEmployees(savedCompany)
+                if employeeCountAfter < employeeCountBefore {
+                    print("⚠️ [경고] 저장 후 직원 수 감소! \(employeeCountBefore) → \(employeeCountAfter)")
+                    // 백업에서 복구 시도
+                    if let backups = listBackups().first {
+                        print("🔄 최근 백업에서 복구 시도: \(backups.lastPathComponent)")
+                    }
+                } else {
+                    print("✅ Company saved: \(employeeCountAfter)명 직원, \(savedCompany.projects.count)개 프로젝트")
+                }
+            }
+
+            // 4. iCloud에 전체 datas 폴더 동기화
             syncDatasToiCloud()
+
+            // 5. 오래된 백업 정리 (최근 10개만 유지)
+            cleanupOldBackups(keepCount: 10)
         } catch {
             print("❌ Failed to save company: \(error)")
+        }
+    }
+
+    /// 저장 전 자동 백업 (rolling backup)
+    private func createAutoBackup() {
+        let backupDirectory = projectDataDirectory.appendingPathComponent("Backups", isDirectory: true)
+
+        if !fileManager.fileExists(atPath: backupDirectory.path) {
+            try? fileManager.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
+        }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+        let timestamp = dateFormatter.string(from: Date())
+        let backupURL = backupDirectory.appendingPathComponent("auto_\(timestamp).json")
+
+        do {
+            try fileManager.copyItem(at: companyFileURL, to: backupURL)
+            print("📦 Auto backup: \(backupURL.lastPathComponent)")
+        } catch {
+            print("⚠️ Auto backup failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// 오래된 백업 정리
+    private func cleanupOldBackups(keepCount: Int) {
+        let backups = listBackups()
+        if backups.count > keepCount {
+            let toDelete = backups.suffix(from: keepCount)
+            for url in toDelete {
+                try? fileManager.removeItem(at: url)
+            }
+            print("🗑️ Cleaned up \(toDelete.count) old backups")
         }
     }
 
@@ -129,21 +196,19 @@ class DataManager {
         // 1. 프로젝트 디렉토리에서 로드 시도
         print("🔍 Loading company from: \(companyFileURL.path)")
         if fileManager.fileExists(atPath: companyFileURL.path) {
-            do {
-                let data = try Data(contentsOf: companyFileURL)
-                print("📊 File size: \(data.count) bytes")
-                let decoder = JSONDecoder()
-                decoder.dateDecodingStrategy = .iso8601
-                let company = try decoder.decode(Company.self, from: data)
-                print("✅ Company loaded from project directory")
-                print("👥 Departments: \(company.departments.count)")
-                print("👥 Total employees: \(company.allEmployees.count)")
-                for dept in company.departments {
-                    print("   - \(dept.name): \(dept.employees.count)명")
-                }
+            if let company = loadCompanyFromFile(companyFileURL) {
+                logCompanyInfo(company, source: "project directory")
                 return company
-            } catch {
-                print("⚠️ Failed to load from project directory: \(error)")
+            }
+
+            // 로드 실패 시 백업에서 복구 시도
+            print("⚠️ Failed to load from main file, trying backup...")
+            if let backup = listBackups().first,
+               let company = loadCompanyFromFile(backup) {
+                logCompanyInfo(company, source: "backup: \(backup.lastPathComponent)")
+                // 백업에서 복구 성공 시 메인 파일로 저장
+                saveCompanyToFile(company)
+                return company
             }
         } else {
             print("⚠️ Company file does not exist at path")
@@ -156,22 +221,67 @@ class DataManager {
             restoreDatasFromiCloud()
 
             // 복원 후 다시 로드
-            if fileManager.fileExists(atPath: companyFileURL.path) {
-                do {
-                    let data = try Data(contentsOf: companyFileURL)
-                    let decoder = JSONDecoder()
-                    decoder.dateDecodingStrategy = .iso8601
-                    let company = try decoder.decode(Company.self, from: data)
-                    print("✅ Company restored from iCloud")
-                    return company
-                } catch {
-                    print("⚠️ Failed to decode restored company: \(error)")
-                }
+            if let company = loadCompanyFromFile(companyFileURL) {
+                logCompanyInfo(company, source: "iCloud")
+                return company
             }
         }
 
         print("📁 No saved company found, creating new one")
         return nil
+    }
+
+    /// 파일에서 Company 로드 (에러 처리 포함)
+    private func loadCompanyFromFile(_ url: URL) -> Company? {
+        do {
+            let data = try Data(contentsOf: url)
+            print("📊 File size: \(data.count) bytes")
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(Company.self, from: data)
+        } catch {
+            print("❌ Failed to load company from \(url.lastPathComponent): \(error)")
+            return nil
+        }
+    }
+
+    /// Company를 파일에 직접 저장 (백업 없이)
+    private func saveCompanyToFile(_ company: Company) {
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(company)
+            try data.write(to: companyFileURL)
+            print("✅ Company saved to: \(companyFileURL.lastPathComponent)")
+        } catch {
+            print("❌ Failed to save company: \(error)")
+        }
+    }
+
+    /// Company 로드 정보 로깅
+    private func logCompanyInfo(_ company: Company, source: String) {
+        let companyEmployees = company.departments.flatMap { $0.employees }.count
+        let projectEmployees = company.projects.flatMap { project in
+            project.departments.flatMap { $0.employees }
+        }.count
+        let totalEmployees = companyEmployees + projectEmployees
+
+        print("✅ Company loaded from \(source)")
+        print("👥 회사 직원: \(companyEmployees)명")
+        print("👥 프로젝트 직원: \(projectEmployees)명")
+        print("👥 총 직원: \(totalEmployees)명")
+        print("📁 프로젝트: \(company.projects.count)개")
+
+        for dept in company.departments where !dept.employees.isEmpty {
+            print("   - \(dept.name): \(dept.employees.count)명")
+        }
+        for project in company.projects {
+            let projectTotal = project.departments.flatMap { $0.employees }.count
+            if projectTotal > 0 {
+                print("   - [\(project.name)] 프로젝트: \(projectTotal)명")
+            }
+        }
     }
 
     /// iCloud에서 전체 datas 폴더 복원

@@ -16,11 +16,17 @@ actor AIActionParser {
         // 2. 태스크 생성 파싱
         actions.append(contentsOf: parseTasks(from: response))
 
-        // 3. 멘션 파싱
+        // 3. 태스크 상태 변경 파싱
+        actions.append(contentsOf: parseTaskStatusUpdates(from: response))
+
+        // 4. 멘션 파싱
         actions.append(contentsOf: parseMentions(from: response))
 
-        // 4. 협업 기록 파싱
+        // 5. 협업 기록 파싱
         actions.append(contentsOf: parseCollaborations(from: response))
+
+        // 6. 직접 메시지 파싱
+        actions.append(contentsOf: parseDirectMessages(from: response))
 
         return actions
     }
@@ -158,6 +164,101 @@ actor AIActionParser {
         return actions
     }
 
+    /// 태스크 상태 변경 파싱
+    /// 포맷: [UPDATE_TASK: 태스크제목 | 상태] 또는 자연어
+    private func parseTaskStatusUpdates(from text: String) -> [AIAction] {
+        var actions: [AIAction] = []
+
+        // 1. 태그 형식: [UPDATE_TASK: 태스크제목 | 상태]
+        let tagPattern = #"\[UPDATE_TASK:\s*([^\|\]]+)\s*\|\s*([^\]]+)\]"#
+        if let tagRegex = try? NSRegularExpression(pattern: tagPattern) {
+            let matches = tagRegex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+            for match in matches {
+                guard match.numberOfRanges == 3,
+                      let titleRange = Range(match.range(at: 1), in: text),
+                      let statusRange = Range(match.range(at: 2), in: text) else {
+                    continue
+                }
+
+                let title = String(text[titleRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+                let statusStr = String(text[statusRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+
+                if let status = parseTaskStatus(from: statusStr) {
+                    actions.append(.updateTaskStatus(taskTitle: title, newStatus: status))
+                }
+            }
+        }
+
+        // 2. 자연어 형식: "~~ 태스크 시작합니다" 또는 "~~ 완료했습니다"
+        let naturalPatterns: [(pattern: String, status: TaskStatus)] = [
+            (#"['\""]?([^'\""\n]+)['\""]?\s*(태스크|작업)?\s*(시작합니다|시작할게요|시작하겠습니다|착수합니다)"#, .inProgress),
+            (#"['\""]?([^'\""\n]+)['\""]?\s*(태스크|작업)?\s*(완료했습니다|완료합니다|끝났습니다|마쳤습니다)"#, .done),
+            (#"['\""]?([^'\""\n]+)['\""]?\s*(태스크|작업)?\s*(검토\s*부탁|리뷰\s*부탁|확인\s*부탁)"#, .needsReview),
+            (#"(이\s*태스크|이\s*작업|해당\s*태스크|해당\s*작업)\s*(시작합니다|시작할게요|시작하겠습니다)"#, .inProgress),
+            (#"(이\s*태스크|이\s*작업|해당\s*태스크|해당\s*작업)\s*(완료했습니다|완료합니다|끝났습니다)"#, .done),
+        ]
+
+        for (pattern, status) in naturalPatterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+                let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+                for match in matches {
+                    if match.numberOfRanges >= 2,
+                       let titleRange = Range(match.range(at: 1), in: text) {
+                        let title = String(text[titleRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+                        // "이 태스크" 같은 지시어는 현재 컨텍스트 태스크 의미 (빈 문자열로)
+                        let cleanTitle = title.contains("태스크") || title.contains("작업") ? "" : title
+                        actions.append(.updateTaskStatus(taskTitle: cleanTitle, newStatus: status))
+                    }
+                }
+            }
+        }
+
+        return actions
+    }
+
+    /// 상태 문자열을 TaskStatus로 변환
+    private func parseTaskStatus(from str: String) -> TaskStatus? {
+        let lowered = str.lowercased()
+        if lowered.contains("백로그") || lowered.contains("backlog") {
+            return .backlog
+        } else if lowered.contains("할일") || lowered.contains("todo") {
+            return .todo
+        } else if lowered.contains("진행") || lowered.contains("progress") || lowered.contains("시작") {
+            return .inProgress
+        } else if lowered.contains("완료") || lowered.contains("done") || lowered.contains("끝") {
+            return .done
+        } else if lowered.contains("검토") || lowered.contains("리뷰") || lowered.contains("review") {
+            return .needsReview
+        } else if lowered.contains("반려") || lowered.contains("reject") {
+            return .rejected
+        }
+        return nil
+    }
+
+    /// 직접 메시지 파싱
+    /// 포맷: [DIRECT_MESSAGE]\n메시지내용\n[/DIRECT_MESSAGE]
+    private func parseDirectMessages(from text: String) -> [AIAction] {
+        var actions: [AIAction] = []
+
+        let pattern = #"\[DIRECT_MESSAGE\]([\s\S]*?)\[\/DIRECT_MESSAGE\]"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return actions }
+
+        let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+        for match in matches {
+            guard match.numberOfRanges == 2,
+                  let contentRange = Range(match.range(at: 1), in: text) else {
+                continue
+            }
+
+            let message = String(text[contentRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !message.isEmpty {
+                actions.append(.directMessage(toUser: true, message: message))
+            }
+        }
+
+        return actions
+    }
+
     /// 협업 기록 파싱
     /// 포맷: [COLLABORATION: 제목]\n참여부서: ...\n내용: ...\n결과: ...\n[/COLLABORATION]
     private func parseCollaborations(from text: String) -> [AIAction] {
@@ -237,11 +338,17 @@ actor AIActionParser {
         case .createTask(let title, let description, let priority, let estimatedHours, let tags):
             await createTask(title: title, description: description, priority: priority, estimatedHours: estimatedHours, tags: tags, projectId: projectId, companyStore: companyStore)
 
+        case .updateTaskStatus(let taskTitle, let newStatus):
+            await updateTaskStatus(taskTitle: taskTitle, newStatus: newStatus, projectId: projectId, employeeId: employeeId, companyStore: companyStore)
+
         case .mention(let targetType, let targetName, let message):
             await processMention(targetType: targetType, targetName: targetName, message: message, fromEmployeeId: employeeId, companyStore: companyStore)
 
         case .createCollaboration(let title, let departments, let content, let outcome):
             await createCollaboration(title: title, departments: departments, content: content, outcome: outcome, companyStore: companyStore)
+
+        case .directMessage(let toUser, let message):
+            await sendDirectMessage(toUser: toUser, message: message, fromEmployeeId: employeeId, companyStore: companyStore)
         }
     }
 
@@ -333,14 +440,98 @@ actor AIActionParser {
         print("  Content: \(content)")
         print("  Outcome: \(outcome)")
     }
+
+    /// 태스크 상태 변경
+    private func updateTaskStatus(
+        taskTitle: String,
+        newStatus: TaskStatus,
+        projectId: UUID?,
+        employeeId: UUID,
+        companyStore: CompanyStore
+    ) async {
+        guard let projectId = projectId else {
+            print("⚠️ [TaskStatus] 프로젝트 ID가 없어서 태스크 상태를 변경할 수 없습니다")
+            return
+        }
+
+        await MainActor.run {
+            // 태스크 찾기 (제목 또는 담당자로)
+            guard let project = companyStore.company.projects.first(where: { $0.id == projectId }) else {
+                print("⚠️ [TaskStatus] 프로젝트를 찾을 수 없습니다")
+                return
+            }
+
+            var targetTask: ProjectTask?
+
+            if taskTitle.isEmpty {
+                // 제목이 비어있으면 현재 직원에게 할당된 진행중 태스크 찾기
+                targetTask = project.tasks.first(where: { $0.assigneeId == employeeId && $0.status == .inProgress })
+                    ?? project.tasks.first(where: { $0.assigneeId == employeeId && $0.status == .todo })
+            } else {
+                // 제목으로 태스크 찾기 (부분 일치)
+                targetTask = project.tasks.first(where: {
+                    $0.title.contains(taskTitle) || taskTitle.contains($0.title)
+                })
+            }
+
+            guard var task = targetTask else {
+                print("⚠️ [TaskStatus] 태스크를 찾을 수 없습니다: \(taskTitle)")
+                return
+            }
+
+            let oldStatus = task.status
+            task.status = newStatus
+            task.updatedAt = Date()
+
+            if newStatus == .done {
+                task.completedAt = Date()
+            }
+
+            companyStore.updateTask(task, inProject: projectId)
+            print("✅ [TaskStatus] '\(task.title)' 상태 변경: \(oldStatus.rawValue) → \(newStatus.rawValue)")
+        }
+    }
+
+    /// 사용자에게 직접 메시지 전송
+    private func sendDirectMessage(
+        toUser: Bool,
+        message: String,
+        fromEmployeeId: UUID,
+        companyStore: CompanyStore
+    ) async {
+        guard toUser else { return }
+
+        await MainActor.run {
+            // 직원 정보 찾기
+            let employeeName = companyStore.findEmployee(byId: fromEmployeeId)?.name ?? "AI 직원"
+
+            // 알림으로 표시 (ToastManager 사용)
+            print("💬 [DirectMessage] \(employeeName): \(message)")
+
+            // 커뮤니티 게시글로 등록 (사용자에게 직접 전달)
+            let post = CommunityPost(
+                employeeId: fromEmployeeId,
+                employeeName: employeeName,
+                departmentType: .general,
+                thinkingId: nil,
+                title: "💬 \(employeeName)님의 메시지",
+                content: message,
+                summary: message,
+                tags: ["직접메시지"]
+            )
+            companyStore.addCommunityPost(post, autoComment: false)
+        }
+    }
 }
 
 /// AI가 수행할 수 있는 액션
 enum AIAction {
     case createWiki(title: String, content: String, category: WikiCategory)
     case createTask(title: String, description: String, priority: TaskPriority, estimatedHours: Double?, tags: [String])
+    case updateTaskStatus(taskTitle: String, newStatus: TaskStatus)
     case mention(targetType: MentionTargetType, targetName: String, message: String)
     case createCollaboration(title: String, departments: [String], content: String, outcome: String)
+    case directMessage(toUser: Bool, message: String)  // 사용자에게 직접 메시지
 }
 
 /// 멘션 대상 유형

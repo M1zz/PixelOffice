@@ -429,10 +429,15 @@ struct ProjectEmployeeChatView: View {
                             actionResults.append("📄 위키 문서 생성: \(title)")
                         case .createTask(let title, _, _, _, _):
                             actionResults.append("✅ 태스크 추가: \(title)")
+                        case .updateTaskStatus(let taskTitle, let newStatus):
+                            let displayTitle = taskTitle.isEmpty ? "현재 태스크" : taskTitle
+                            actionResults.append("🔄 태스크 상태 변경: \(displayTitle) → \(newStatus.rawValue)")
                         case .mention(_, let targetName, _):
                             actionResults.append("🔔 멘션: @\(targetName)")
                         case .createCollaboration(let title, _, _, _):
                             actionResults.append("🤝 협업 기록: \(title)")
+                        case .directMessage(_, let message):
+                            actionResults.append("💬 직접 메시지: \(String(message.prefix(50)))...")
                         }
                     }
                 }

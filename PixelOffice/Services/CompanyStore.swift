@@ -397,8 +397,8 @@ class CompanyStore: ObservableObject, StoreCoordinator {
 
     // MARK: - Community Posts (→ CommunityStore 위임)
 
-    func addCommunityPost(_ post: CommunityPost) {
-        communityStore.addCommunityPost(post)
+    func addCommunityPost(_ post: CommunityPost, autoComment: Bool = true) {
+        communityStore.addCommunityPost(post, autoComment: autoComment)
     }
 
     func createPostFromThinking(_ thinking: EmployeeThinking) -> CommunityPost? {
