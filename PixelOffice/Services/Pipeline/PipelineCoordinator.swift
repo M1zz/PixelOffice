@@ -23,6 +23,9 @@ class PipelineCoordinator: ObservableObject {
     @Published var notificationMessage: String?
     @Published var notificationType: NotificationType = .info
 
+    /// 히스토리 변경 감지용 (뷰 새로고침 트리거)
+    @Published var historyUpdateId = UUID()
+
     enum NotificationType {
         case info, success, warning, error
 
@@ -592,6 +595,11 @@ extension PipelineCoordinator {
 
             try data.write(to: URL(fileURLWithPath: historyFilePath))
             print("[PipelineCoordinator] 파이프라인 저장됨: \(historyFilePath)")
+
+            // 히스토리 변경 알림 (뷰 새로고침)
+            Task { @MainActor in
+                self.historyUpdateId = UUID()
+            }
         } catch {
             print("[PipelineCoordinator] 파이프라인 저장 실패: \(error)")
         }

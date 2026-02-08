@@ -33,9 +33,11 @@ struct PipelineView: View {
         projectEmployees.first { $0.id == selectedEmployeeId }
     }
 
-    /// 이 프로젝트의 파이프라인 히스토리
+    /// 이 프로젝트의 파이프라인 히스토리 (historyUpdateId 관찰로 자동 새로고침)
     var pipelineHistory: [PipelineRun] {
-        coordinator.loadPipelineHistory(for: projectId)
+        // historyUpdateId를 참조하여 변경 시 뷰 새로고침 트리거
+        _ = coordinator.historyUpdateId
+        return coordinator.loadPipelineHistory(for: projectId)
     }
 
     /// 재개 가능한 실행
