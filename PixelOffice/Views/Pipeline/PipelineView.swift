@@ -11,7 +11,6 @@ struct PipelineView: View {
     @State private var showingLogs = false
     @State private var showingHistory = false
     @State private var selectedTab: PipelineTab = .current
-    @State private var selectedEmployeeId: UUID?
     @State private var selectedSprintId: UUID?
     @State private var historyRefreshId = UUID()  // 히스토리 새로고침용
     @State private var showingKanbanPicker = false  // 칸반에서 가져오기
@@ -37,14 +36,35 @@ struct PipelineView: View {
         project?.sprints ?? []
     }
 
-    /// 선택된 담당자
-    var selectedEmployee: ProjectEmployee? {
-        projectEmployees.first { $0.id == selectedEmployeeId }
+    /// 부서별 직원 수
+    var departmentEmployeeCounts: [DepartmentType: Int] {
+        var counts: [DepartmentType: Int] = [:]
+        for dept in project?.departments ?? [] {
+            counts[dept.type] = dept.employees.count
+        }
+        return counts
     }
 
     /// 선택된 스프린트
     var selectedSprint: Sprint? {
         projectSprints.first { $0.id == selectedSprintId }
+    }
+
+    /// 선택된 스프린트의 태스크들
+    var selectedSprintTasks: [ProjectTask] {
+        guard let sprint = selectedSprint else { return [] }
+        // 태스크의 sprintId가 선택된 스프린트와 일치하는 태스크들
+        return (project?.tasks ?? []).filter { $0.sprintId == sprint.id }
+    }
+
+    /// 스프린트 선택으로 시작 가능 (요구사항 없이)
+    var canStartWithSprint: Bool {
+        requirement.isEmpty && selectedSprint != nil && !selectedSprintTasks.isEmpty
+    }
+
+    /// 파이프라인 시작 가능 여부
+    var canStartPipeline: Bool {
+        !requirement.isEmpty || canStartWithSprint
     }
 
     /// 이 프로젝트의 파이프라인 히스토리 (historyUpdateId 관찰로 자동 새로고침)
@@ -141,13 +161,13 @@ struct PipelineView: View {
             // 왼쪽: 입력 & 결과
             ScrollView {
                 VStack(spacing: 20) {
-                    // 요구사항 입력, 스프린트 및 담당자 선택
+                    // 요구사항 입력 및 스프린트 선택
                     RequirementInputView(
                         requirement: $requirement,
-                        selectedEmployeeId: $selectedEmployeeId,
                         selectedSprintId: $selectedSprintId,
-                        employees: projectEmployees,
                         sprints: projectSprints,
+                        departmentEmployeeCounts: departmentEmployeeCounts,
+                        sprintTaskCount: selectedSprintTasks.count,
                         isDisabled: coordinator.isRunning
                     )
 
@@ -191,7 +211,8 @@ struct PipelineView: View {
                     currentAction: coordinator.currentAction,
                     currentTaskIndex: coordinator.currentTaskIndex,
                     currentTaskName: coordinator.currentTaskName,
-                    logs: coordinator.currentRun?.logs ?? []
+                    logs: coordinator.currentRun?.logs ?? [],
+                    runningProcessCount: coordinator.runningProcessCount
                 )
                 .frame(width: 320)
             }
@@ -278,11 +299,64 @@ struct PipelineView: View {
             }
 
             if coordinator.isRunning {
+                // 실시간 토큰 사용량 표시
+                if coordinator.totalTokens > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "dollarsign.circle.fill")
+                            .foregroundStyle(.green)
+                        Text("\(formatNumber(coordinator.totalTokens)) 토큰")
+                            .font(.caption.monospacedDigit())
+                        Text("($\(String(format: "%.4f", coordinator.totalCostUSD)))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.1))
+                    .clipShape(Capsule())
+                }
+
+                // 실행 중인 프로세스 수 표시
+                if coordinator.runningProcessCount > 0 {
+                    Text("\(coordinator.runningProcessCount)개 병렬 실행")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                }
+
                 Button("일시정지") {
                     coordinator.cancelPipeline()
                 }
                 .buttonStyle(.bordered)
+
+                Button {
+                    coordinator.stopAllProcesses()
+                } label: {
+                    Label("전체 중지", systemImage: "stop.fill")
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
             } else {
+                // 실행 모드 선택
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("실행 모드")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    Picker("모드", selection: $coordinator.executionMode) {
+                        ForEach(PipelineExecutionMode.allCases, id: \.self) { mode in
+                            Text(mode.rawValue).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 200)
+                    .help(coordinator.executionMode.description)
+                    .onChange(of: coordinator.executionMode) { _, newMode in
+                        coordinator.setExecutionMode(newMode)
+                    }
+                }
+
+                Spacer()
+
                 // 칸반에서 가져오기
                 Button {
                     showingKanbanPicker = true
@@ -295,10 +369,10 @@ struct PipelineView: View {
                 Button {
                     startPipeline()
                 } label: {
-                    Label("새 파이프라인", systemImage: "play.fill")
+                    Label(canStartWithSprint ? "스프린트 태스크 실행" : "새 파이프라인", systemImage: "play.fill")
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(requirement.isEmpty)
+                .disabled(!canStartPipeline)
             }
         }
         .padding()
@@ -308,13 +382,27 @@ struct PipelineView: View {
 
     private func startPipeline() {
         guard let project = project else { return }
-        Task {
-            await coordinator.startPipeline(
-                requirement: requirement,
-                project: project,
-                assignedEmployee: selectedEmployee,
-                sprint: selectedSprint
-            )
+
+        // 스프린트가 선택되고 요구사항이 없으면 스프린트 태스크들을 처리
+        if canStartWithSprint {
+            let tasks = selectedSprintTasks
+            Task {
+                await coordinator.startPipelineWithKanbanTasks(
+                    tasks: tasks,
+                    project: project,
+                    sprint: selectedSprint
+                )
+            }
+            coordinator.showNotification("스프린트 '\(selectedSprint?.name ?? "")' 태스크 \(tasks.count)개를 시작합니다.", type: .info)
+        } else {
+            // 요구사항이 있으면 일반 파이프라인 시작
+            Task {
+                await coordinator.startPipeline(
+                    requirement: requirement,
+                    project: project,
+                    sprint: selectedSprint
+                )
+            }
         }
     }
 
@@ -337,11 +425,17 @@ struct PipelineView: View {
             await coordinator.startPipelineWithKanbanTasks(
                 tasks: tasks,
                 project: project,
-                assignedEmployee: selectedEmployee,
                 sprint: selectedSprint
             )
         }
         coordinator.showNotification("\(tasks.count)개의 태스크를 파이프라인으로 가져왔습니다.", type: .info)
+    }
+
+    /// 숫자 포맷팅 (천 단위 콤마)
+    private func formatNumber(_ number: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return formatter.string(from: NSNumber(value: number)) ?? "\(number)"
     }
 }
 
@@ -651,10 +745,10 @@ struct PipelineHeaderView: View {
 
 struct RequirementInputView: View {
     @Binding var requirement: String
-    @Binding var selectedEmployeeId: UUID?
     @Binding var selectedSprintId: UUID?
-    let employees: [ProjectEmployee]
     let sprints: [Sprint]
+    let departmentEmployeeCounts: [DepartmentType: Int]  // 부서별 직원 수
+    let sprintTaskCount: Int  // 선택된 스프린트의 태스크 수
     let isDisabled: Bool
 
     var body: some View {
@@ -683,59 +777,110 @@ struct RequirementInputView: View {
 
             Divider()
 
-            // 스프린트 및 담당자 선택 (가로 배치)
+            // 스프린트 선택
             HStack(alignment: .top, spacing: 20) {
-                // 스프린트 선택
                 VStack(alignment: .leading, spacing: 8) {
                     Label("스프린트", systemImage: "flag")
                         .font(.headline)
 
-                    Picker("스프린트 선택", selection: $selectedSprintId) {
-                        Text("지정하지 않음").tag(nil as UUID?)
-                        ForEach(sprints, id: \.id) { sprint in
-                            HStack {
-                                Text(sprint.name)
-                                if sprint.isActive {
-                                    Text("(진행중)")
-                                        .foregroundStyle(.orange)
+                    // 심플한 메뉴 스타일
+                    Menu {
+                        Button("지정하지 않음") {
+                            selectedSprintId = nil
+                        }
+                        Divider()
+                        ForEach(sprints) { sprint in
+                            Button {
+                                selectedSprintId = sprint.id
+                            } label: {
+                                HStack {
+                                    Text(sprint.name)
+                                    if sprint.isActive {
+                                        Image(systemName: "bolt.fill")
+                                    }
                                 }
                             }
-                            .tag(sprint.id as UUID?)
                         }
-                    }
-                    .pickerStyle(.menu)
-                    .disabled(isDisabled)
-
-                    Text("생성된 태스크가 이 스프린트에 할당됩니다")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                // 담당자 선택
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("담당자", systemImage: "person.circle")
-                        .font(.headline)
-
-                    Picker("담당자 선택", selection: $selectedEmployeeId) {
-                        Text("지정하지 않음").tag(nil as UUID?)
-                        ForEach(employees, id: \.id) { employee in
-                            HStack {
-                                Text(employee.name)
-                                Text("(\(employee.departmentType.rawValue))")
+                    } label: {
+                        HStack {
+                            if let sprintId = selectedSprintId,
+                               let sprint = sprints.first(where: { $0.id == sprintId }) {
+                                Text(sprint.name)
+                                if sprint.isActive {
+                                    Image(systemName: "bolt.fill")
+                                        .foregroundStyle(.orange)
+                                }
+                            } else {
+                                Text("지정하지 않음")
                                     .foregroundStyle(.secondary)
                             }
-                            .tag(employee.id as UUID?)
+                            Image(systemName: "chevron.down")
+                                .font(.caption)
                         }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
-                    .pickerStyle(.menu)
                     .disabled(isDisabled)
 
-                    Text("모르는 것이 있을 때 질문합니다")
+                    // 스프린트 선택 시 태스크 정보 표시
+                    if selectedSprintId != nil {
+                        if sprintTaskCount > 0 {
+                            HStack(spacing: 4) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                Text("스프린트에 \(sprintTaskCount)개 태스크 있음")
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.green)
+
+                            Text("요구사항 없이 시작하면 스프린트 태스크를 처리합니다")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            HStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundStyle(.orange)
+                                Text("스프린트에 태스크가 없습니다")
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                        }
+                    } else {
+                        Text("생성된 태스크가 이 스프린트에 할당됩니다")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                // 부서별 직원 현황
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("부서별 직원", systemImage: "person.3")
+                        .font(.headline)
+
+                    HStack(spacing: 12) {
+                        ForEach([DepartmentType.planning, .design, .development, .qa, .marketing], id: \.self) { (dept: DepartmentType) in
+                            let count = departmentEmployeeCounts[dept] ?? 0
+                            VStack(spacing: 2) {
+                                Image(systemName: dept.icon)
+                                    .font(.caption)
+                                    .foregroundStyle(count > 0 ? dept.color : .secondary)
+                                Text("\(count)")
+                                    .font(.caption2)
+                                    .foregroundColor(count > 0 ? .primary : .red)
+                            }
+                            .frame(width: 30)
+                            .help("\(dept.rawValue): \(count)명")
+                        }
+                    }
+
+                    Text("태스크는 해당 부서 직원에게 자동 할당됩니다")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding()
@@ -1024,6 +1169,11 @@ struct PipelineTodoPanel: View {
     let currentTaskIndex: Int
     let currentTaskName: String
     let logs: [PipelineLogEntry]
+    var runningProcessCount: Int = 0
+
+    /// 경과 시간 표시를 위한 타이머
+    @State private var elapsedSeconds: Int = 0
+    @State private var timer: Timer? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1033,6 +1183,46 @@ struct PipelineTodoPanel: View {
                 Text("진행 상황")
                     .font(.headline)
                 Spacer()
+
+                // 병렬 실행 표시
+                if runningProcessCount > 1 {
+                    HStack(spacing: 4) {
+                        ProgressView()
+                            .scaleEffect(0.6)
+                        Image(systemName: "arrow.triangle.branch")
+                            .foregroundStyle(.blue)
+                        Text("\(runningProcessCount)개 병렬 실행")
+                            .font(.caption)
+                            .foregroundStyle(.blue)
+                        Text("(\(formatElapsedTime(elapsedSeconds)))")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.blue.opacity(0.1))
+                    .clipShape(Capsule())
+                } else if runningProcessCount == 1 {
+                    HStack(spacing: 4) {
+                        ProgressView()
+                            .scaleEffect(0.6)
+                        Text("실행 중")
+                            .font(.caption)
+                        Text("(\(formatElapsedTime(elapsedSeconds)))")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    .foregroundStyle(.blue)
+                } else if runningProcessCount == 0 && currentAction.contains("호출 중") {
+                    // 프로세스 카운트가 0이지만 호출 중일 때 (타이밍 이슈)
+                    HStack(spacing: 4) {
+                        ProgressView()
+                            .scaleEffect(0.6)
+                        Text("응답 대기 중...")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.orange)
+                }
             }
             .padding()
             .background(.ultraThinMaterial)
@@ -1070,6 +1260,41 @@ struct PipelineTodoPanel: View {
             }
         }
         .background(Color(NSColor.windowBackgroundColor))
+        .onAppear {
+            startTimer()
+        }
+        .onDisappear {
+            stopTimer()
+        }
+        .onChange(of: runningProcessCount) { oldValue, newValue in
+            if newValue > 0 && oldValue == 0 {
+                // 프로세스 시작 시 타이머 리셋
+                elapsedSeconds = 0
+            }
+        }
+    }
+
+    private func startTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if runningProcessCount > 0 {
+                elapsedSeconds += 1
+            }
+        }
+    }
+
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func formatElapsedTime(_ seconds: Int) -> String {
+        let mins = seconds / 60
+        let secs = seconds % 60
+        if mins > 0 {
+            return String(format: "%d:%02d", mins, secs)
+        } else {
+            return "\(secs)초"
+        }
     }
 }
 

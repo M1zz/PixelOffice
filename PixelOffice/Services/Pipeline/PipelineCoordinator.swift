@@ -23,6 +23,15 @@ class PipelineCoordinator: ObservableObject {
     @Published var notificationMessage: String?
     @Published var notificationType: NotificationType = .info
 
+    /// 실시간 토큰 사용량
+    @Published var totalInputTokens: Int = 0
+    @Published var totalOutputTokens: Int = 0
+    @Published var totalCostUSD: Double = 0
+
+    var totalTokens: Int {
+        totalInputTokens + totalOutputTokens
+    }
+
     /// 히스토리 변경 감지용 (뷰 새로고침 트리거)
     @Published var historyUpdateId = UUID()
 
@@ -52,15 +61,32 @@ class PipelineCoordinator: ObservableObject {
 
     private weak var companyStore: CompanyStore?
     private let decomposer = RequirementDecomposer()
-    private let executor = PipelineExecutor()
+    private var executor: PipelineExecutor
     private let buildService = BuildService()
     private var cancellationFlag = false
     private var currentProjectName: String = ""
 
+    /// 최대 동시 실행 태스크 수 (기본 3개)
+    static let defaultMaxConcurrentTasks = 3
+
+    /// 현재 실행 모드
+    @Published var executionMode: PipelineExecutionMode = .lightweight
+
     // MARK: - Init
 
-    init(companyStore: CompanyStore? = nil) {
+    init(companyStore: CompanyStore? = nil, maxConcurrentTasks: Int = defaultMaxConcurrentTasks, executionMode: PipelineExecutionMode = .lightweight) {
         self.companyStore = companyStore
+        self.executionMode = executionMode
+        self.executor = PipelineExecutor(maxConcurrentTasks: maxConcurrentTasks, executionMode: executionMode)
+    }
+
+    /// 실행 모드 변경
+    func setExecutionMode(_ mode: PipelineExecutionMode) {
+        self.executionMode = mode
+        self.executor = PipelineExecutor(
+            maxConcurrentTasks: PipelineCoordinator.defaultMaxConcurrentTasks,
+            executionMode: mode
+        )
     }
 
     func setCompanyStore(_ store: CompanyStore) {
@@ -73,11 +99,19 @@ class PipelineCoordinator: ObservableObject {
     /// - Parameters:
     ///   - requirement: 요구사항 텍스트
     ///   - project: 대상 프로젝트
-    ///   - assignedEmployee: 담당자 (모르는 것이 있을 때 질문할 대상)
     ///   - sprint: 스프린트 (태스크가 할당될 스프린트)
-    func startPipeline(requirement: String, project: Project, assignedEmployee: ProjectEmployee? = nil, sprint: Sprint? = nil) async {
+    func startPipeline(requirement: String, project: Project, sprint: Sprint? = nil) async {
         guard !isRunning else {
             print("[PipelineCoordinator] Pipeline already running")
+            return
+        }
+
+        // 🔍 사전 검증: 프로젝트 경로 확인
+        let projectInfo = loadProjectInfo(for: project)
+        if projectInfo == nil || projectInfo?.absolutePath.isEmpty == true {
+            let errorMessage = buildProjectPathErrorMessage(project: project, projectInfo: projectInfo)
+            showNotification(errorMessage, type: .error)
+            print("[PipelineCoordinator] 파이프라인 시작 실패: \(errorMessage)")
             return
         }
 
@@ -86,26 +120,31 @@ class PipelineCoordinator: ObservableObject {
         progress = 0.0
         currentProjectName = project.name
 
+        // 토큰 카운터 초기화
+        totalInputTokens = 0
+        totalOutputTokens = 0
+        totalCostUSD = 0
+
         // TODO 리스트 초기화
         initializeTodoList()
 
         var run = PipelineRun(projectId: project.id, requirement: requirement)
         run.projectName = project.name
-        run.assignedEmployeeId = assignedEmployee?.id
-        run.assignedEmployeeName = assignedEmployee?.name
         run.sprintId = sprint?.id
         run.sprintName = sprint?.name
         run.startedAt = Date()
         run.state = .decomposing
 
         var logMessage = "파이프라인 시작"
-        if let employee = assignedEmployee {
-            logMessage += " (담당자: \(employee.name))"
-        }
         if let sprint = sprint {
             logMessage += " [스프린트: \(sprint.name)]"
         }
         run.addLog(logMessage, level: .info)
+
+        // 프로젝트 경로 로그
+        if let path = projectInfo?.absolutePath {
+            run.addLog("📍 프로젝트 경로: \(path)", level: .info)
+        }
 
         currentRun = run
         updateAction("파이프라인 초기화 중...")
@@ -127,6 +166,11 @@ class PipelineCoordinator: ObservableObject {
         cancellationFlag = false
         currentProjectName = project.name
 
+        // 토큰 카운터 초기화 (재개 시에도 새로 시작)
+        totalInputTokens = 0
+        totalOutputTokens = 0
+        totalCostUSD = 0
+
         // TODO 리스트 초기화 (완료된 항목 반영)
         initializeTodoList()
         for phase in run.completedPhases {
@@ -135,7 +179,9 @@ class PipelineCoordinator: ObservableObject {
 
         var resumeRun = run
         resumeRun.state = .decomposing  // 임시, 실제 Phase에서 변경됨
-        resumeRun.addLog("파이프라인 재개 (Phase: \(run.resumePhase.name))", level: .info)
+        resumeRun.addLog("🔄 파이프라인 재개", level: .info)
+        resumeRun.addLog("   재개 Phase: \(run.resumePhase.name)", level: .info)
+        resumeRun.addLog("   완료된 Phase: \(run.completedPhases.map { $0.name }.joined(separator: ", "))", level: .debug)
         currentRun = resumeRun
         updateAction("파이프라인 재개 중...")
 
@@ -149,9 +195,8 @@ class PipelineCoordinator: ObservableObject {
     /// - Parameters:
     ///   - tasks: 칸반에서 선택한 태스크들
     ///   - project: 대상 프로젝트
-    ///   - assignedEmployee: 담당자
     ///   - sprint: 스프린트
-    func startPipelineWithKanbanTasks(tasks: [ProjectTask], project: Project, assignedEmployee: ProjectEmployee? = nil, sprint: Sprint? = nil) async {
+    func startPipelineWithKanbanTasks(tasks: [ProjectTask], project: Project, sprint: Sprint? = nil) async {
         guard !isRunning else {
             print("[PipelineCoordinator] Pipeline already running")
             return
@@ -162,29 +207,55 @@ class PipelineCoordinator: ObservableObject {
             return
         }
 
+        // 🔍 이미 완료된 태스크 검증
+        let (pendingTasks, completedTasks) = filterCompletedTasks(tasks, in: project)
+
+        if !completedTasks.isEmpty {
+            let completedNames = completedTasks.map { $0.title }.joined(separator: ", ")
+            if pendingTasks.isEmpty {
+                // 모든 태스크가 이미 완료됨
+                showNotification("선택된 태스크가 이미 모두 완료되었습니다: \(completedNames)", type: .info)
+                print("[PipelineCoordinator] 모든 태스크가 이미 완료됨: \(completedNames)")
+                return
+            } else {
+                // 일부만 완료됨 - 미완료 태스크만 진행
+                showNotification("이미 완료된 태스크 제외: \(completedTasks.count)개 (미완료 \(pendingTasks.count)개 진행)", type: .info)
+                print("[PipelineCoordinator] 완료된 태스크 제외: \(completedNames)")
+            }
+        }
+
+        // 실행할 태스크가 없으면 중단
+        guard !pendingTasks.isEmpty else {
+            showNotification("실행할 태스크가 없습니다.", type: .warning)
+            return
+        }
+
         isRunning = true
         cancellationFlag = false
         progress = 0.0
         currentProjectName = project.name
 
+        // 토큰 카운터 초기화
+        totalInputTokens = 0
+        totalOutputTokens = 0
+        totalCostUSD = 0
+
         // TODO 리스트 초기화 (분해 단계는 스킵)
         initializeTodoList()
         completeTodo(phase: .decomposition)  // 분해 완료로 표시
 
-        // 요구사항은 선택된 태스크들의 제목을 연결
-        let requirement = tasks.map { $0.title }.joined(separator: ", ")
+        // 요구사항은 선택된 태스크들의 제목을 연결 (미완료 태스크만)
+        let requirement = pendingTasks.map { $0.title }.joined(separator: ", ")
 
         var run = PipelineRun(projectId: project.id, requirement: "칸반 태스크 처리: \(requirement)")
         run.projectName = project.name
-        run.assignedEmployeeId = assignedEmployee?.id
-        run.assignedEmployeeName = assignedEmployee?.name
         run.sprintId = sprint?.id
         run.sprintName = sprint?.name
         run.startedAt = Date()
         run.state = .executing
 
-        // ProjectTask를 DecomposedTask로 변환
-        run.decomposedTasks = tasks.enumerated().map { index, task in
+        // ProjectTask를 DecomposedTask로 변환 (pendingTasks만 사용)
+        run.decomposedTasks = pendingTasks.enumerated().map { index, task in
             DecomposedTask(
                 id: task.id,  // 원본 ID 유지
                 title: task.title,
@@ -195,9 +266,9 @@ class PipelineCoordinator: ObservableObject {
             )
         }
 
-        run.addLog("칸반에서 \(tasks.count)개 태스크를 가져왔습니다.", level: .info)
-        if let employee = assignedEmployee {
-            run.addLog("담당자: \(employee.name)", level: .info)
+        run.addLog("칸반에서 \(pendingTasks.count)개 태스크를 가져왔습니다.", level: .info)
+        if !completedTasks.isEmpty {
+            run.addLog("⏭️ 이미 완료된 태스크 \(completedTasks.count)개 제외됨", level: .info)
         }
         if let sprint = sprint {
             run.addLog("스프린트: \(sprint.name)", level: .info)
@@ -270,6 +341,9 @@ class PipelineCoordinator: ObservableObject {
             // 완료/실패 알림
             if currentRun.isBuildSuccessful {
                 showNotification("파이프라인이 성공적으로 완료되었습니다!", type: .success)
+
+                // 칸반 태스크 완료 처리
+                syncCompletedTasksToKanban(run: currentRun, project: project)
             } else {
                 showNotification("파이프라인이 실패했습니다. 로그를 확인하세요.", type: .error)
             }
@@ -312,6 +386,9 @@ class PipelineCoordinator: ObservableObject {
         isRunning = false
         updateAction("⏸️ 일시정지됨")
         showNotification("파이프라인이 일시정지되었습니다. 히스토리에서 재개할 수 있습니다.", type: .warning)
+
+        // 모든 작업 중인 직원을 휴식 중으로 변경
+        resetAllEmployeesToIdle(projectId: run.projectId)
     }
 
     /// 알림 표시
@@ -340,9 +417,56 @@ class PipelineCoordinator: ObservableObject {
         }
     }
 
-    /// 파이프라인 취소
+    /// 파이프라인 취소 (일시정지)
     func cancelPipeline() {
         cancellationFlag = true
+    }
+
+    /// 모든 실행 중인 프로세스 강제 중지
+    func stopAllProcesses() {
+        cancellationFlag = true
+        ClaudeCodeService.processManager.stopAll()
+        showNotification("모든 작업이 중지되었습니다.", type: .warning)
+        updateAction("⏹️ 모든 작업 중지됨")
+
+        // 현재 실행 상태도 업데이트
+        if var run = currentRun {
+            run.state = .cancelled
+            run.completedAt = Date()
+            run.addLog("모든 작업이 강제 중지됨", level: .warning)
+            currentRun = run
+            savePipelineRun(run)
+
+            // 모든 작업 중인 직원을 휴식 중으로 변경
+            resetAllEmployeesToIdle(projectId: run.projectId)
+        }
+        isRunning = false
+    }
+
+    /// 프로젝트의 모든 직원을 휴식 중으로 변경
+    private func resetAllEmployeesToIdle(projectId: UUID) {
+        guard let companyStore = companyStore,
+              let project = companyStore.company.projects.first(where: { $0.id == projectId }) else {
+            return
+        }
+
+        for department in project.departments {
+            for employee in department.employees {
+                if employee.status == .working {
+                    companyStore.updateProjectEmployeeStatus(
+                        employee.id,
+                        inProject: projectId,
+                        status: .idle
+                    )
+                    currentRun?.addLog("🔄 \(employee.name) 상태: 휴식 중 (중지됨)", level: .debug)
+                }
+            }
+        }
+    }
+
+    /// 실행 중인 프로세스 수
+    var runningProcessCount: Int {
+        ClaudeCodeService.processManager.runningCount
     }
 
     private func cancel() {
@@ -354,6 +478,9 @@ class PipelineCoordinator: ObservableObject {
         isRunning = false
         updateAction("⏸️ 일시정지됨")
         showNotification("파이프라인이 일시정지되었습니다. 히스토리에서 재개할 수 있습니다.", type: .warning)
+
+        // 모든 작업 중인 직원을 휴식 중으로 변경
+        resetAllEmployeesToIdle(projectId: run.projectId)
     }
 
     // MARK: - Phase 1: Decomposition
@@ -367,32 +494,50 @@ class PipelineCoordinator: ObservableObject {
         currentRun = run
 
         startTodo(phase: .decomposition)
+        run.addLog("📂 프로젝트 정보 로드 중...", level: .info)
         updateAction("프로젝트 정보 로드 중...")
 
         // PROJECT.md에서 ProjectInfo 로드
         let projectInfo = loadProjectInfo(for: project)
+        if let info = projectInfo {
+            run.addLog("   - 언어: \(info.language)", level: .debug)
+            run.addLog("   - 프레임워크: \(info.framework)", level: .debug)
+            run.addLog("   - 경로: \(info.absolutePath)", level: .debug)
+        }
         updateAction("PROJECT.md 분석 완료")
+        run.addLog("✓ PROJECT.md 분석 완료", level: .info)
 
         // 프로젝트 컨텍스트 읽기
         var projectContext = project.projectContext
         if let projectMdPath = getProjectMdPath(project: project) {
             if let content = try? String(contentsOfFile: projectMdPath, encoding: .utf8) {
                 projectContext = content
+                run.addLog("📄 프로젝트 컨텍스트 로드: \(content.count)자", level: .debug)
             }
         }
 
+        run.addLog("🤖 AI에게 요구사항 분해 요청 중...", level: .info)
+        run.addLog("   요구사항: \(run.requirement.prefix(100))...", level: .debug)
         updateAction("AI에게 요구사항 분해 요청 중...")
 
         let autoApprove = companyStore?.company.settings.autoApproveAI ?? true
+        let decomposeStartTime = Date()
         let result = try await decomposer.decompose(
             requirement: run.requirement,
             projectInfo: projectInfo,
             projectContext: projectContext,
             autoApprove: autoApprove
         )
+        let decomposeElapsed = Date().timeIntervalSince(decomposeStartTime)
 
         run.decomposedTasks = result.tasks
-        run.addLog("분해 완료: \(result.tasks.count)개 태스크", level: .success)
+        run.addLog("✅ 분해 완료: \(result.tasks.count)개 태스크 (소요시간: \(String(format: "%.1f", decomposeElapsed))초)", level: .success)
+
+        // 분해된 태스크 목록 로그
+        for (index, task) in result.tasks.enumerated() {
+            run.addLog("   [\(index + 1)] \(task.title) (\(task.department.rawValue))", level: .debug)
+        }
+
         updateAction("✓ 분해 완료: \(result.tasks.count)개 태스크 생성")
 
         if !result.warnings.isEmpty {
@@ -418,6 +563,7 @@ class PipelineCoordinator: ObservableObject {
         currentRun = run
 
         startTodo(phase: .development)
+        run.addLog("💻 개발 태스크 준비 중...", level: .info)
         updateAction("개발 태스크 준비 중...")
 
         let allEmployees = project.departments.flatMap { $0.employees }
@@ -425,28 +571,92 @@ class PipelineCoordinator: ObservableObject {
         let totalTasks = run.decomposedTasks.count
         let autoApprove = companyStore?.company.settings.autoApproveAI ?? true
 
+        // 직원 현황 로그
+        run.addLog("👥 참여 직원: \(allEmployees.count)명", level: .debug)
+        let deptCounts = Dictionary(grouping: allEmployees) { $0.departmentType }
+            .mapValues { $0.count }
+        for (dept, count) in deptCounts.sorted(by: { $0.key.rawValue < $1.key.rawValue }) {
+            run.addLog("   - \(dept.rawValue)팀: \(count)명", level: .debug)
+        }
+
+        run.addLog("📋 실행할 태스크: \(totalTasks)개", level: .info)
+
+        // 프로젝트 컨텍스트 문서 로드 (한번만 읽어서 모든 태스크에 전달)
+        updateAction("프로젝트 문서 컨텍스트 로드 중...")
+        run.addLog("📚 프로젝트 컨텍스트 로드 시작...", level: .info)
+        let projectContext = loadProjectContext(for: project)
+        if !projectContext.isEmpty {
+            run.addLog("📚 컨텍스트 로드 완료: \(projectContext.count)자", level: .info)
+            run.addLog("   - PROJECT.md, 개발 문서, 디렉토리 구조 포함", level: .debug)
+        } else {
+            run.addLog("⚠️ 프로젝트 컨텍스트를 찾을 수 없습니다", level: .warning)
+        }
+
+        // 실행 모드 로그
+        run.addLog("⚙️ 실행 모드: \(executionMode.rawValue) - \(executionMode.description)", level: .info)
+
         run.decomposedTasks = try await executor.executeTasks(
             run.decomposedTasks,
             project: project,
             projectInfo: projectInfo,
             employees: allEmployees,
-            autoApprove: autoApprove
-        ) { [weak self] task, message in
-            Task { @MainActor in
-                guard let self = self else { return }
-                self.currentRun?.addLog(message, level: .info)
-                if let index = run.decomposedTasks.firstIndex(where: { $0.id == task.id }) {
-                    self.currentTaskIndex = index + 1
-                    self.currentTaskName = task.title
-                    self.updateAction("[\(index + 1)/\(totalTasks)] \(task.title)")
+            projectContext: projectContext.isEmpty ? nil : projectContext,
+            autoApprove: autoApprove,
+            onProgress: { [weak self] task, message in
+                Task { @MainActor in
+                    guard let self = self else { return }
+                    // currentRun 변경 감지를 위해 명시적으로 업데이트
+                    if var updatedRun = self.currentRun {
+                        updatedRun.addLog(message, level: .info)
+                        self.currentRun = updatedRun  // 재할당으로 @Published 트리거
+                    }
+                    if let index = run.decomposedTasks.firstIndex(where: { $0.id == task.id }) {
+                        self.currentTaskIndex = index + 1
+                        self.currentTaskName = task.title
+                        self.updateAction("[\(index + 1)/\(totalTasks)] \(task.title)")
+                    }
+                }
+            },
+            onTokenUsage: { [weak self] inputTokens, outputTokens, costUSD in
+                Task { @MainActor in
+                    self?.addTokenUsage(input: inputTokens, output: outputTokens, cost: costUSD)
+                }
+            },
+            onEmployeeStatus: { [weak self] employeeId, employeeName, isWorking in
+                Task { @MainActor in
+                    guard let self = self, let companyStore = self.companyStore else { return }
+
+                    let status: EmployeeStatus = isWorking ? .working : .idle
+                    companyStore.updateProjectEmployeeStatus(
+                        employeeId,
+                        inProject: project.id,
+                        status: status
+                    )
+
+                    if isWorking {
+                        self.currentRun?.addLog("   🔄 \(employeeName) 상태: 작업 중", level: .debug)
+                    } else {
+                        self.currentRun?.addLog("   🔄 \(employeeName) 상태: 휴식 중", level: .debug)
+                    }
                 }
             }
-        }
+        )
 
         let completedCount = run.decomposedTasks.filter { $0.status == .completed }.count
         let failedCount = run.decomposedTasks.filter { $0.status == .failed }.count
 
-        run.addLog("코드 생성 완료: 성공 \(completedCount), 실패 \(failedCount)", level: completedCount > 0 ? .success : .warning)
+        // 상세 결과 로그
+        run.addLog("📊 코드 생성 결과 요약:", level: .info)
+        run.addLog("   ✅ 성공: \(completedCount)개", level: completedCount > 0 ? .success : .info)
+        if failedCount > 0 {
+            run.addLog("   ❌ 실패: \(failedCount)개", level: .warning)
+        }
+
+        // 토큰 사용량 로그
+        run.addLog("💰 총 토큰 사용량: \(totalTokens) (입력: \(totalInputTokens), 출력: \(totalOutputTokens))", level: .info)
+        run.addLog("   비용: $\(String(format: "%.4f", totalCostUSD))", level: .info)
+
+        run.addLog("✅ 코드 생성 완료", level: completedCount > 0 ? .success : .warning)
         updateAction("✓ 코드 생성 완료: 성공 \(completedCount), 실패 \(failedCount)")
 
         progress = 0.5
@@ -462,21 +672,32 @@ class PipelineCoordinator: ObservableObject {
         run.currentPhase = .build
         run.state = .building
         currentPhaseDescription = "빌드 중..."
-        run.addLog("Phase 3: 빌드 시작", level: .info)
+        run.addLog("🔨 Phase 3: 빌드 시작", level: .info)
         currentRun = run
 
         startTodo(phase: .build)
+        run.addLog("📂 프로젝트 경로 확인 중...", level: .debug)
         updateAction("프로젝트 경로 확인 중...")
 
         let projectInfo = loadProjectInfo(for: project)
         guard let projectPath = projectInfo?.absolutePath, !projectPath.isEmpty else {
-            run.addLog("프로젝트 경로가 설정되지 않음", level: .error)
+            let basePath = DataPathService.shared.basePath
+            let projectMdPath = "\(basePath)/\(project.name)/PROJECT.md"
+
+            run.addLog("❌ 프로젝트 경로가 설정되지 않음", level: .error)
+            run.addLog("   PROJECT.md 위치: \(projectMdPath)", level: .error)
+            run.addLog("   필요한 형식:", level: .error)
+            run.addLog("   ## 프로젝트 경로", level: .error)
+            run.addLog("   - **절대경로**: `/Users/.../YourProject`", level: .error)
+
             updateAction("✗ 프로젝트 경로가 설정되지 않음")
+            showNotification("PROJECT.md에 프로젝트 절대경로를 설정해주세요.", type: .error)
+
             let attempt = BuildAttempt(
                 success: false,
                 exitCode: -1,
-                output: "프로젝트 경로가 설정되지 않았습니다.",
-                errors: [BuildError(message: "프로젝트 경로 없음", severity: .error)],
+                output: "프로젝트 경로가 설정되지 않았습니다. PROJECT.md에 '## 프로젝트 경로' 섹션과 '- **절대경로**: /path' 형식으로 추가하세요.",
+                errors: [BuildError(message: "프로젝트 경로 없음 - PROJECT.md 확인 필요", severity: .error)],
                 startedAt: Date(),
                 completedAt: Date()
             )
@@ -485,18 +706,29 @@ class PipelineCoordinator: ObservableObject {
             return run
         }
 
+        run.addLog("📍 프로젝트 경로: \(projectPath)", level: .debug)
+        run.addLog("🔧 xcodebuild 실행 중... (시간이 걸릴 수 있습니다)", level: .info)
         updateAction("xcodebuild 실행 중... (시간이 걸릴 수 있습니다)")
+
+        let buildStartTime = Date()
         let attempt = try await buildService.build(projectPath: projectPath)
+        let buildElapsed = Date().timeIntervalSince(buildStartTime)
         run.buildAttempts.append(attempt)
 
+        run.addLog("⏱️ 빌드 소요시간: \(String(format: "%.1f", buildElapsed))초", level: .debug)
+
         if attempt.success {
-            run.addLog("빌드 성공!", level: .success)
+            run.addLog("✅ 빌드 성공!", level: .success)
             updateAction("✓ 빌드 성공!")
         } else {
-            run.addLog("빌드 실패: \(attempt.errors.count)개 에러", level: .error)
+            run.addLog("❌ 빌드 실패: \(attempt.errors.count)개 에러", level: .error)
             updateAction("✗ 빌드 실패: \(attempt.errors.count)개 에러")
-            for error in attempt.errors.prefix(5) {
-                run.addLog("  - \(error.message)", level: .error)
+            for error in attempt.errors.prefix(10) {
+                let location = error.location.isEmpty ? "" : " (\(error.location))"
+                run.addLog("   ⚠️ \(error.message)\(location)", level: .error)
+            }
+            if attempt.errors.count > 10 {
+                run.addLog("   ... 외 \(attempt.errors.count - 10)개 에러", level: .error)
             }
         }
 
@@ -514,17 +746,27 @@ class PipelineCoordinator: ObservableObject {
         run.state = .healing
         run.healingAttempts += 1
         currentPhaseDescription = "Self-Healing 시도 \(run.healingAttempts)/\(run.maxHealingAttempts)..."
-        run.addLog("Phase 4: Self-Healing 시작 (시도 \(run.healingAttempts))", level: .info)
+        run.addLog("🩹 Phase 4: Self-Healing 시작 (시도 \(run.healingAttempts)/\(run.maxHealingAttempts))", level: .info)
         currentRun = run
 
         startTodo(phase: .healing)
+        run.addLog("🔍 빌드 에러 분석 중...", level: .info)
         updateAction("빌드 에러 분석 중...")
 
-        guard let lastAttempt = run.lastBuildAttempt else { return run }
+        guard let lastAttempt = run.lastBuildAttempt else {
+            run.addLog("⚠️ 이전 빌드 시도를 찾을 수 없습니다", level: .warning)
+            return run
+        }
+
+        run.addLog("   발견된 에러: \(lastAttempt.errors.count)개", level: .debug)
+        for error in lastAttempt.errors.prefix(5) {
+            run.addLog("   - \(error.message)", level: .debug)
+        }
 
         let projectInfo = loadProjectInfo(for: project)
 
         // 에러 수정 프롬프트 생성
+        run.addLog("📝 에러 수정 프롬프트 생성 중...", level: .debug)
         updateAction("에러 수정 프롬프트 생성 중...")
         let healingPrompt = await buildService.generateHealingPrompt(from: lastAttempt, projectInfo: projectInfo)
 
@@ -535,25 +777,34 @@ class PipelineCoordinator: ObservableObject {
         에러를 수정한 후 해당 파일을 직접 수정해주세요.
         """
 
-        run.addLog("에러 분석 및 수정 요청 중...", level: .info)
+        run.addLog("🤖 AI에게 에러 수정 요청 중...", level: .info)
         updateAction("AI에게 에러 수정 요청 중...")
 
+        let healingStartTime = Date()
         let autoApprove = companyStore?.company.settings.autoApproveAI ?? true
         let response = try await claudeService.sendMessage(healingPrompt, systemPrompt: systemPrompt, autoApprove: autoApprove)
-        run.addLog("수정 완료, 재빌드 중...", level: .info)
+        let healingElapsed = Date().timeIntervalSince(healingStartTime)
+
+        run.addLog("✓ AI 수정 완료 (소요시간: \(String(format: "%.1f", healingElapsed))초)", level: .info)
+        run.addLog("🔨 재빌드 시작...", level: .info)
         updateAction("수정 완료, 재빌드 시작...")
 
         // 재빌드
         if let projectPath = projectInfo?.absolutePath {
+            let rebuildStartTime = Date()
             var rebuildAttempt = try await buildService.build(projectPath: projectPath)
+            let rebuildElapsed = Date().timeIntervalSince(rebuildStartTime)
             rebuildAttempt.isHealingAttempt = true
             run.buildAttempts.append(rebuildAttempt)
 
+            run.addLog("⏱️ 재빌드 소요시간: \(String(format: "%.1f", rebuildElapsed))초", level: .debug)
+
             if rebuildAttempt.success {
-                run.addLog("Self-Healing 성공! 빌드 통과", level: .success)
+                run.addLog("✅ Self-Healing 성공! 빌드 통과", level: .success)
                 updateAction("✓ Self-Healing 성공!")
             } else {
-                run.addLog("Self-Healing 후에도 빌드 실패", level: .warning)
+                run.addLog("❌ Self-Healing 후에도 빌드 실패", level: .warning)
+                run.addLog("   남은 에러: \(rebuildAttempt.errors.count)개", level: .debug)
                 updateAction("✗ Self-Healing 실패")
             }
         }
@@ -578,9 +829,261 @@ class PipelineCoordinator: ObservableObject {
     private func loadProjectInfo(for project: Project) -> ProjectInfo? {
         guard let projectMdPath = getProjectMdPath(project: project),
               let content = try? String(contentsOfFile: projectMdPath, encoding: .utf8) else {
+            print("[PipelineCoordinator] PROJECT.md를 찾을 수 없음: \(project.name)")
             return nil
         }
-        return ProjectInfo.fromMarkdown(content)
+
+        var info = ProjectInfo.fromMarkdown(content)
+
+        // absolutePath가 비어있으면 다른 방법으로 찾기 시도
+        if info.absolutePath.isEmpty {
+            print("[PipelineCoordinator] PROJECT.md에서 절대경로를 찾지 못함, 대체 경로 탐색 중...")
+
+            // 1. 프로젝트 이름과 같은 xcodeproj 찾기
+            if let foundPath = findXcodeProjectPath(projectName: project.name) {
+                info.absolutePath = foundPath
+                print("[PipelineCoordinator] Xcode 프로젝트 발견: \(foundPath)")
+            }
+
+            // 2. 여전히 없으면 PROJECT.md에서 다른 패턴으로 경로 찾기
+            if info.absolutePath.isEmpty {
+                info.absolutePath = extractPathFromMarkdown(content)
+            }
+        }
+
+        return info
+    }
+
+    /// Xcode 프로젝트 경로 자동 탐색
+    private func findXcodeProjectPath(projectName: String) -> String? {
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
+        let commonPaths = [
+            "\(homeDir)/Documents/workspace/code/\(projectName)",
+            "\(homeDir)/Developer/\(projectName)",
+            "\(homeDir)/Projects/\(projectName)",
+            "\(homeDir)/Documents/\(projectName)"
+        ]
+
+        for basePath in commonPaths {
+            // .xcodeproj 또는 .xcworkspace 찾기
+            if let contents = try? FileManager.default.contentsOfDirectory(atPath: basePath) {
+                if contents.contains(where: { $0.hasSuffix(".xcodeproj") || $0.hasSuffix(".xcworkspace") }) {
+                    return basePath
+                }
+            }
+        }
+
+        return nil
+    }
+
+    /// 프로젝트 경로 오류 메시지 생성
+    private func buildProjectPathErrorMessage(project: Project, projectInfo: ProjectInfo?) -> String {
+        let basePath = DataPathService.shared.basePath
+        let projectMdPath = "\(basePath)/\(project.name)/PROJECT.md"
+
+        if projectInfo == nil {
+            return """
+            프로젝트 경로를 설정해주세요.
+
+            PROJECT.md 파일이 없습니다: \(projectMdPath)
+
+            PROJECT.md에 다음 형식으로 경로를 추가하세요:
+            ## 프로젝트 경로
+            - **절대경로**: `/Users/.../YourProject`
+            """
+        } else {
+            return """
+            프로젝트 절대경로가 설정되지 않았습니다.
+
+            PROJECT.md 파일 위치: \(projectMdPath)
+
+            다음 형식으로 경로를 추가하세요:
+            ## 프로젝트 경로
+            - **절대경로**: `/Users/.../YourProject`
+            """
+        }
+    }
+
+    /// PROJECT.md에서 경로 패턴 추출 (다양한 형식 지원)
+    private func extractPathFromMarkdown(_ content: String) -> String {
+        let patterns = [
+            // - **절대경로**: `/path`
+            #"\*\*절대경로\*\*[:\s]+`?([^`\n]+)`?"#,
+            // - **프로젝트 경로**: `/path`
+            #"\*\*프로젝트 경로\*\*[:\s]+`?([^`\n]+)`?"#,
+            // 경로: /path
+            #"경로[:\s]+`?(/[^\s`\n]+)`?"#,
+            // path: /path
+            #"[Pp]ath[:\s]+`?(/[^\s`\n]+)`?"#
+        ]
+
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern),
+               let match = regex.firstMatch(in: content, range: NSRange(content.startIndex..., in: content)),
+               match.numberOfRanges > 1,
+               let range = Range(match.range(at: 1), in: content) {
+                let path = String(content[range]).trimmingCharacters(in: .whitespaces)
+                if path.hasPrefix("/") && FileManager.default.fileExists(atPath: path) {
+                    print("[PipelineCoordinator] 대체 패턴으로 경로 발견: \(path)")
+                    return path
+                }
+            }
+        }
+
+        return ""
+    }
+
+    /// 프로젝트 컨텍스트 문서 로드 (PROJECT.md + 개발 문서)
+    /// 이 컨텍스트를 모든 태스크에 전달하여 Claude가 파일을 반복해서 읽지 않도록 함
+    private func loadProjectContext(for project: Project) -> String {
+        var context = ""
+        let basePath = DataPathService.shared.basePath
+        let projectPath = "\(basePath)/\(project.name)"
+
+        // 1. PROJECT.md 로드
+        let projectMdPath = "\(projectPath)/PROJECT.md"
+        if let projectMd = try? String(contentsOfFile: projectMdPath, encoding: .utf8) {
+            context += "### PROJECT.md\n\n\(projectMd)\n\n"
+        }
+
+        // 2. 개발팀 문서 중 주요 문서 로드 (아키텍처, 코딩 컨벤션 등)
+        let devDocsPath = "\(projectPath)/개발/documents"
+        if let files = try? FileManager.default.contentsOfDirectory(atPath: devDocsPath) {
+            let importantDocs = files.filter { name in
+                let lowercased = name.lowercased()
+                return lowercased.contains("architecture") ||
+                       lowercased.contains("아키텍처") ||
+                       lowercased.contains("convention") ||
+                       lowercased.contains("컨벤션") ||
+                       lowercased.contains("guide") ||
+                       lowercased.contains("가이드") ||
+                       lowercased.contains("readme")
+            }.prefix(3)  // 최대 3개만
+
+            for docName in importantDocs {
+                let docPath = "\(devDocsPath)/\(docName)"
+                if let content = try? String(contentsOfFile: docPath, encoding: .utf8) {
+                    // 너무 긴 문서는 앞부분만
+                    let truncated = content.count > 5000 ? String(content.prefix(5000)) + "\n...(생략)..." : content
+                    context += "### \(docName)\n\n\(truncated)\n\n"
+                }
+            }
+        }
+
+        // 3. 프로젝트 구조 요약 (디렉토리 목록)
+        if let projectInfo = loadProjectInfo(for: project),
+           !projectInfo.absolutePath.isEmpty {
+            let sourcePath = projectInfo.absolutePath
+            context += "### 프로젝트 소스 디렉토리 구조\n\n"
+            context += getDirectoryStructure(at: sourcePath, depth: 2)
+            context += "\n\n"
+        }
+
+        // 컨텍스트가 너무 크면 제한
+        if context.count > 30000 {
+            context = String(context.prefix(30000)) + "\n\n...(컨텍스트 크기 제한으로 생략됨)..."
+        }
+
+        return context
+    }
+
+    /// 디렉토리 구조 문자열 생성 (depth 레벨까지)
+    private func getDirectoryStructure(at path: String, depth: Int, currentDepth: Int = 0, indent: String = "") -> String {
+        guard currentDepth < depth else { return "" }
+        guard let items = try? FileManager.default.contentsOfDirectory(atPath: path) else { return "" }
+
+        var result = ""
+        let sortedItems = items.filter { !$0.hasPrefix(".") }.sorted()
+
+        for item in sortedItems.prefix(20) {  // 각 레벨당 최대 20개
+            let itemPath = (path as NSString).appendingPathComponent(item)
+            var isDir: ObjCBool = false
+            FileManager.default.fileExists(atPath: itemPath, isDirectory: &isDir)
+
+            if isDir.boolValue {
+                result += "\(indent)📁 \(item)/\n"
+                result += getDirectoryStructure(at: itemPath, depth: depth, currentDepth: currentDepth + 1, indent: indent + "  ")
+            } else if item.hasSuffix(".swift") || item.hasSuffix(".h") || item.hasSuffix(".m") {
+                result += "\(indent)📄 \(item)\n"
+            }
+        }
+
+        return result
+    }
+
+    // MARK: - Kanban Sync
+
+    /// 파이프라인 완료 시 칸반 태스크 상태 동기화
+    /// - Parameters:
+    ///   - run: 완료된 파이프라인 실행
+    ///   - project: 프로젝트
+    private func syncCompletedTasksToKanban(run: PipelineRun, project: Project) {
+        guard let companyStore = companyStore else {
+            print("[PipelineCoordinator] CompanyStore가 없어 칸반 동기화 불가")
+            return
+        }
+
+        var syncedCount = 0
+        var updatedRun = run
+
+        // 완료된 DecomposedTask에 대해 칸반 태스크 찾아서 업데이트
+        for task in run.decomposedTasks where task.status == .completed {
+            // 칸반에서 해당 decomposedTaskId를 가진 ProjectTask 찾기
+            if let projectTask = findProjectTask(for: task.id, in: project) {
+                var updatedTask = projectTask
+                updatedTask.status = .done
+                updatedTask.completedAt = Date()
+                updatedTask.pipelineRunId = run.id
+                companyStore.updateTask(updatedTask, inProject: project.id)
+                syncedCount += 1
+                updatedRun.addLog("✅ 칸반 태스크 완료 처리: \(updatedTask.title)", level: .debug)
+            }
+        }
+
+        // 실패한 태스크는 needsReview로 변경
+        for task in run.decomposedTasks where task.status == .failed {
+            if let projectTask = findProjectTask(for: task.id, in: project) {
+                var updatedTask = projectTask
+                updatedTask.status = .needsReview
+                updatedTask.pipelineRunId = run.id
+                companyStore.updateTask(updatedTask, inProject: project.id)
+                updatedRun.addLog("⚠️ 칸반 태스크 검토 필요: \(updatedTask.title)", level: .warning)
+            }
+        }
+
+        if syncedCount > 0 {
+            updatedRun.addLog("📋 칸반 동기화 완료: \(syncedCount)개 태스크 완료 처리됨", level: .success)
+            currentRun = updatedRun
+        }
+
+        print("[PipelineCoordinator] 칸반 동기화 완료: \(syncedCount)개 태스크")
+    }
+
+    /// DecomposedTask ID로 ProjectTask 찾기
+    private func findProjectTask(for decomposedTaskId: UUID, in project: Project) -> ProjectTask? {
+        // 1. decomposedTaskId로 직접 매칭
+        if let task = project.tasks.first(where: { $0.decomposedTaskId == decomposedTaskId }) {
+            return task
+        }
+
+        // 2. decomposedTaskId가 없는 경우 task.id로 매칭 (칸반에서 직접 선택한 경우)
+        // startPipelineWithKanbanTasks에서 task.id를 그대로 사용하므로
+        if let task = project.tasks.first(where: { $0.id == decomposedTaskId }) {
+            return task
+        }
+
+        return nil
+    }
+
+    /// 이미 완료된 태스크 필터링
+    /// - Parameters:
+    ///   - tasks: 선택된 태스크들
+    ///   - project: 프로젝트
+    /// - Returns: (실행할 태스크, 이미 완료된 태스크)
+    func filterCompletedTasks(_ tasks: [ProjectTask], in project: Project) -> (pending: [ProjectTask], completed: [ProjectTask]) {
+        let completed = tasks.filter { $0.status == .done }
+        let pending = tasks.filter { $0.status != .done }
+        return (pending, completed)
     }
 }
 
@@ -614,6 +1117,13 @@ extension PipelineCoordinator {
     /// 현재 작업 업데이트
     func updateAction(_ action: String) {
         currentAction = action
+    }
+
+    /// 토큰 사용량 추가
+    func addTokenUsage(input: Int, output: Int, cost: Double) {
+        totalInputTokens += input
+        totalOutputTokens += output
+        totalCostUSD += cost
     }
 }
 
