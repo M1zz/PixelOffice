@@ -163,3 +163,34 @@ extension TaskPriority {
         }
     }
 }
+
+// MARK: - DecomposedTask → ProjectTask 변환
+
+extension DecomposedTask {
+    /// DecomposedTask를 칸반용 ProjectTask로 변환
+    func toProjectTask(pipelineRunId: UUID, sprintId: UUID? = nil) -> ProjectTask {
+        // 상태 변환
+        let taskStatus: TaskStatus = {
+            switch status {
+            case .pending: return .todo
+            case .running: return .inProgress
+            case .completed: return .done
+            case .failed: return .needsReview
+            case .skipped: return .backlog
+            }
+        }()
+
+        return ProjectTask(
+            title: title,
+            description: description,
+            status: taskStatus,
+            priority: priority,
+            assigneeId: assignedEmployeeId,
+            departmentType: department,
+            prompt: prompt,
+            sprintId: sprintId,
+            pipelineRunId: pipelineRunId,
+            decomposedTaskId: id
+        )
+    }
+}

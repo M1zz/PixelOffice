@@ -227,6 +227,17 @@ class CompanyStore: ObservableObject, StoreCoordinator {
         projectStore.assignTaskToEmployee(taskId: taskId, employeeId: employeeId, projectId: projectId)
     }
 
+    /// 파이프라인 태스크들을 칸반에 추가
+    func addTasksFromPipeline(_ run: PipelineRun, toProject projectId: UUID, sprintId: UUID? = nil) -> Int {
+        var addedCount = 0
+        for decomposedTask in run.decomposedTasks {
+            let projectTask = decomposedTask.toProjectTask(pipelineRunId: run.id, sprintId: sprintId)
+            addTask(projectTask, toProject: projectId)
+            addedCount += 1
+        }
+        return addedCount
+    }
+
     func startTask(taskId: UUID, projectId: UUID) {
         projectStore.startTask(taskId: taskId, projectId: projectId)
     }

@@ -182,6 +182,9 @@ struct PipelineView: View {
             onResume: { run in
                 resumePipeline(run)
                 selectedTab = .current
+            },
+            onSendToKanban: { run in
+                sendToKanban(run)
             }
         )
     }
@@ -221,6 +224,17 @@ struct PipelineView: View {
                 .padding(.vertical, 6)
                 .background(run.state.color.opacity(0.1))
                 .clipShape(Capsule())
+
+                // 칸반으로 보내기 (태스크가 있을 때)
+                if !run.decomposedTasks.isEmpty {
+                    Button {
+                        sendToKanban(run)
+                    } label: {
+                        Label("칸반으로 보내기", systemImage: "rectangle.split.3x1")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.blue)
+                }
 
                 // 재개 버튼 (일시정지/실패 상태일 때)
                 if run.state.canResume {
@@ -275,6 +289,11 @@ struct PipelineView: View {
     private func openReport(at path: String) {
         let url = URL(fileURLWithPath: path)
         NSWorkspace.shared.open(url)
+    }
+
+    private func sendToKanban(_ run: PipelineRun) {
+        let addedCount = companyStore.addTasksFromPipeline(run, toProject: projectId, sprintId: nil)
+        coordinator.showNotification("\(addedCount)개의 태스크가 칸반에 추가되었습니다.", type: .success)
     }
 }
 
@@ -345,6 +364,7 @@ struct PipelineHistoryView: View {
     let history: [PipelineRun]
     let onSelect: (PipelineRun) -> Void
     let onResume: (PipelineRun) -> Void
+    let onSendToKanban: (PipelineRun) -> Void
 
     var body: some View {
         if history.isEmpty {
@@ -367,7 +387,8 @@ struct PipelineHistoryView: View {
                         PipelineHistoryRow(
                             run: run,
                             onSelect: { onSelect(run) },
-                            onResume: { onResume(run) }
+                            onResume: { onResume(run) },
+                            onSendToKanban: { onSendToKanban(run) }
                         )
                     }
                 }
@@ -381,6 +402,7 @@ struct PipelineHistoryRow: View {
     let run: PipelineRun
     let onSelect: () -> Void
     let onResume: () -> Void
+    let onSendToKanban: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -433,6 +455,17 @@ struct PipelineHistoryRow: View {
 
                 // 버튼들
                 HStack(spacing: 8) {
+                    // 칸반으로 보내기 버튼 (태스크가 있을 때만)
+                    if !run.decomposedTasks.isEmpty {
+                        Button {
+                            onSendToKanban()
+                        } label: {
+                            Label("칸반", systemImage: "rectangle.split.3x1")
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.blue)
+                    }
+
                     if run.state.canResume {
                         Button("재개") {
                             onResume()

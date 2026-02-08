@@ -23,10 +23,15 @@ struct ProjectTask: Codable, Identifiable, Hashable {
     var workflowHistory: [WorkflowTransition]
     var parentTaskId: UUID?
 
+    // 파이프라인 연계
+    var pipelineRunId: UUID?  // 파이프라인에서 생성된 경우
+    var decomposedTaskId: UUID?  // 원본 DecomposedTask ID
+
     enum CodingKeys: String, CodingKey {
         case id, title, description, status, priority, assigneeId, departmentType
         case conversation, outputs, createdAt, updatedAt, completedAt
         case estimatedHours, actualHours, prompt, workflowHistory, parentTaskId, sprintId
+        case pipelineRunId, decomposedTaskId
     }
 
     init(
@@ -47,7 +52,9 @@ struct ProjectTask: Codable, Identifiable, Hashable {
         prompt: String = "",
         workflowHistory: [WorkflowTransition] = [],
         parentTaskId: UUID? = nil,
-        sprintId: UUID? = nil
+        sprintId: UUID? = nil,
+        pipelineRunId: UUID? = nil,
+        decomposedTaskId: UUID? = nil
     ) {
         self.id = id
         self.title = title
@@ -67,6 +74,8 @@ struct ProjectTask: Codable, Identifiable, Hashable {
         self.workflowHistory = workflowHistory
         self.parentTaskId = parentTaskId
         self.sprintId = sprintId
+        self.pipelineRunId = pipelineRunId
+        self.decomposedTaskId = decomposedTaskId
     }
 
     // 기존 저장 파일 호환성
@@ -91,6 +100,8 @@ struct ProjectTask: Codable, Identifiable, Hashable {
         workflowHistory = try container.decodeIfPresent([WorkflowTransition].self, forKey: .workflowHistory) ?? []
         parentTaskId = try container.decodeIfPresent(UUID.self, forKey: .parentTaskId)
         sprintId = try container.decodeIfPresent(UUID.self, forKey: .sprintId)
+        pipelineRunId = try container.decodeIfPresent(UUID.self, forKey: .pipelineRunId)
+        decomposedTaskId = try container.decodeIfPresent(UUID.self, forKey: .decomposedTaskId)
     }
     
     static func == (lhs: ProjectTask, rhs: ProjectTask) -> Bool {
