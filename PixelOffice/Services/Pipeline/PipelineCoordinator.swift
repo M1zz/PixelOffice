@@ -74,7 +74,8 @@ class PipelineCoordinator: ObservableObject {
     ///   - requirement: 요구사항 텍스트
     ///   - project: 대상 프로젝트
     ///   - assignedEmployee: 담당자 (모르는 것이 있을 때 질문할 대상)
-    func startPipeline(requirement: String, project: Project, assignedEmployee: ProjectEmployee? = nil) async {
+    ///   - sprint: 스프린트 (태스크가 할당될 스프린트)
+    func startPipeline(requirement: String, project: Project, assignedEmployee: ProjectEmployee? = nil, sprint: Sprint? = nil) async {
         guard !isRunning else {
             print("[PipelineCoordinator] Pipeline already running")
             return
@@ -92,13 +93,20 @@ class PipelineCoordinator: ObservableObject {
         run.projectName = project.name
         run.assignedEmployeeId = assignedEmployee?.id
         run.assignedEmployeeName = assignedEmployee?.name
+        run.sprintId = sprint?.id
+        run.sprintName = sprint?.name
         run.startedAt = Date()
         run.state = .decomposing
+
+        var logMessage = "파이프라인 시작"
         if let employee = assignedEmployee {
-            run.addLog("파이프라인 시작 (담당자: \(employee.name))", level: .info)
-        } else {
-            run.addLog("파이프라인 시작", level: .info)
+            logMessage += " (담당자: \(employee.name))"
         }
+        if let sprint = sprint {
+            logMessage += " [스프린트: \(sprint.name)]"
+        }
+        run.addLog(logMessage, level: .info)
+
         currentRun = run
         updateAction("파이프라인 초기화 중...")
 
@@ -142,7 +150,8 @@ class PipelineCoordinator: ObservableObject {
     ///   - tasks: 칸반에서 선택한 태스크들
     ///   - project: 대상 프로젝트
     ///   - assignedEmployee: 담당자
-    func startPipelineWithKanbanTasks(tasks: [ProjectTask], project: Project, assignedEmployee: ProjectEmployee? = nil) async {
+    ///   - sprint: 스프린트
+    func startPipelineWithKanbanTasks(tasks: [ProjectTask], project: Project, assignedEmployee: ProjectEmployee? = nil, sprint: Sprint? = nil) async {
         guard !isRunning else {
             print("[PipelineCoordinator] Pipeline already running")
             return
@@ -169,6 +178,8 @@ class PipelineCoordinator: ObservableObject {
         run.projectName = project.name
         run.assignedEmployeeId = assignedEmployee?.id
         run.assignedEmployeeName = assignedEmployee?.name
+        run.sprintId = sprint?.id
+        run.sprintName = sprint?.name
         run.startedAt = Date()
         run.state = .executing
 
@@ -187,6 +198,9 @@ class PipelineCoordinator: ObservableObject {
         run.addLog("칸반에서 \(tasks.count)개 태스크를 가져왔습니다.", level: .info)
         if let employee = assignedEmployee {
             run.addLog("담당자: \(employee.name)", level: .info)
+        }
+        if let sprint = sprint {
+            run.addLog("스프린트: \(sprint.name)", level: .info)
         }
 
         currentRun = run

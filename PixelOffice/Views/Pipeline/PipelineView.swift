@@ -12,6 +12,7 @@ struct PipelineView: View {
     @State private var showingHistory = false
     @State private var selectedTab: PipelineTab = .current
     @State private var selectedEmployeeId: UUID?
+    @State private var selectedSprintId: UUID?
     @State private var historyRefreshId = UUID()  // 히스토리 새로고침용
     @State private var showingKanbanPicker = false  // 칸반에서 가져오기
     @State private var selectedKanbanTasks: Set<UUID> = []
@@ -31,9 +32,19 @@ struct PipelineView: View {
         project?.departments.flatMap { $0.employees } ?? []
     }
 
+    /// 프로젝트의 스프린트 목록
+    var projectSprints: [Sprint] {
+        project?.sprints ?? []
+    }
+
     /// 선택된 담당자
     var selectedEmployee: ProjectEmployee? {
         projectEmployees.first { $0.id == selectedEmployeeId }
+    }
+
+    /// 선택된 스프린트
+    var selectedSprint: Sprint? {
+        projectSprints.first { $0.id == selectedSprintId }
     }
 
     /// 이 프로젝트의 파이프라인 히스토리 (historyUpdateId 관찰로 자동 새로고침)
@@ -130,11 +141,13 @@ struct PipelineView: View {
             // 왼쪽: 입력 & 결과
             ScrollView {
                 VStack(spacing: 20) {
-                    // 요구사항 입력 및 담당자 선택
+                    // 요구사항 입력, 스프린트 및 담당자 선택
                     RequirementInputView(
                         requirement: $requirement,
                         selectedEmployeeId: $selectedEmployeeId,
+                        selectedSprintId: $selectedSprintId,
                         employees: projectEmployees,
+                        sprints: projectSprints,
                         isDisabled: coordinator.isRunning
                     )
 
@@ -299,7 +312,8 @@ struct PipelineView: View {
             await coordinator.startPipeline(
                 requirement: requirement,
                 project: project,
-                assignedEmployee: selectedEmployee
+                assignedEmployee: selectedEmployee,
+                sprint: selectedSprint
             )
         }
     }
@@ -323,7 +337,8 @@ struct PipelineView: View {
             await coordinator.startPipelineWithKanbanTasks(
                 tasks: tasks,
                 project: project,
-                assignedEmployee: selectedEmployee
+                assignedEmployee: selectedEmployee,
+                sprint: selectedSprint
             )
         }
         coordinator.showNotification("\(tasks.count)개의 태스크를 파이프라인으로 가져왔습니다.", type: .info)
@@ -470,6 +485,14 @@ struct PipelineHistoryRow: View {
                             Label(employeeName, systemImage: "person.circle")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                        }
+
+                        if let sprintName = run.sprintName {
+                            Text("•")
+                                .foregroundStyle(.secondary)
+                            Label(sprintName, systemImage: "flag")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
                         }
 
                         Text("•")
@@ -629,7 +652,9 @@ struct PipelineHeaderView: View {
 struct RequirementInputView: View {
     @Binding var requirement: String
     @Binding var selectedEmployeeId: UUID?
+    @Binding var selectedSprintId: UUID?
     let employees: [ProjectEmployee]
+    let sprints: [Sprint]
     let isDisabled: Bool
 
     var body: some View {
@@ -658,28 +683,59 @@ struct RequirementInputView: View {
 
             Divider()
 
-            // 담당자 선택
-            VStack(alignment: .leading, spacing: 8) {
-                Label("담당자", systemImage: "person.circle")
-                    .font(.headline)
+            // 스프린트 및 담당자 선택 (가로 배치)
+            HStack(alignment: .top, spacing: 20) {
+                // 스프린트 선택
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("스프린트", systemImage: "flag")
+                        .font(.headline)
 
-                Picker("담당자 선택", selection: $selectedEmployeeId) {
-                    Text("지정하지 않음").tag(nil as UUID?)
-                    ForEach(employees, id: \.id) { employee in
-                        HStack {
-                            Text(employee.name)
-                            Text("(\(employee.departmentType.rawValue))")
-                                .foregroundStyle(.secondary)
+                    Picker("스프린트 선택", selection: $selectedSprintId) {
+                        Text("지정하지 않음").tag(nil as UUID?)
+                        ForEach(sprints, id: \.id) { sprint in
+                            HStack {
+                                Text(sprint.name)
+                                if sprint.isActive {
+                                    Text("(진행중)")
+                                        .foregroundStyle(.orange)
+                                }
+                            }
+                            .tag(sprint.id as UUID?)
                         }
-                        .tag(employee.id as UUID?)
                     }
-                }
-                .pickerStyle(.menu)
-                .disabled(isDisabled)
+                    .pickerStyle(.menu)
+                    .disabled(isDisabled)
 
-                Text("파이프라인 실행 중 모르는 것이 있을 때 담당자에게 질문합니다")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    Text("생성된 태스크가 이 스프린트에 할당됩니다")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                // 담당자 선택
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("담당자", systemImage: "person.circle")
+                        .font(.headline)
+
+                    Picker("담당자 선택", selection: $selectedEmployeeId) {
+                        Text("지정하지 않음").tag(nil as UUID?)
+                        ForEach(employees, id: \.id) { employee in
+                            HStack {
+                                Text(employee.name)
+                                Text("(\(employee.departmentType.rawValue))")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .tag(employee.id as UUID?)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .disabled(isDisabled)
+
+                    Text("모르는 것이 있을 때 질문합니다")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding()

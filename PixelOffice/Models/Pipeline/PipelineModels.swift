@@ -130,6 +130,10 @@ struct PipelineRun: Codable, Identifiable {
     var assignedEmployeeId: UUID?
     var assignedEmployeeName: String?
 
+    /// 스프린트 정보
+    var sprintId: UUID?
+    var sprintName: String?
+
     /// 총 소요 시간 (초)
     var duration: TimeInterval? {
         guard let start = startedAt else { return nil }
