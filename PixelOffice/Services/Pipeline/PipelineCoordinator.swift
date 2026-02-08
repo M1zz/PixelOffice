@@ -825,29 +825,170 @@ class PipelineCoordinator: ObservableObject {
         return nil
     }
 
-    /// PROJECT.md에서 ProjectInfo 로드
+    /// PIPELINE_CONTEXT.md 경로 가져오기
+    private func getPipelineContextPath(project: Project) -> String? {
+        let basePath = DataPathService.shared.basePath
+        let contextPath = "\(basePath)/\(project.name)/PIPELINE_CONTEXT.md"
+        if FileManager.default.fileExists(atPath: contextPath) {
+            return contextPath
+        }
+        return nil
+    }
+
+    /// PIPELINE_CONTEXT.md 또는 PROJECT.md에서 ProjectInfo 로드
     private func loadProjectInfo(for project: Project) -> ProjectInfo? {
-        guard let projectMdPath = getProjectMdPath(project: project),
-              let content = try? String(contentsOfFile: projectMdPath, encoding: .utf8) else {
-            print("[PipelineCoordinator] PROJECT.md를 찾을 수 없음: \(project.name)")
+        let basePath = DataPathService.shared.basePath
+        var info = ProjectInfo()
+        var foundPath = false
+
+        // 1. 먼저 PIPELINE_CONTEXT.md 확인 (우선순위 높음)
+        if let contextPath = getPipelineContextPath(project: project),
+           let content = try? String(contentsOfFile: contextPath, encoding: .utf8) {
+            print("[PipelineCoordinator] PIPELINE_CONTEXT.md 발견: \(contextPath)")
+
+            // 코드 블록에서 경로 추출
+            if let path = extractPathFromCodeBlock(content) {
+                info.absolutePath = path
+                print("[PipelineCoordinator] PIPELINE_CONTEXT.md에서 경로 추출: \(path)")
+                foundPath = true
+            }
+
+            // 추가 정보 파싱
+            info = parseContextFile(content, baseInfo: info)
+        }
+
+        // 2. PROJECT.md에서도 정보 보완
+        if let projectMdPath = getProjectMdPath(project: project),
+           let content = try? String(contentsOfFile: projectMdPath, encoding: .utf8) {
+            let projectInfo = ProjectInfo.fromMarkdown(content)
+
+            // 경로가 없으면 PROJECT.md에서 가져오기
+            if info.absolutePath.isEmpty {
+                info.absolutePath = projectInfo.absolutePath
+            }
+
+            // 기술 스택 정보 보완
+            if info.language.isEmpty { info.language = projectInfo.language }
+            if info.framework.isEmpty { info.framework = projectInfo.framework }
+            if info.buildTool.isEmpty { info.buildTool = projectInfo.buildTool }
+        }
+
+        // 3. 여전히 경로가 없으면 대체 방법 시도
+        if info.absolutePath.isEmpty {
+            print("[PipelineCoordinator] 컨텍스트 파일에서 경로를 찾지 못함, 대체 경로 탐색 중...")
+
+            // Xcode 프로젝트 자동 탐색
+            if let foundXcodePath = findXcodeProjectPath(projectName: project.name) {
+                info.absolutePath = foundXcodePath
+                print("[PipelineCoordinator] Xcode 프로젝트 발견: \(foundXcodePath)")
+            }
+        }
+
+        // 경로가 여전히 없으면 nil 반환
+        if info.absolutePath.isEmpty {
+            print("[PipelineCoordinator] 프로젝트 경로를 찾을 수 없음: \(project.name)")
+
+            // PIPELINE_CONTEXT.md 없으면 안내 메시지 출력
+            let contextPath = "\(basePath)/\(project.name)/PIPELINE_CONTEXT.md"
+            if !FileManager.default.fileExists(atPath: contextPath) {
+                print("[PipelineCoordinator] 💡 PIPELINE_CONTEXT.md 파일을 생성하세요: \(contextPath)")
+                print("[PipelineCoordinator] 💡 템플릿: \(basePath)/_shared/templates/PIPELINE_CONTEXT.md")
+            }
             return nil
         }
 
-        var info = ProjectInfo.fromMarkdown(content)
+        return info
+    }
 
-        // absolutePath가 비어있으면 다른 방법으로 찾기 시도
-        if info.absolutePath.isEmpty {
-            print("[PipelineCoordinator] PROJECT.md에서 절대경로를 찾지 못함, 대체 경로 탐색 중...")
+    /// 코드 블록에서 경로 추출 (```로 감싸진 경로)
+    private func extractPathFromCodeBlock(_ content: String) -> String? {
+        // "### 프로젝트 소스 경로" 섹션 찾기
+        let lines = content.components(separatedBy: "\n")
+        var inSourcePathSection = false
+        var inCodeBlock = false
 
-            // 1. 프로젝트 이름과 같은 xcodeproj 찾기
-            if let foundPath = findXcodeProjectPath(projectName: project.name) {
-                info.absolutePath = foundPath
-                print("[PipelineCoordinator] Xcode 프로젝트 발견: \(foundPath)")
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            // 섹션 시작
+            if trimmed.contains("프로젝트 소스 경로") || trimmed.contains("프로젝트 경로") {
+                inSourcePathSection = true
+                continue
             }
 
-            // 2. 여전히 없으면 PROJECT.md에서 다른 패턴으로 경로 찾기
-            if info.absolutePath.isEmpty {
-                info.absolutePath = extractPathFromMarkdown(content)
+            // 다른 섹션으로 이동
+            if inSourcePathSection && trimmed.hasPrefix("###") {
+                inSourcePathSection = false
+                continue
+            }
+
+            // 코드 블록 시작/끝
+            if trimmed.hasPrefix("```") {
+                if inCodeBlock {
+                    inCodeBlock = false
+                } else {
+                    inCodeBlock = true
+                }
+                continue
+            }
+
+            // 코드 블록 내 경로 추출
+            if inSourcePathSection && inCodeBlock && trimmed.hasPrefix("/") {
+                let path = trimmed.trimmingCharacters(in: .whitespaces)
+                if FileManager.default.fileExists(atPath: path) {
+                    return path
+                }
+            }
+
+            // 인라인 경로 추출 (` ` 로 감싸진 경우)
+            if inSourcePathSection && trimmed.contains("`/") {
+                if let range = trimmed.range(of: "`(/[^`]+)`", options: .regularExpression) {
+                    var path = String(trimmed[range])
+                    path = path.trimmingCharacters(in: CharacterSet(charactersIn: "`"))
+                    if FileManager.default.fileExists(atPath: path) {
+                        return path
+                    }
+                }
+            }
+        }
+
+        return nil
+    }
+
+    /// PIPELINE_CONTEXT.md 파싱
+    private func parseContextFile(_ content: String, baseInfo: ProjectInfo) -> ProjectInfo {
+        var info = baseInfo
+        let lines = content.components(separatedBy: "\n")
+        var currentSection = ""
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            // 섹션 감지
+            if trimmed.hasPrefix("### ") || trimmed.hasPrefix("## ") {
+                currentSection = trimmed.replacingOccurrences(of: "#", with: "").trimmingCharacters(in: .whitespaces)
+                continue
+            }
+
+            // 키-값 파싱
+            if trimmed.hasPrefix("- **") {
+                if let colonRange = trimmed.range(of: "**: ") {
+                    let key = String(trimmed[trimmed.index(trimmed.startIndex, offsetBy: 4)..<colonRange.lowerBound])
+                    var value = String(trimmed[colonRange.upperBound...])
+
+                    // 백틱 제거
+                    if value.hasPrefix("`") && value.hasSuffix("`") {
+                        value = String(value.dropFirst().dropLast())
+                    }
+
+                    // 값 적용
+                    switch key {
+                    case "언어": info.language = value
+                    case "프레임워크": info.framework = value
+                    case "빌드 시스템", "빌드 도구": info.buildTool = value
+                    default: break
+                    }
+                }
             }
         }
 
@@ -879,29 +1020,26 @@ class PipelineCoordinator: ObservableObject {
     /// 프로젝트 경로 오류 메시지 생성
     private func buildProjectPathErrorMessage(project: Project, projectInfo: ProjectInfo?) -> String {
         let basePath = DataPathService.shared.basePath
-        let projectMdPath = "\(basePath)/\(project.name)/PROJECT.md"
+        let contextPath = "\(basePath)/\(project.name)/PIPELINE_CONTEXT.md"
+        let templatePath = "\(basePath)/_shared/templates/PIPELINE_CONTEXT.md"
 
-        if projectInfo == nil {
-            return """
-            프로젝트 경로를 설정해주세요.
+        return """
+        프로젝트 소스 경로가 설정되지 않았습니다.
 
-            PROJECT.md 파일이 없습니다: \(projectMdPath)
+        📁 PIPELINE_CONTEXT.md 파일을 생성하세요:
+           \(contextPath)
 
-            PROJECT.md에 다음 형식으로 경로를 추가하세요:
-            ## 프로젝트 경로
-            - **절대경로**: `/Users/.../YourProject`
-            """
-        } else {
-            return """
-            프로젝트 절대경로가 설정되지 않았습니다.
+        📋 템플릿 위치:
+           \(templatePath)
 
-            PROJECT.md 파일 위치: \(projectMdPath)
-
-            다음 형식으로 경로를 추가하세요:
-            ## 프로젝트 경로
-            - **절대경로**: `/Users/.../YourProject`
-            """
-        }
+        필수 설정 형식:
+        ```
+        ### 프로젝트 소스 경로
+        ```
+        /Users/.../YourProject
+        ```
+        ```
+        """
     }
 
     /// PROJECT.md에서 경로 패턴 추출 (다양한 형식 지원)
