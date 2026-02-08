@@ -137,6 +137,71 @@ class PipelineCoordinator: ObservableObject {
         await executePipelinePhases(run: &resumeRun, project: project, startPhase: run.resumePhase)
     }
 
+    /// 칸반에서 태스크를 가져와서 파이프라인 시작
+    /// - Parameters:
+    ///   - tasks: 칸반에서 선택한 태스크들
+    ///   - project: 대상 프로젝트
+    ///   - assignedEmployee: 담당자
+    func startPipelineWithKanbanTasks(tasks: [ProjectTask], project: Project, assignedEmployee: ProjectEmployee? = nil) async {
+        guard !isRunning else {
+            print("[PipelineCoordinator] Pipeline already running")
+            return
+        }
+
+        guard !tasks.isEmpty else {
+            showNotification("선택된 태스크가 없습니다.", type: .warning)
+            return
+        }
+
+        isRunning = true
+        cancellationFlag = false
+        progress = 0.0
+        currentProjectName = project.name
+
+        // TODO 리스트 초기화 (분해 단계는 스킵)
+        initializeTodoList()
+        completeTodo(phase: .decomposition)  // 분해 완료로 표시
+
+        // 요구사항은 선택된 태스크들의 제목을 연결
+        let requirement = tasks.map { $0.title }.joined(separator: ", ")
+
+        var run = PipelineRun(projectId: project.id, requirement: "칸반 태스크 처리: \(requirement)")
+        run.projectName = project.name
+        run.assignedEmployeeId = assignedEmployee?.id
+        run.assignedEmployeeName = assignedEmployee?.name
+        run.startedAt = Date()
+        run.state = .executing
+
+        // ProjectTask를 DecomposedTask로 변환
+        run.decomposedTasks = tasks.enumerated().map { index, task in
+            DecomposedTask(
+                id: task.id,  // 원본 ID 유지
+                title: task.title,
+                description: task.description,
+                department: task.departmentType,
+                priority: task.priority,
+                order: index
+            )
+        }
+
+        run.addLog("칸반에서 \(tasks.count)개 태스크를 가져왔습니다.", level: .info)
+        if let employee = assignedEmployee {
+            run.addLog("담당자: \(employee.name)", level: .info)
+        }
+
+        currentRun = run
+        updateAction("칸반 태스크 처리 준비 중...")
+
+        // 초기 상태 저장
+        saveRunProgress(run)
+
+        // 분해 단계 완료로 표시하고 개발 단계부터 시작
+        run.markPhaseCompleted(.decomposition)
+        progress = 0.25
+
+        await executePipelinePhases(run: &run, project: project, startPhase: .development)
+    }
+
     /// 파이프라인 Phase 실행 (시작/재개 공통)
     private func executePipelinePhases(run: inout PipelineRun, project: Project, startPhase: PipelinePhase) async {
         do {

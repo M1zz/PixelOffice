@@ -141,6 +141,22 @@ class CompanyStore: ObservableObject, StoreCoordinator {
         employeeStore.getEmployeeStatus(employeeId)
     }
 
+    func getEmployeeStatistics(_ employeeId: UUID) -> EmployeeStatistics? {
+        // 먼저 회사 직원에서 찾기
+        if let employee = getEmployee(byId: employeeId) {
+            return employee.statistics
+        }
+        // 프로젝트 직원에서 찾기
+        for project in company.projects {
+            for dept in project.departments {
+                if let employee = dept.employees.first(where: { $0.id == employeeId }) {
+                    return employee.statistics
+                }
+            }
+        }
+        return nil
+    }
+
     func updateEmployeeTokenUsage(
         _ employeeId: UUID,
         inputTokens: Int,

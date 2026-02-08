@@ -13,9 +13,12 @@ struct PipelineView: View {
     @State private var selectedTab: PipelineTab = .current
     @State private var selectedEmployeeId: UUID?
     @State private var historyRefreshId = UUID()  // 히스토리 새로고침용
+    @State private var showingKanbanPicker = false  // 칸반에서 가져오기
+    @State private var selectedKanbanTasks: Set<UUID> = []
 
     enum PipelineTab: String, CaseIterable {
         case current = "현재 실행"
+        case activity = "활동 현황"
         case history = "히스토리"
     }
 
@@ -68,13 +71,25 @@ struct PipelineView: View {
                     historyRefreshId = UUID()  // 히스토리 탭 전환 시 새로고침
                 }
             }
+            .sheet(isPresented: $showingKanbanPicker) {
+                KanbanTaskPickerSheet(
+                    tasks: project?.tasks ?? [],
+                    selectedTaskIds: $selectedKanbanTasks,
+                    onConfirm: { tasks in
+                        fetchFromKanban(tasks)
+                    }
+                )
+            }
 
             Divider()
 
             // 메인 콘텐츠
-            if selectedTab == .current {
+            switch selectedTab {
+            case .current:
                 currentExecutionView
-            } else {
+            case .activity:
+                activityView
+            case .history:
                 historyView
                     .id(historyRefreshId)  // 새로고침 트리거
             }
@@ -170,6 +185,18 @@ struct PipelineView: View {
         }
     }
 
+    // MARK: - 활동 현황 뷰
+
+    var activityView: some View {
+        PipelineActivityView(
+            projectEmployees: projectEmployees,
+            companyStore: companyStore,
+            onSelectEmployee: { employee in
+                // 직원 선택 시 해당 직원의 대화창으로 이동하거나 상세 보기
+            }
+        )
+    }
+
     // MARK: - 히스토리 뷰
 
     var historyView: some View {
@@ -182,9 +209,6 @@ struct PipelineView: View {
             onResume: { run in
                 resumePipeline(run)
                 selectedTab = .current
-            },
-            onSendToKanban: { run in
-                sendToKanban(run)
             }
         )
     }
@@ -225,17 +249,6 @@ struct PipelineView: View {
                 .background(run.state.color.opacity(0.1))
                 .clipShape(Capsule())
 
-                // 칸반으로 보내기 (태스크가 있을 때)
-                if !run.decomposedTasks.isEmpty {
-                    Button {
-                        sendToKanban(run)
-                    } label: {
-                        Label("칸반으로 보내기", systemImage: "rectangle.split.3x1")
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.blue)
-                }
-
                 // 재개 버튼 (일시정지/실패 상태일 때)
                 if run.state.canResume {
                     Button {
@@ -254,6 +267,15 @@ struct PipelineView: View {
                 }
                 .buttonStyle(.bordered)
             } else {
+                // 칸반에서 가져오기
+                Button {
+                    showingKanbanPicker = true
+                } label: {
+                    Label("칸반에서 가져오기", systemImage: "tray.and.arrow.down")
+                }
+                .buttonStyle(.bordered)
+                .disabled((project?.tasks ?? []).isEmpty)
+
                 Button {
                     startPipeline()
                 } label: {
@@ -291,9 +313,17 @@ struct PipelineView: View {
         NSWorkspace.shared.open(url)
     }
 
-    private func sendToKanban(_ run: PipelineRun) {
-        let addedCount = companyStore.addTasksFromPipeline(run, toProject: projectId, sprintId: nil)
-        coordinator.showNotification("\(addedCount)개의 태스크가 칸반에 추가되었습니다.", type: .success)
+    private func fetchFromKanban(_ tasks: [ProjectTask]) {
+        guard let project = project else { return }
+        // 선택된 칸반 태스크들을 파이프라인으로 처리
+        Task {
+            await coordinator.startPipelineWithKanbanTasks(
+                tasks: tasks,
+                project: project,
+                assignedEmployee: selectedEmployee
+            )
+        }
+        coordinator.showNotification("\(tasks.count)개의 태스크를 파이프라인으로 가져왔습니다.", type: .info)
     }
 }
 
@@ -364,7 +394,6 @@ struct PipelineHistoryView: View {
     let history: [PipelineRun]
     let onSelect: (PipelineRun) -> Void
     let onResume: (PipelineRun) -> Void
-    let onSendToKanban: (PipelineRun) -> Void
 
     var body: some View {
         if history.isEmpty {
@@ -387,8 +416,7 @@ struct PipelineHistoryView: View {
                         PipelineHistoryRow(
                             run: run,
                             onSelect: { onSelect(run) },
-                            onResume: { onResume(run) },
-                            onSendToKanban: { onSendToKanban(run) }
+                            onResume: { onResume(run) }
                         )
                     }
                 }
@@ -402,7 +430,6 @@ struct PipelineHistoryRow: View {
     let run: PipelineRun
     let onSelect: () -> Void
     let onResume: () -> Void
-    let onSendToKanban: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -455,17 +482,6 @@ struct PipelineHistoryRow: View {
 
                 // 버튼들
                 HStack(spacing: 8) {
-                    // 칸반으로 보내기 버튼 (태스크가 있을 때만)
-                    if !run.decomposedTasks.isEmpty {
-                        Button {
-                            onSendToKanban()
-                        } label: {
-                            Label("칸반", systemImage: "rectangle.split.3x1")
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(.blue)
-                    }
-
                     if run.state.canResume {
                         Button("재개") {
                             onResume()
@@ -1155,6 +1171,434 @@ struct PipelineNotificationBanner: View {
         }
         .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
         .padding(.horizontal, 20)
+    }
+}
+
+// MARK: - 활동 현황 뷰
+
+struct PipelineActivityView: View {
+    let projectEmployees: [ProjectEmployee]
+    let companyStore: CompanyStore
+    let onSelectEmployee: (ProjectEmployee) -> Void
+
+    /// 현재 작업 중인 직원들
+    var workingEmployees: [ProjectEmployee] {
+        projectEmployees.filter { employee in
+            companyStore.getEmployeeStatus(employee.id) == .working ||
+            companyStore.getEmployeeStatus(employee.id) == .thinking
+        }
+    }
+
+    /// 대기 중인 직원들
+    var idleEmployees: [ProjectEmployee] {
+        projectEmployees.filter { employee in
+            companyStore.getEmployeeStatus(employee.id) == .idle
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // 현재 작업 중인 직원들
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "person.wave.2.fill")
+                            .foregroundStyle(.blue)
+                        Text("현재 작업 중")
+                            .font(.headline)
+                        Text("(\(workingEmployees.count)명)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if workingEmployees.isEmpty {
+                        HStack {
+                            Image(systemName: "moon.zzz")
+                                .foregroundStyle(.secondary)
+                            Text("현재 작업 중인 직원이 없습니다")
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    } else {
+                        ForEach(workingEmployees) { employee in
+                            EmployeeActivityRow(
+                                employee: employee,
+                                status: companyStore.getEmployeeStatus(employee.id),
+                                statistics: companyStore.getEmployeeStatistics(employee.id),
+                                onSelect: { onSelectEmployee(employee) }
+                            )
+                        }
+                    }
+                }
+
+                Divider()
+
+                // 대기 중인 직원들
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "person.3.fill")
+                            .foregroundStyle(.secondary)
+                        Text("대기 중")
+                            .font(.headline)
+                        Text("(\(idleEmployees.count)명)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if idleEmployees.isEmpty {
+                        Text("모든 직원이 작업 중입니다")
+                            .foregroundStyle(.secondary)
+                            .padding()
+                    } else {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 200))], spacing: 8) {
+                            ForEach(idleEmployees) { employee in
+                                IdleEmployeeCard(
+                                    employee: employee,
+                                    onSelect: { onSelectEmployee(employee) }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 토큰 사용량 요약
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "chart.bar.fill")
+                            .foregroundStyle(.green)
+                        Text("오늘의 토큰 사용량")
+                            .font(.headline)
+                    }
+
+                    TokenUsageSummaryCard(employees: projectEmployees, companyStore: companyStore)
+                }
+            }
+            .padding()
+        }
+    }
+}
+
+/// 작업 중인 직원 행
+struct EmployeeActivityRow: View {
+    let employee: ProjectEmployee
+    let status: EmployeeStatus
+    let statistics: EmployeeStatistics?
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 12) {
+                // 상태 표시
+                Circle()
+                    .fill(status.color)
+                    .frame(width: 10, height: 10)
+                    .overlay {
+                        if status == .working || status == .thinking {
+                            Circle()
+                                .stroke(status.color, lineWidth: 2)
+                                .scaleEffect(1.5)
+                                .opacity(0.5)
+                        }
+                    }
+
+                // 직원 정보
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text(employee.name)
+                            .font(.headline)
+                        Text("(\(employee.departmentType.rawValue))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    HStack(spacing: 8) {
+                        Label(status.rawValue, systemImage: status.icon)
+                            .font(.caption)
+                            .foregroundStyle(status.color)
+
+                        if let stats = statistics {
+                            Text("•")
+                                .foregroundStyle(.secondary)
+                            Text("\(stats.totalTokensUsed.formatted()) 토큰")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                // 실시간 토큰 사용량 (작업 중일 때)
+                if status == .working || status == .thinking {
+                    HStack(spacing: 4) {
+                        ProgressView()
+                            .scaleEffect(0.6)
+                        Text("처리중...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(.tertiary)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(status.color.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// 대기 중인 직원 카드
+struct IdleEmployeeCard: View {
+    let employee: ProjectEmployee
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack {
+                Text(employee.name)
+                    .font(.subheadline)
+                Text("(\(employee.departmentType.rawValue))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color(NSColor.controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// 토큰 사용량 요약 카드
+struct TokenUsageSummaryCard: View {
+    let employees: [ProjectEmployee]
+    let companyStore: CompanyStore
+
+    var todaysTotalTokens: Int {
+        employees.reduce(0) { total, employee in
+            total + (companyStore.getEmployeeStatistics(employee.id)?.tokensLast24Hours ?? 0)
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 20) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("오늘 총 사용")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("\(todaysTotalTokens.formatted())")
+                    .font(.title2.bold())
+                Text("토큰")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
+                .frame(height: 40)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("활성 직원")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("\(employees.count)")
+                    .font(.title2.bold())
+                Text("명")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+// MARK: - 칸반 태스크 선택 시트
+
+struct KanbanTaskPickerSheet: View {
+    let tasks: [ProjectTask]
+    @Binding var selectedTaskIds: Set<UUID>
+    let onConfirm: ([ProjectTask]) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    /// 처리 가능한 태스크 (완료되지 않은 태스크)
+    var availableTasks: [ProjectTask] {
+        tasks.filter { $0.status != .done }
+    }
+
+    /// 선택된 태스크들
+    var selectedTasks: [ProjectTask] {
+        tasks.filter { selectedTaskIds.contains($0.id) }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // 헤더
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("칸반에서 태스크 가져오기")
+                        .font(.title2.bold())
+                    Text("파이프라인으로 처리할 태스크를 선택하세요")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding()
+
+            Divider()
+
+            // 태스크 목록
+            if availableTasks.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "tray")
+                        .font(.system(size: 48))
+                        .foregroundStyle(.secondary)
+                    Text("처리할 태스크가 없습니다")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                    Text("칸반 보드에 태스크를 추가해주세요")
+                        .font(.body)
+                        .foregroundStyle(.tertiary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(availableTasks) { task in
+                            KanbanTaskRow(
+                                task: task,
+                                isSelected: selectedTaskIds.contains(task.id),
+                                onToggle: {
+                                    if selectedTaskIds.contains(task.id) {
+                                        selectedTaskIds.remove(task.id)
+                                    } else {
+                                        selectedTaskIds.insert(task.id)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    .padding()
+                }
+            }
+
+            Divider()
+
+            // 하단 버튼
+            HStack {
+                Text("\(selectedTasks.count)개 선택됨")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Button("취소") {
+                    dismiss()
+                }
+                .buttonStyle(.bordered)
+
+                Button {
+                    onConfirm(selectedTasks)
+                    dismiss()
+                } label: {
+                    Label("파이프라인 시작", systemImage: "play.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(selectedTasks.isEmpty)
+            }
+            .padding()
+        }
+        .frame(minWidth: 600, minHeight: 500)
+    }
+}
+
+/// 칸반 태스크 선택 행
+struct KanbanTaskRow: View {
+    let task: ProjectTask
+    let isSelected: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: 12) {
+                // 선택 체크박스
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? .blue : .secondary)
+                    .font(.title3)
+
+                // 태스크 정보
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(task.title)
+                            .font(.headline)
+                            .lineLimit(1)
+
+                        Spacer()
+
+                        // 우선순위
+                        Label(task.priority.rawValue, systemImage: task.priority.icon)
+                            .font(.caption)
+                            .foregroundStyle(task.priority.color)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(task.priority.color.opacity(0.1))
+                            .clipShape(Capsule())
+                    }
+
+                    HStack(spacing: 8) {
+                        // 부서
+                        Label(task.departmentType.rawValue, systemImage: "building.2")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        // 상태
+                        Label(task.status.rawValue, systemImage: task.status.icon)
+                            .font(.caption)
+                            .foregroundStyle(task.status.color)
+                    }
+
+                    if !task.description.isEmpty {
+                        Text(task.description)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(2)
+                    }
+                }
+            }
+            .padding()
+            .background(isSelected ? Color.blue.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
