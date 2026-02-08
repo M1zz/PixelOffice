@@ -674,6 +674,34 @@ extension PipelineCoordinator {
     func loadPipelineHistory(for projectId: UUID) -> [PipelineRun] {
         return loadPipelineHistory().filter { $0.projectId == projectId }
     }
+
+    /// 파이프라인 히스토리 삭제
+    func deletePipelineRun(_ runId: UUID) {
+        var history = loadPipelineHistory()
+
+        // 해당 항목 제거
+        history.removeAll { $0.id == runId }
+
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(history)
+
+            try data.write(to: URL(fileURLWithPath: historyFilePath))
+            print("[PipelineCoordinator] 파이프라인 삭제됨: \(runId)")
+
+            // 히스토리 변경 알림 (뷰 새로고침)
+            Task { @MainActor in
+                self.historyUpdateId = UUID()
+            }
+
+            showNotification("히스토리가 삭제되었습니다.", type: .info)
+        } catch {
+            print("[PipelineCoordinator] 파이프라인 삭제 실패: \(error)")
+            showNotification("삭제에 실패했습니다.", type: .error)
+        }
+    }
 }
 
 // MARK: - Pipeline TODO Item

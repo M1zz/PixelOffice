@@ -209,6 +209,9 @@ struct PipelineView: View {
             onResume: { run in
                 resumePipeline(run)
                 selectedTab = .current
+            },
+            onDelete: { run in
+                coordinator.deletePipelineRun(run.id)
             }
         )
     }
@@ -394,6 +397,7 @@ struct PipelineHistoryView: View {
     let history: [PipelineRun]
     let onSelect: (PipelineRun) -> Void
     let onResume: (PipelineRun) -> Void
+    let onDelete: (PipelineRun) -> Void
 
     var body: some View {
         if history.isEmpty {
@@ -416,7 +420,8 @@ struct PipelineHistoryView: View {
                         PipelineHistoryRow(
                             run: run,
                             onSelect: { onSelect(run) },
-                            onResume: { onResume(run) }
+                            onResume: { onResume(run) },
+                            onDelete: { onDelete(run) }
                         )
                     }
                 }
@@ -430,6 +435,8 @@ struct PipelineHistoryRow: View {
     let run: PipelineRun
     let onSelect: () -> Void
     let onResume: () -> Void
+    let onDelete: () -> Void
+    @State private var showDeleteConfirmation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -494,7 +501,28 @@ struct PipelineHistoryRow: View {
                         onSelect()
                     }
                     .buttonStyle(.bordered)
+
+                    // 삭제 버튼
+                    Button {
+                        showDeleteConfirmation = true
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
                 }
+            }
+            .confirmationDialog(
+                "이 히스토리를 삭제하시겠습니까?",
+                isPresented: $showDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("삭제", role: .destructive) {
+                    onDelete()
+                }
+                Button("취소", role: .cancel) {}
+            } message: {
+                Text("삭제된 히스토리는 복구할 수 없습니다.")
             }
 
             // 진행 정보
