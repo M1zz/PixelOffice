@@ -492,6 +492,25 @@ struct PipelineView: View {
 struct ResumableRunsCard: View {
     let runs: [PipelineRun]
     let onResume: (PipelineRun) -> Void
+    
+    /// 표시할 요구사항 (비어있으면 대체 텍스트 표시)
+    private func displayRequirement(for run: PipelineRun) -> String {
+        if !run.requirement.isEmpty {
+            return run.requirement
+        }
+        if !run.decomposedTasks.isEmpty {
+            let taskTitles = run.decomposedTasks.prefix(3).map { $0.title }.joined(separator: ", ")
+            let suffix = run.decomposedTasks.count > 3 ? " 외 \(run.decomposedTasks.count - 3)개" : ""
+            return "📋 \(taskTitles)\(suffix)"
+        }
+        if let sprintName = run.sprintName {
+            return "🏃 스프린트: \(sprintName)"
+        }
+        if !run.projectName.isEmpty {
+            return "📁 \(run.projectName) 파이프라인"
+        }
+        return "(요구사항 없음)"
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -502,7 +521,7 @@ struct ResumableRunsCard: View {
             ForEach(runs.prefix(3)) { run in
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(run.requirement)
+                        Text(displayRequirement(for: run))
                             .font(.body)
                             .lineLimit(1)
 
@@ -594,6 +613,28 @@ struct PipelineHistoryRow: View {
     let onResume: () -> Void
     let onDelete: () -> Void
     @State private var showDeleteConfirmation = false
+    
+    /// 표시할 요구사항 (비어있으면 대체 텍스트 표시)
+    private var displayRequirement: String {
+        if !run.requirement.isEmpty {
+            return run.requirement
+        }
+        // 요구사항이 비어있으면 태스크 제목들로 대체
+        if !run.decomposedTasks.isEmpty {
+            let taskTitles = run.decomposedTasks.prefix(3).map { $0.title }.joined(separator: ", ")
+            let suffix = run.decomposedTasks.count > 3 ? " 외 \(run.decomposedTasks.count - 3)개" : ""
+            return "📋 \(taskTitles)\(suffix)"
+        }
+        // 스프린트 이름으로 대체
+        if let sprintName = run.sprintName {
+            return "🏃 스프린트: \(sprintName)"
+        }
+        // 프로젝트 이름으로 대체
+        if !run.projectName.isEmpty {
+            return "📁 \(run.projectName) 파이프라인"
+        }
+        return "(요구사항 없음)"
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -604,7 +645,7 @@ struct PipelineHistoryRow: View {
                     .font(.title3)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(run.requirement)
+                    Text(displayRequirement)
                         .font(.body.weight(.medium))
                         .lineLimit(2)
 
@@ -1058,6 +1099,10 @@ struct DecomposedTasksView: View {
 
 struct DecomposedTaskRow: View {
     let task: DecomposedTask
+    
+    private var isCompleted: Bool {
+        task.status == .completed
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -1068,10 +1113,13 @@ struct DecomposedTaskRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(task.title)
                     .font(.body.weight(.medium))
+                    .strikethrough(isCompleted, color: .secondary)
+                    .foregroundStyle(isCompleted ? .secondary : .primary)
                 Text(task.description)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+                    .strikethrough(isCompleted, color: .secondary.opacity(0.5))
             }
 
             Spacer()
@@ -1079,7 +1127,7 @@ struct DecomposedTaskRow: View {
             HStack(spacing: 8) {
                 Label(task.department.rawValue, systemImage: task.department.icon)
                     .font(.caption)
-                    .foregroundStyle(task.department.color)
+                    .foregroundStyle(isCompleted ? .secondary : task.department.color)
 
                 if let duration = task.duration {
                     Text(String(format: "%.1fs", duration))
@@ -1090,8 +1138,9 @@ struct DecomposedTaskRow: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
-        .background(Color(NSColor.textBackgroundColor))
+        .background(isCompleted ? Color(NSColor.textBackgroundColor).opacity(0.6) : Color(NSColor.textBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .animation(.easeInOut(duration: 0.3), value: isCompleted)
     }
 }
 
@@ -1298,12 +1347,17 @@ struct PipelineTodoPanel: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
 
-                    // TODO 리스트
+                    // TODO 리스트 (완료 시 자동 제거 애니메이션)
                     VStack(alignment: .leading, spacing: 12) {
                         ForEach(todoItems) { item in
                             TodoItemRow(item: item)
+                                .transition(.asymmetric(
+                                    insertion: .opacity,
+                                    removal: .move(edge: .leading).combined(with: .opacity)
+                                ))
                         }
                     }
+                    .animation(.easeInOut(duration: 0.3), value: todoItems.count)
 
                     // 현재 태스크 (개발 단계일 때)
                     if currentTaskIndex > 0 && !currentTaskName.isEmpty {

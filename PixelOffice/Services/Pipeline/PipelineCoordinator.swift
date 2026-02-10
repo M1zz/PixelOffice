@@ -1336,10 +1336,18 @@ extension PipelineCoordinator {
         }
     }
 
-    /// 특정 Phase TODO 완료
+    /// 특정 Phase TODO 완료 (완료 후 1초 뒤 리스트에서 제거)
     func completeTodo(phase: PipelinePhase) {
         if let index = todoItems.firstIndex(where: { $0.phase == phase }) {
             todoItems[index].status = .completed
+            
+            // 1초 후 리스트에서 제거 (애니메이션 효과를 위해 딜레이)
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(1))
+                withAnimation(.easeOut(duration: 0.3)) {
+                    todoItems.removeAll { $0.phase == phase }
+                }
+            }
         }
     }
 

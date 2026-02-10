@@ -203,7 +203,7 @@ actor ClaudeCodeService {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: claudePath)
 
-        var args = ["--print", "--output-format", "json"]
+        var args = ["--output-format", "json"]
         args.append(contentsOf: allowedTools.commandArgs)
         process.arguments = args
 
@@ -383,13 +383,14 @@ actor ClaudeCodeService {
         process.executableURL = URL(fileURLWithPath: claudePath)
 
         // 기본 인자
-        var args = ["--print"]
+        var args: [String] = []
 
         // autoApprove가 true면 모든 권한 자동 허용 (파이프라인용)
         if autoApprove {
             args.append("--dangerously-skip-permissions")
         } else {
-            // 제한된 도구만 허용
+            // 제한된 도구만 허용 (--print로 읽기 전용)
+            args.append("--print")
             args.append(contentsOf: ["--allowedTools", "WebSearch,WebFetch,Read,Glob,Grep"])
         }
 
