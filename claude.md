@@ -4,24 +4,32 @@
 
 ## 🔴 핵심 경로 정보 (필독)
 
-**Claude가 파일을 탐색할 때 반드시 이 경로를 기준으로 해야 합니다.**
+### 프로젝트 루트 찾기 (동적 탐색)
 
-| 항목 | 경로 |
-|------|------|
-| **프로젝트 루트** | `/Users/hyunholee/Documents/workspace/code/PixelOffice/` |
-| **데이터 폴더** | `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/` |
-| **전사 공용** | `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/_shared/` |
+**절대경로를 하드코딩하지 마세요!** 여러 컴퓨터에서 작업하므로 상대경로를 사용합니다.
+
+**프로젝트 루트 탐색 방법:**
+1. 현재 작업 디렉토리에서 `PixelOffice.xcodeproj` 또는 `Project.swift` 파일이 있는 폴더를 찾음
+2. 또는 `claude.md` 파일이 있는 디렉토리가 프로젝트 루트
+
+**상대 경로 기준:**
+
+| 항목 | 상대경로 (프로젝트 루트 기준) |
+|------|------------------------------|
+| **프로젝트 루트** | `.` (현재 디렉토리) |
+| **데이터 폴더** | `./datas/` |
+| **전사 공용** | `./datas/_shared/` |
 
 ### ⭐ PROJECT.md 위치 (반드시 확인!)
 
 **프로젝트 작업 전에 반드시 PROJECT.md를 읽어야 합니다.** 기술스택, 프로젝트 비전, 개발 가이드 등 핵심 정보가 담겨 있습니다.
 
-| 프로젝트 | PROJECT.md 경로 |
-|----------|-----------------|
-| **픽셀-오피스** | `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/픽셀-오피스/PROJECT.md` |
-| **전사 공용** | `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/_shared/일반/documents/PROJECT.md` |
+| 프로젝트 | PROJECT.md 상대경로 |
+|----------|---------------------|
+| **픽셀-오피스** | `./datas/픽셀-오피스/PROJECT.md` |
+| **전사 공용** | `./datas/_shared/일반/documents/PROJECT.md` |
 
-**일반 규칙**: 모든 프로젝트의 PROJECT.md는 `datas/[프로젝트명]/PROJECT.md` 경로에 있습니다.
+**일반 규칙**: 모든 프로젝트의 PROJECT.md는 `./datas/[프로젝트명]/PROJECT.md` 경로에 있습니다.
 
 ### 프로젝트별 주요 파일
 
@@ -38,9 +46,10 @@ datas/[프로젝트명]/
 
 ### 경로 탐색 규칙
 
-1. **상대경로가 주어지면** → 프로젝트 루트를 앞에 붙여서 절대경로로 변환
-2. **프로젝트 정보 필요시** → `datas/[프로젝트명]/PROJECT.md` 먼저 확인
-3. **문서 탐색시** → 해당 부서의 `documents/` 폴더 확인
+1. **프로젝트 루트 먼저 탐색** → `*.xcodeproj` 또는 `Project.swift` 있는 폴더
+2. **상대경로 사용** → 프로젝트 루트 기준 `./datas/...` 형태
+3. **프로젝트 정보 필요시** → `./datas/[프로젝트명]/PROJECT.md` 먼저 확인
+4. **문서 탐색시** → 해당 부서의 `documents/` 폴더 확인
 
 ---
 
@@ -238,12 +247,12 @@ PixelOffice/
 ### 기본 원칙
 
 1. **프로젝트 디렉토리 외부에 파일 생성 금지**
-   - 절대 `/Users/hyunholee/Documents/workspace/code/PixelOffice/` 바깥에 파일을 만들지 않음
+   - 프로젝트 루트(`*.xcodeproj` 있는 폴더) 바깥에 파일을 만들지 않음
    - `~/Documents/`, `~/Desktop/`, `/tmp/` 등 외부 경로 사용 금지
    - 모든 데이터, 문서, 설정 파일은 프로젝트 디렉토리 내에 저장
 
 2. **모든 데이터는 프로젝트 디렉토리 내에 저장**
-   - 저장 위치: `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/`
+   - 저장 위치: `./datas/` (프로젝트 루트 기준)
    - 앱 데이터, 업무 기록, 위키 문서 모두 이 경로 사용
 
 3. **모든 작업은 파일로 기록**
@@ -340,9 +349,26 @@ let wikiPath = "datas/_shared/wiki/"
 class DataPathService {
     static let shared = DataPathService()
 
+    /// 프로젝트 루트를 동적으로 탐색 (*.xcodeproj 기준)
+    var projectRoot: String {
+        // 현재 실행 파일 위치에서 상위로 올라가며 .xcodeproj 탐색
+        // 또는 Bundle.main.bundlePath 기준으로 탐색
+        findProjectRoot() ?? FileManager.default.currentDirectoryPath
+    }
+
     var basePath: String {
-        // 프로젝트 디렉토리 내 datas 폴더
-        return "/Users/hyunholee/Documents/workspace/code/PixelOffice/datas"
+        return "\(projectRoot)/datas"
+    }
+
+    private func findProjectRoot() -> String? {
+        var current = FileManager.default.currentDirectoryPath
+        while current != "/" {
+            let xcodeproj = try? FileManager.default.contentsOfDirectory(atPath: current)
+                .first { $0.hasSuffix(".xcodeproj") }
+            if xcodeproj != nil { return current }
+            current = (current as NSString).deletingLastPathComponent
+        }
+        return nil
     }
 
     func projectPath(_ projectName: String) -> String {

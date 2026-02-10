@@ -114,7 +114,7 @@ extension DecomposedTask {
         let department = DepartmentType.from(string: claudeTask.department)
         let priority = TaskPriority.from(string: claudeTask.priority ?? "medium")
 
-        var task = DecomposedTask(
+        let task = DecomposedTask(
             title: claudeTask.title,
             description: claudeTask.description,
             department: department,

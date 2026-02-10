@@ -15,6 +15,8 @@ struct PipelineView: View {
     @State private var historyRefreshId = UUID()  // 히스토리 새로고침용
     @State private var showingKanbanPicker = false  // 칸반에서 가져오기
     @State private var selectedKanbanTasks: Set<UUID> = []
+    @State private var showingPathSetup = false  // 프로젝트 경로 설정
+    @State private var pathValidation: ProjectPathValidation = .notSet
 
     enum PipelineTab: String, CaseIterable {
         case current = "현재 실행"
@@ -62,7 +64,7 @@ struct PipelineView: View {
         requirement.isEmpty && selectedSprint != nil && !selectedSprintTasks.isEmpty
     }
 
-    /// 파이프라인 시작 가능 여부
+    /// 파이프라인 시작 가능 여부 (경로 없어도 시작 가능, 빌드 단계에서 검증)
     var canStartPipeline: Bool {
         !requirement.isEmpty || canStartWithSprint
     }
@@ -144,14 +146,53 @@ struct PipelineView: View {
                 .padding(.top, 50)
             }
         }
+        // 🔥 일시정지 상태일 때 전체 오버레이
+        .overlay {
+            if coordinator.currentRun?.state == .paused {
+                PausedOverlayView(
+                    onResume: {
+                        if let run = coordinator.currentRun, let project = project {
+                            Task {
+                                await coordinator.resumePipeline(run: run, project: project)
+                            }
+                        }
+                    },
+                    onCancel: {
+                        coordinator.dismissNotification()
+                        coordinator.currentRun = nil
+                    }
+                )
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: coordinator.currentRun?.state)
+            }
+        }
         .onAppear {
             coordinator.setCompanyStore(companyStore)
+            validateProjectPath()
         }
         .sheet(isPresented: $showingLogs) {
             if let run = coordinator.currentRun {
                 PipelineLogView(logs: run.logs)
             }
         }
+        .sheet(isPresented: $showingPathSetup) {
+            ProjectPathSetupView(
+                projectName: project?.name ?? "",
+                isPresented: $showingPathSetup
+            ) { newPath in
+                // 경로 저장
+                if let projectName = project?.name {
+                    PipelineContextService.shared.setProjectPath(for: projectName, sourcePath: newPath)
+                    validateProjectPath()
+                }
+            }
+        }
+    }
+
+    /// 프로젝트 경로 검증
+    private func validateProjectPath() {
+        guard let projectName = project?.name else { return }
+        pathValidation = PipelineContextService.shared.validateProjectPath(for: projectName)
     }
 
     // MARK: - 현재 실행 뷰
@@ -161,6 +202,13 @@ struct PipelineView: View {
             // 왼쪽: 입력 & 결과
             ScrollView {
                 VStack(spacing: 20) {
+                    // 🔥 프로젝트 경로 상태 카드
+                    ProjectPathStatusCard(
+                        projectName: project?.name ?? "",
+                        validation: pathValidation,
+                        onSetupPath: { showingPathSetup = true }
+                    )
+
                     // 요구사항 입력 및 스프린트 선택
                     RequirementInputView(
                         requirement: $requirement,
@@ -1231,9 +1279,23 @@ struct PipelineTodoPanel: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    // 현재 작업 (Claude Code 스타일)
+                    // 🔥 현재 작업 (항상 표시, 비어있으면 대기 중)
                     if !currentAction.isEmpty {
                         CurrentActionView(action: currentAction)
+                    } else if runningProcessCount > 0 {
+                        CurrentActionView(action: "처리 중...")
+                    } else {
+                        HStack(spacing: 8) {
+                            Image(systemName: "hourglass")
+                                .foregroundStyle(.secondary)
+                            Text("작업 대기 중...")
+                                .font(.system(.body, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.secondary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
 
                     // TODO 리스트
@@ -1252,8 +1314,9 @@ struct PipelineTodoPanel: View {
                     }
 
                     Divider()
+                        .padding(.vertical, 8)
 
-                    // 최근 로그 (실시간)
+                    // 🔥 최근 로그 (실시간) - 더 크게
                     RecentLogsView(logs: logs)
                 }
                 .padding()
@@ -1298,32 +1361,39 @@ struct PipelineTodoPanel: View {
     }
 }
 
-/// 현재 작업 표시 (Claude Code 스타일)
+/// 현재 작업 표시 (Claude Code 스타일) - 더 눈에 띄게 개선
 struct CurrentActionView: View {
     let action: String
 
     var body: some View {
-        HStack(spacing: 8) {
-            if action.hasPrefix("✓") || action.hasPrefix("✗") {
+        HStack(spacing: 12) {
+            if action.hasPrefix("✓") || action.hasPrefix("✗") || action.hasPrefix("✅") || action.hasPrefix("❌") {
                 // 완료/실패 아이콘
                 Text(action)
-                    .font(.system(.body, design: .monospaced))
-                    .foregroundStyle(action.hasPrefix("✓") ? .green : .red)
+                    .font(.system(.title3, design: .monospaced).weight(.semibold))
+                    .foregroundStyle(action.contains("✓") || action.contains("✅") ? .green : .red)
             } else {
-                // 진행 중 스피너
+                // 진행 중 스피너 - 더 크게
                 ProgressView()
-                    .scaleEffect(0.7)
-                    .frame(width: 16, height: 16)
+                    .scaleEffect(0.9)
+                    .frame(width: 20, height: 20)
 
                 Text(action)
-                    .font(.system(.body, design: .monospaced))
+                    .font(.system(.title3, design: .monospaced).weight(.medium))
                     .foregroundStyle(.blue)
             }
             Spacer()
         }
-        .padding(12)
-        .background(Color.blue.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .padding(16)
+        .background {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.blue.opacity(0.15))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.blue.opacity(0.3), lineWidth: 2)
+                }
+        }
+        .animation(.easeInOut(duration: 0.3), value: action)
     }
 }
 
@@ -1399,42 +1469,76 @@ struct CurrentTaskInfoView: View {
     }
 }
 
-/// 최근 로그 뷰
+/// 최근 로그 뷰 - 더 크고 눈에 잘 띄게 개선
 struct RecentLogsView: View {
     let logs: [PipelineLogEntry]
 
     var recentLogs: [PipelineLogEntry] {
-        Array(logs.suffix(10).reversed())
+        Array(logs.suffix(20).reversed())  // 20개로 늘림
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("최근 로그", systemImage: "list.bullet.rectangle")
-                .font(.subheadline.weight(.semibold))
-
-            if recentLogs.isEmpty {
-                Text("로그가 없습니다")
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("실시간 로그", systemImage: "terminal.fill")
+                    .font(.headline)
+                Spacer()
+                Text("\(logs.count)개")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-            } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(recentLogs) { log in
-                        HStack(alignment: .top, spacing: 6) {
-                            Image(systemName: log.level.icon)
-                                .font(.caption2)
-                                .foregroundStyle(log.level.color)
-                                .frame(width: 12)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.secondary.opacity(0.2))
+                    .clipShape(Capsule())
+            }
 
-                            Text(log.message)
-                                .font(.caption)
-                                .foregroundStyle(log.level.color)
-                                .lineLimit(2)
+            if recentLogs.isEmpty {
+                HStack {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                    Text("로그 대기 중...")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding()
+            } else {
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(recentLogs) { log in
+                                HStack(alignment: .top, spacing: 8) {
+                                    Image(systemName: log.level.icon)
+                                        .font(.caption)
+                                        .foregroundStyle(log.level.color)
+                                        .frame(width: 16)
+
+                                    Text(log.message)
+                                        .font(.system(.callout, design: .monospaced))
+                                        .foregroundStyle(log.level.color)
+                                        .textSelection(.enabled)
+                                }
+                                .id(log.id)
+                            }
+                        }
+                        .padding(12)
+                    }
+                    .frame(minHeight: 150, maxHeight: 250)
+                    .background(Color(NSColor.textBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
+                    }
+                    .onChange(of: logs.count) { _, _ in
+                        // 새 로그 추가 시 자동 스크롤
+                        if let firstLog = recentLogs.first {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                proxy.scrollTo(firstLog.id, anchor: .top)
+                            }
                         }
                     }
                 }
-                .padding(8)
-                .background(Color(NSColor.textBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
             }
         }
     }
@@ -1908,6 +2012,131 @@ struct KanbanTaskRow: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - 일시정지 오버레이
+
+/// 일시정지 상태일 때 표시되는 전체 화면 오버레이
+struct PausedOverlayView: View {
+    let onResume: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        ZStack {
+            // 반투명 배경
+            Color.black.opacity(0.5)
+                .ignoresSafeArea()
+
+            // 중앙 카드
+            VStack(spacing: 24) {
+                // 아이콘
+                Image(systemName: "pause.circle.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(.orange)
+                    .symbolEffect(.pulse)
+
+                // 텍스트
+                VStack(spacing: 8) {
+                    Text("파이프라인 일시정지됨")
+                        .font(.title.bold())
+
+                    Text("작업이 일시정지되었습니다.\n재개하거나 취소할 수 있습니다.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                // 버튼들
+                HStack(spacing: 16) {
+                    Button {
+                        onCancel()
+                    } label: {
+                        Label("취소", systemImage: "xmark")
+                            .frame(width: 120)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+
+                    Button {
+                        onResume()
+                    } label: {
+                        Label("재개", systemImage: "play.fill")
+                            .frame(width: 120)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.green)
+                    .controlSize(.large)
+                }
+            }
+            .padding(40)
+            .background {
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.ultraThickMaterial)
+                    .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
+            }
+        }
+    }
+}
+
+// MARK: - 프로젝트 경로 상태 카드
+
+/// 프로젝트 소스 경로 상태를 표시하고 설정 UI를 제공
+struct ProjectPathStatusCard: View {
+    let projectName: String
+    let validation: ProjectPathValidation
+    let onSetupPath: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // 상태 아이콘
+            Image(systemName: validation.icon)
+                .font(.title2)
+                .foregroundStyle(validation.color)
+                .frame(width: 32)
+
+            // 상태 메시지
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("프로젝트 소스 경로")
+                        .font(.headline)
+                    
+                    if !validation.isValid {
+                        Text("(선택사항)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Text(validation.isValid ? validation.message : "경로 미설정 시 빌드 단계에서 자동 탐색합니다")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            Spacer()
+
+            // 설정 버튼
+            Button {
+                onSetupPath()
+            } label: {
+                Label(
+                    validation.isValid ? "변경" : "설정",
+                    systemImage: validation.isValid ? "pencil" : "folder.badge.plus"
+                )
+            }
+            .buttonStyle(.bordered)
+            .tint(validation.isValid ? .secondary : .blue)
+        }
+        .padding()
+        .background {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(validation.isValid ? Color.green.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(validation.isValid ? validation.color.opacity(0.3) : Color.secondary.opacity(0.2), lineWidth: 1)
+                }
+        }
     }
 }
 

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0065A64B88102789CA6B9D6B /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F30F23ABD8AD50705DBDFB /* Message.swift */; };
 		02515BA00F7D3019D07932D0 /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0989B97043D4D9B65446C072 /* DataManager.swift */; };
+		039FB5771CAB44AF472ABD19 /* ProjectPathSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500B13F05BE44BDA6373B13B /* ProjectPathSetupView.swift */; };
 		049BDE6760D270EA57D33BF5 /* CollaborationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 998D9A599169ABCC53770C8C /* CollaborationStore.swift */; };
 		076F1B8A36223F023902B253 /* MarkdownToHTMLConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990B7831A8D81B3F719FA740 /* MarkdownToHTMLConverter.swift */; };
 		08B35536085DD48C8CDFF90D /* EmployeeWorkLogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E1FF4577CBC233335B25160 /* EmployeeWorkLogService.swift */; };
@@ -51,10 +52,13 @@
 		7B096B068534CA1CE399EE12 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60AF703FA7A7789328BEC671 /* Project.swift */; };
 		7B770B6398A3CFD05727C3EE /* ClaudeCodeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80A9376C646173A9E4FECA71 /* ClaudeCodeService.swift */; };
 		7BC728DECF935EA985B8B23C /* ProjectStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A894491391AC7AE7F2DE303 /* ProjectStore.swift */; };
+		7E68B31FDD69E5DE81BADA36 /* PipelineContextService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7D4D4F9E9D68F72AC2A8B94 /* PipelineContextService.swift */; };
 		7EEECF3F96715C0686C65083 /* Onboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A789EC57E9C73179C35A4A2C /* Onboarding.swift */; };
 		8153EBE6DAFA2C0EB2C26B1C /* DeskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E639628ED1C587F9F3B7585 /* DeskView.swift */; };
 		81A3E80460A1E6D1C0679742 /* StructuredDebateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290DF008621301A4FC3570E4 /* StructuredDebateService.swift */; };
+		81E0AC8E8E9CD03BB6F92B7B /* NewXcodeProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9341B250520D34456947E420 /* NewXcodeProjectView.swift */; };
 		83EDDF13E71852EEBF2137BE /* AddEmployeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62E8C7D9D13EA8D4D44D0D4 /* AddEmployeeView.swift */; };
+		85F0B6227EF7CA33EEB44FDB /* XcodeProjectGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4D2E87A5DA6AF76734152E /* XcodeProjectGenerator.swift */; };
 		88C5AC55CE6EF57496B8E573 /* EmployeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA72A5FA0C47A7414D8FD79 /* EmployeeView.swift */; };
 		8EEF6F0A432DC14A217FB8C3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC521E8BDA27062502FD747 /* ContentView.swift */; };
 		8F511F63D8CCA7D7290ECE13 /* EmployeeIDCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E1AB37A14A087DDBCB7F477 /* EmployeeIDCardView.swift */; };
@@ -136,6 +140,7 @@
 		0C484404A467617FB6A22ABC /* Department.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Department.swift; sourceTree = "<group>"; };
 		122E5D64E27E17B9DD3254D6 /* PermissionRequestCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequestCard.swift; sourceTree = "<group>"; };
 		1B41A3B5FE8E45BC717B9765 /* PipelineExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineExecutor.swift; sourceTree = "<group>"; };
+		1B4D2E87A5DA6AF76734152E /* XcodeProjectGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XcodeProjectGenerator.swift; sourceTree = "<group>"; };
 		1DC521E8BDA27062502FD747 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1E22EBAA40F9B133389F7068 /* OfficeDecoration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeDecoration.swift; sourceTree = "<group>"; };
 		1F79895E6E7A87B64E077DFE /* ProjectWikiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWikiView.swift; sourceTree = "<group>"; };
@@ -154,6 +159,7 @@
 		4887307B5BFD66BE8E330FEF /* PermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsView.swift; sourceTree = "<group>"; };
 		48B30F23EF3CDD8A9FFD7DA1 /* Sprint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sprint.swift; sourceTree = "<group>"; };
 		49497933A19EE14A481767B5 /* AITool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITool.swift; sourceTree = "<group>"; };
+		500B13F05BE44BDA6373B13B /* ProjectPathSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectPathSetupView.swift; sourceTree = "<group>"; };
 		543818918AD8C6AACB739670 /* WalkingEmployeesLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkingEmployeesLayer.swift; sourceTree = "<group>"; };
 		55108A5D91AA7D25C1ACDD8E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5D99F25149E017D17D22291A /* StoreCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreCoordinator.swift; sourceTree = "<group>"; };
@@ -174,6 +180,7 @@
 		8E1FF4577CBC233335B25160 /* EmployeeWorkLogService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeWorkLogService.swift; sourceTree = "<group>"; };
 		8E639628ED1C587F9F3B7585 /* DeskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskView.swift; sourceTree = "<group>"; };
 		8ED370B96B952FFB1C9EED7A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9341B250520D34456947E420 /* NewXcodeProjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewXcodeProjectView.swift; sourceTree = "<group>"; };
 		93F06F09BFEBCC94CAA3C7AF /* AddTaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTaskView.swift; sourceTree = "<group>"; };
 		93F30F23ABD8AD50705DBDFB /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		9423358B6E193D0F1CAE6B0D /* CommunityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityStore.swift; sourceTree = "<group>"; };
@@ -192,6 +199,7 @@
 		B1B1493F5F9C5543D6EB54B9 /* ProjectDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDetailView.swift; sourceTree = "<group>"; };
 		B5D6EA2E38C3E5D61E594F3D /* EmployeeWorkLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeWorkLogView.swift; sourceTree = "<group>"; };
 		B79B879D6AEDC7C03D58C88C /* EmployeeThinking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeThinking.swift; sourceTree = "<group>"; };
+		B7D4D4F9E9D68F72AC2A8B94 /* PipelineContextService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineContextService.swift; sourceTree = "<group>"; };
 		B7DCC804C1608534FD8081C7 /* TuistBundle+PixelOffice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TuistBundle+PixelOffice.swift"; sourceTree = "<group>"; };
 		B90CC655A190CBA616BE1915 /* DecomposedTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecomposedTask.swift; sourceTree = "<group>"; };
 		B947C13BC0FEAEEA9342E746 /* AutoApprovalRulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoApprovalRulesView.swift; sourceTree = "<group>"; };
@@ -276,7 +284,9 @@
 		365DDF6C00944365046535A7 /* Pipeline */ = {
 			isa = PBXGroup;
 			children = (
+				9341B250520D34456947E420 /* NewXcodeProjectView.swift */,
 				66B1A2B428E01E3EE9B40397 /* PipelineView.swift */,
+				500B13F05BE44BDA6373B13B /* ProjectPathSetupView.swift */,
 			);
 			path = Pipeline;
 			sourceTree = "<group>";
@@ -528,11 +538,13 @@
 				278DBFF64525307C7513CEAF /* DataPathService.swift */,
 				8E1FF4577CBC233335B25160 /* EmployeeWorkLogService.swift */,
 				CA9CD1626097C533A9E24CB5 /* PermissionManager.swift */,
+				B7D4D4F9E9D68F72AC2A8B94 /* PipelineContextService.swift */,
 				97A9CB482FD52C7CC52CFCB7 /* ProjectRecoveryService.swift */,
 				DC6B079A3FDF151282A2BD0C /* Repositories.swift */,
 				290DF008621301A4FC3570E4 /* StructuredDebateService.swift */,
 				A3F838A6D789B8AB73EF47C5 /* ToastManager.swift */,
 				3CC0ACACE5D7F45661BA5823 /* WikiService.swift */,
+				1B4D2E87A5DA6AF76734152E /* XcodeProjectGenerator.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -665,6 +677,7 @@
 				FC4EE6B1B8A92BFF3D4C707E /* PipelineExecutor.swift in Sources */,
 				CE48E81D5E1FB051AAAE97B9 /* PipelineReportService.swift in Sources */,
 				2496EC974AECDF8B81AE27F1 /* RequirementDecomposer.swift in Sources */,
+				7E68B31FDD69E5DE81BADA36 /* PipelineContextService.swift in Sources */,
 				49F70D04B201AFD7CF0A1FC5 /* ProjectRecoveryService.swift in Sources */,
 				908760EAD693C2A23F102EC8 /* Repositories.swift in Sources */,
 				049BDE6760D270EA57D33BF5 /* CollaborationStore.swift in Sources */,
@@ -678,6 +691,7 @@
 				81A3E80460A1E6D1C0679742 /* StructuredDebateService.swift in Sources */,
 				CDDC9A4678C2B0837C009034 /* ToastManager.swift in Sources */,
 				D0E4763E1B75B3D3B40959D7 /* WikiService.swift in Sources */,
+				85F0B6227EF7CA33EEB44FDB /* XcodeProjectGenerator.swift in Sources */,
 				076F1B8A36223F023902B253 /* MarkdownToHTMLConverter.swift in Sources */,
 				8FD9E900FA7857385378DAD2 /* PixelArtRenderer.swift in Sources */,
 				B8EC71304109012CF6B4820A /* EmployeeChatView.swift in Sources */,
@@ -710,7 +724,9 @@
 				6D08F473F46B68CB5EDD1EBE /* AutoApprovalRulesView.swift in Sources */,
 				77B2201F5AE4A74A99CCDC99 /* PermissionRequestDetailView.swift in Sources */,
 				CE27CCDB534A4A12A92A8B14 /* PermissionsView.swift in Sources */,
+				81E0AC8E8E9CD03BB6F92B7B /* NewXcodeProjectView.swift in Sources */,
 				B5D18B92F7E5AE8EC30AF210 /* PipelineView.swift in Sources */,
+				039FB5771CAB44AF472ABD19 /* ProjectPathSetupView.swift in Sources */,
 				F7D194DBFCDD5C92C18C98C1 /* AddProjectView.swift in Sources */,
 				4A34F9B36EEB7C7DF95ED99C /* AddTaskView.swift in Sources */,
 				5E04F7F1530049FA6C6D0A38 /* ConversationView.swift in Sources */,

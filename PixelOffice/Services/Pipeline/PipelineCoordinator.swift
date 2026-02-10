@@ -67,14 +67,14 @@ class PipelineCoordinator: ObservableObject {
     private var currentProjectName: String = ""
 
     /// 최대 동시 실행 태스크 수 (기본 3개)
-    static let defaultMaxConcurrentTasks = 3
+    nonisolated static let defaultMaxConcurrentTasks = 3
 
     /// 현재 실행 모드
-    @Published var executionMode: PipelineExecutionMode = .lightweight
+    @Published var executionMode: PipelineExecutionMode = .full  // 기본값을 full로 변경 (파일 생성 가능)
 
     // MARK: - Init
 
-    init(companyStore: CompanyStore? = nil, maxConcurrentTasks: Int = defaultMaxConcurrentTasks, executionMode: PipelineExecutionMode = .lightweight) {
+    init(companyStore: CompanyStore? = nil, maxConcurrentTasks: Int = defaultMaxConcurrentTasks, executionMode: PipelineExecutionMode = .full) {
         self.companyStore = companyStore
         self.executionMode = executionMode
         self.executor = PipelineExecutor(maxConcurrentTasks: maxConcurrentTasks, executionMode: executionMode)
@@ -782,7 +782,7 @@ class PipelineCoordinator: ObservableObject {
 
         let healingStartTime = Date()
         let autoApprove = companyStore?.company.settings.autoApproveAI ?? true
-        let response = try await claudeService.sendMessage(healingPrompt, systemPrompt: systemPrompt, autoApprove: autoApprove)
+        _ = try await claudeService.sendMessage(healingPrompt, systemPrompt: systemPrompt, autoApprove: autoApprove)
         let healingElapsed = Date().timeIntervalSince(healingStartTime)
 
         run.addLog("✓ AI 수정 완료 (소요시간: \(String(format: "%.1f", healingElapsed))초)", level: .info)
@@ -839,7 +839,6 @@ class PipelineCoordinator: ObservableObject {
     private func loadProjectInfo(for project: Project) -> ProjectInfo? {
         let basePath = DataPathService.shared.basePath
         var info = ProjectInfo()
-        var foundPath = false
 
         // 1. 먼저 PIPELINE_CONTEXT.md 확인 (우선순위 높음)
         if let contextPath = getPipelineContextPath(project: project),
@@ -850,7 +849,6 @@ class PipelineCoordinator: ObservableObject {
             if let path = extractPathFromCodeBlock(content) {
                 info.absolutePath = path
                 print("[PipelineCoordinator] PIPELINE_CONTEXT.md에서 경로 추출: \(path)")
-                foundPath = true
             }
 
             // 추가 정보 파싱
@@ -877,23 +875,43 @@ class PipelineCoordinator: ObservableObject {
         if info.absolutePath.isEmpty {
             print("[PipelineCoordinator] 컨텍스트 파일에서 경로를 찾지 못함, 대체 경로 탐색 중...")
 
-            // Xcode 프로젝트 자동 탐색
-            if let foundXcodePath = findXcodeProjectPath(projectName: project.name) {
+            // 3-1. "픽셀-오피스" 프로젝트는 현재 PixelOffice 자체를 가리킴
+            let isPixelOfficeProject = project.name == "픽셀-오피스" ||
+                                       project.name == "픽셀 오피스" ||
+                                       project.name.lowercased().contains("pixeloffice")
+
+            if isPixelOfficeProject, let projectRoot = findProjectRootPath() {
+                info.absolutePath = projectRoot
+                print("[PipelineCoordinator] PixelOffice 자체 프로젝트 감지: \(projectRoot)")
+            }
+            // 3-2. 다른 프로젝트는 Xcode 프로젝트 자동 탐색
+            else if let foundXcodePath = findXcodeProjectPath(projectName: project.name) {
                 info.absolutePath = foundXcodePath
                 print("[PipelineCoordinator] Xcode 프로젝트 발견: \(foundXcodePath)")
             }
         }
 
-        // 경로가 여전히 없으면 nil 반환
+        // 4. 경로가 여전히 없으면 프로젝트 루트 자체를 사용 (PixelOffice 내부 프로젝트)
         if info.absolutePath.isEmpty {
-            print("[PipelineCoordinator] 프로젝트 경로를 찾을 수 없음: \(project.name)")
+            print("[PipelineCoordinator] 컨텍스트 파일에서 경로를 찾지 못함, 프로젝트 루트 사용...")
 
-            // PIPELINE_CONTEXT.md 없으면 안내 메시지 출력
-            let contextPath = "\(basePath)/\(project.name)/PIPELINE_CONTEXT.md"
-            if !FileManager.default.fileExists(atPath: contextPath) {
-                print("[PipelineCoordinator] 💡 PIPELINE_CONTEXT.md 파일을 생성하세요: \(contextPath)")
-                print("[PipelineCoordinator] 💡 템플릿: \(basePath)/_shared/templates/PIPELINE_CONTEXT.md")
+            // PixelOffice 프로젝트 루트를 기본값으로 사용
+            if let projectRoot = findProjectRootPath() {
+                info.absolutePath = projectRoot
+                print("[PipelineCoordinator] 프로젝트 루트 사용: \(projectRoot)")
+
+                // PIPELINE_CONTEXT.md가 없으면 자동 생성 시도
+                let contextPath = "\(basePath)/\(project.name)/PIPELINE_CONTEXT.md"
+                if !FileManager.default.fileExists(atPath: contextPath) {
+                    print("[PipelineCoordinator] 💡 PIPELINE_CONTEXT.md 자동 생성 중...")
+                    DataPathService.shared.createProjectDirectories(projectName: project.name)
+                }
             }
+        }
+
+        // 최종적으로 경로가 없으면 nil 반환
+        if info.absolutePath.isEmpty {
+            print("[PipelineCoordinator] ❌ 프로젝트 경로를 찾을 수 없음: \(project.name)")
             return nil
         }
 
@@ -932,21 +950,48 @@ class PipelineCoordinator: ObservableObject {
                 continue
             }
 
-            // 코드 블록 내 경로 추출
-            if inSourcePathSection && inCodeBlock && trimmed.hasPrefix("/") {
+            // 코드 블록 내 경로 추출 (절대경로 또는 상대경로)
+            if inSourcePathSection && inCodeBlock && !trimmed.isEmpty && !trimmed.hasPrefix("#") {
                 let path = trimmed.trimmingCharacters(in: .whitespaces)
-                if FileManager.default.fileExists(atPath: path) {
-                    return path
+
+                // 절대경로
+                if path.hasPrefix("/") {
+                    if FileManager.default.fileExists(atPath: path) {
+                        return path
+                    }
+                }
+                // 상대경로 (../ 또는 ./)
+                else if path.hasPrefix("..") || path.hasPrefix("./") {
+                    // 프로젝트 루트 기준으로 해석
+                    if let projectRoot = findProjectRootPath() {
+                        let absolutePath = (projectRoot as NSString).appendingPathComponent(path)
+                        let standardized = (absolutePath as NSString).standardizingPath
+                        if FileManager.default.fileExists(atPath: standardized) {
+                            return standardized
+                        }
+                    }
                 }
             }
 
             // 인라인 경로 추출 (` ` 로 감싸진 경우)
-            if inSourcePathSection && trimmed.contains("`/") {
-                if let range = trimmed.range(of: "`(/[^`]+)`", options: .regularExpression) {
+            if inSourcePathSection && (trimmed.contains("`/") || trimmed.contains("`..")) {
+                // 절대경로 또는 상대경로 패턴
+                if let range = trimmed.range(of: "`([^`]+)`", options: .regularExpression) {
                     var path = String(trimmed[range])
                     path = path.trimmingCharacters(in: CharacterSet(charactersIn: "`"))
-                    if FileManager.default.fileExists(atPath: path) {
-                        return path
+
+                    if path.hasPrefix("/") {
+                        if FileManager.default.fileExists(atPath: path) {
+                            return path
+                        }
+                    } else if path.hasPrefix("..") || path.hasPrefix("./") {
+                        if let projectRoot = findProjectRootPath() {
+                            let absolutePath = (projectRoot as NSString).appendingPathComponent(path)
+                            let standardized = (absolutePath as NSString).standardizingPath
+                            if FileManager.default.fileExists(atPath: standardized) {
+                                return standardized
+                            }
+                        }
                     }
                 }
             }
@@ -955,18 +1000,24 @@ class PipelineCoordinator: ObservableObject {
         return nil
     }
 
+    /// 프로젝트 루트 경로 찾기 (DataPathService와 동일 로직)
+    private func findProjectRootPath() -> String? {
+        // DataPathService의 프로젝트 루트 사용
+        let basePath = DataPathService.shared.basePath
+        // basePath는 ~/datas 이므로 상위 디렉토리가 프로젝트 루트
+        return (basePath as NSString).deletingLastPathComponent
+    }
+
     /// PIPELINE_CONTEXT.md 파싱
     private func parseContextFile(_ content: String, baseInfo: ProjectInfo) -> ProjectInfo {
         var info = baseInfo
         let lines = content.components(separatedBy: "\n")
-        var currentSection = ""
 
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
 
-            // 섹션 감지
+            // 섹션 헤더는 스킵
             if trimmed.hasPrefix("### ") || trimmed.hasPrefix("## ") {
-                currentSection = trimmed.replacingOccurrences(of: "#", with: "").trimmingCharacters(in: .whitespaces)
                 continue
             }
 
@@ -997,19 +1048,59 @@ class PipelineCoordinator: ObservableObject {
 
     /// Xcode 프로젝트 경로 자동 탐색
     private func findXcodeProjectPath(projectName: String) -> String? {
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
+        let fileManager = FileManager.default
+        let homeDir = fileManager.homeDirectoryForCurrentUser.path
+
+        // 1. 먼저 DataPathService의 프로젝트 루트 확인 (현재 PixelOffice 자체)
+        if let projectRoot = findProjectRootPath() {
+            // 현재 프로젝트가 PixelOffice 자체인 경우
+            if projectName == "픽셀-오피스" || projectName == "픽셀 오피스" || projectName.lowercased().contains("pixeloffice") {
+                if let contents = try? fileManager.contentsOfDirectory(atPath: projectRoot),
+                   contents.contains(where: { $0.hasSuffix(".xcodeproj") || $0.hasSuffix(".xcworkspace") }) {
+                    return projectRoot
+                }
+            }
+        }
+
+        // 2. 일반적인 개발 경로 탐색
         let commonPaths = [
             "\(homeDir)/Documents/workspace/code/\(projectName)",
+            "\(homeDir)/Documents/code/\(projectName)",
             "\(homeDir)/Developer/\(projectName)",
             "\(homeDir)/Projects/\(projectName)",
+            "\(homeDir)/Code/\(projectName)",
             "\(homeDir)/Documents/\(projectName)"
         ]
 
         for basePath in commonPaths {
             // .xcodeproj 또는 .xcworkspace 찾기
-            if let contents = try? FileManager.default.contentsOfDirectory(atPath: basePath) {
+            if let contents = try? fileManager.contentsOfDirectory(atPath: basePath) {
                 if contents.contains(where: { $0.hasSuffix(".xcodeproj") || $0.hasSuffix(".xcworkspace") }) {
                     return basePath
+                }
+            }
+        }
+
+        // 3. 프로젝트명과 유사한 폴더 탐색 (케이스 무시)
+        let searchPaths = [
+            "\(homeDir)/Documents/workspace/code",
+            "\(homeDir)/Documents/code",
+            "\(homeDir)/Developer"
+        ]
+
+        let normalizedName = projectName.lowercased().replacingOccurrences(of: "-", with: "").replacingOccurrences(of: " ", with: "")
+
+        for searchPath in searchPaths {
+            if let folders = try? fileManager.contentsOfDirectory(atPath: searchPath) {
+                for folder in folders {
+                    let normalizedFolder = folder.lowercased().replacingOccurrences(of: "-", with: "").replacingOccurrences(of: " ", with: "")
+                    if normalizedFolder.contains(normalizedName) || normalizedName.contains(normalizedFolder) {
+                        let fullPath = "\(searchPath)/\(folder)"
+                        if let contents = try? fileManager.contentsOfDirectory(atPath: fullPath),
+                           contents.contains(where: { $0.hasSuffix(".xcodeproj") || $0.hasSuffix(".xcworkspace") }) {
+                            return fullPath
+                        }
+                    }
                 }
             }
         }

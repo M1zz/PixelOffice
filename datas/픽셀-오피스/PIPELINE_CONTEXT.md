@@ -8,13 +8,20 @@
 
 ### 프로젝트 소스 경로
 
+> ⚠️ **절대경로를 사용하지 마세요!** 여러 컴퓨터에서 작업합니다.
+
 ```
-/Users/hyunholee/Documents/workspace/code/PixelOffice
+../..
 ```
+
+**프로젝트 루트 탐색 방법:**
+1. 이 파일(`PIPELINE_CONTEXT.md`) 기준 상대경로 `../..`
+2. 또는 `*.xcodeproj` / `Project.swift` 파일이 있는 폴더 자동 탐색
 
 ### 빌드 명령
 
 ```bash
+# 프로젝트 루트에서 실행
 xcodebuild -project PixelOffice.xcodeproj -scheme PixelOffice -configuration Debug build
 ```
 
@@ -106,10 +113,10 @@ PixelOffice/
 
 ---
 
-## 📚 참고 문서
+## 📚 참고 문서 (상대경로, 프로젝트 루트 기준)
 
-- **CLAUDE.md**: `/Users/hyunholee/Documents/workspace/code/PixelOffice/CLAUDE.md`
-- **PROJECT.md**: `/Users/hyunholee/Documents/workspace/code/PixelOffice/datas/픽셀-오피스/PROJECT.md`
+- **claude.md**: `./claude.md`
+- **PROJECT.md**: `./datas/픽셀-오피스/PROJECT.md`
 
 ---
 
