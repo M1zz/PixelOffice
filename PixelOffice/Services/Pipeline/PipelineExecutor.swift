@@ -271,21 +271,27 @@ actor PipelineExecutor {
         let systemPrompt = buildSystemPrompt(task: task, employee: employee)
 
         // 실행 모드에 따라 허용 도구 결정
+        // 개발팀 태스크는 코드 수정이 필요하므로 항상 쓰기 권한 부여
+        let isDevelopmentTask = task.department == .development || task.department == .general
         let allowedTools: ClaudeCodeService.AllowedTools
         switch executionMode {
         case .full:
-            allowedTools = autoApprove ? .all : .webOnly
+            // 개발팀 태스크는 autoApprove 무관하게 항상 쓰기 권한
+            allowedTools = (autoApprove || isDevelopmentTask) ? .all : .webOnly
         case .lightweight:
-            allowedTools = .readOnly  // 읽기만 허용
+            // 개발팀 태스크는 lightweight 모드에서도 쓰기 권한
+            allowedTools = isDevelopmentTask ? .all : .readOnly
         case .codeOnly:
             allowedTools = .none  // 도구 없음
         }
 
         // 토큰 사용량 추적을 위해 sendMessageWithTokens 사용
+        // 프로젝트 경로에서 Claude Code 실행 (파일 생성/수정 가능하도록)
         let tokenResult = try await claudeService.sendMessageWithTokens(
             prompt,
             systemPrompt: systemPrompt,
-            allowedTools: allowedTools
+            allowedTools: allowedTools,
+            workingDirectory: projectInfo?.absolutePath
         )
 
         // 응답에서 파일 변경사항 추출

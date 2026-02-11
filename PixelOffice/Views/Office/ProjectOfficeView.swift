@@ -10,6 +10,8 @@ struct ProjectOfficeView: View {
     @State private var zoomLevel: Double = 1.0
     @State private var floorSize: CGSize = .zero
     @State private var showingProjectContext = false
+    @State private var showingSourcePathEditor = false
+    @State private var editingSourcePath = ""
 
     let columns = 2
 
@@ -56,6 +58,10 @@ struct ProjectOfficeView: View {
                                 },
                                 onOpenPipeline: {
                                     openWindow(id: "pipeline", value: projectId)
+                                },
+                                onEditSourcePath: {
+                                    editingSourcePath = project.sourcePath ?? ""
+                                    showingSourcePathEditor = true
                                 }
                             )
 
@@ -172,6 +178,14 @@ struct ProjectOfficeView: View {
             .sheet(isPresented: $showingProjectContext) {
                 ProjectInfoEditorView(projectName: project.name, isPresented: $showingProjectContext)
             }
+            .sheet(isPresented: $showingSourcePathEditor) {
+                SourcePathEditorSheet(
+                    projectId: projectId,
+                    sourcePath: $editingSourcePath,
+                    isPresented: $showingSourcePathEditor
+                )
+                .environmentObject(companyStore)
+            }
         } else {
             Text("프로젝트를 찾을 수 없습니다")
         }
@@ -185,24 +199,26 @@ struct ProjectOfficeHeader: View {
     let onOpenCollaboration: () -> Void
     let onOpenProjectContext: () -> Void
     let onOpenPipeline: () -> Void
+    let onEditSourcePath: () -> Void
 
     var body: some View {
-        HStack {
-            Image(systemName: "building.2.fill")
-                .font(.title)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(project.name)
-                    .font(.title.bold())
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(project.status.color)
-                        .frame(width: 8, height: 8)
-                    Text(project.status.rawValue)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
+        VStack(spacing: 8) {
+            HStack {
+                Image(systemName: "building.2.fill")
+                    .font(.title)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(project.name)
+                        .font(.title.bold())
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(project.status.color)
+                            .frame(width: 8, height: 8)
+                        Text(project.status.rawValue)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-            }
-            Spacer()
+                Spacer()
 
             // 프로젝트 정보 버튼
             Button {
@@ -244,13 +260,46 @@ struct ProjectOfficeHeader: View {
             }
             .buttonStyle(.bordered)
 
-            VStack(alignment: .trailing) {
-                Text("직원 \(project.allEmployees.count)명")
-                    .font(.body)
-                Text("작업 중 \(project.workingEmployees.count)명")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .trailing) {
+                    Text("직원 \(project.allEmployees.count)명")
+                        .font(.body)
+                    Text("작업 중 \(project.workingEmployees.count)명")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
             }
+            
+            // Source Path Row
+            HStack(spacing: 8) {
+                Image(systemName: "folder.fill")
+                    .foregroundStyle(.secondary)
+                
+                if let path = project.sourcePath, !path.isEmpty {
+                    Text(path)
+                        .font(.callout.monospaced())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                } else {
+                    Text("소스 경로 미설정 - AI가 코드를 수정하려면 경로를 설정하세요")
+                        .font(.callout)
+                        .foregroundStyle(.orange)
+                }
+                
+                Spacer()
+                
+                Button {
+                    onEditSourcePath()
+                } label: {
+                    Label(project.sourcePath == nil ? "경로 설정" : "변경", systemImage: "folder.badge.gearshape")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .padding()
         .background(.ultraThinMaterial)

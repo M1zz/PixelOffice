@@ -840,13 +840,19 @@ class PipelineCoordinator: ObservableObject {
         let basePath = DataPathService.shared.basePath
         var info = ProjectInfo()
 
+        // 0. Project.sourcePath가 설정되어 있으면 최우선 사용
+        if let sourcePath = project.sourcePath, !sourcePath.isEmpty {
+            info.absolutePath = sourcePath
+            print("[PipelineCoordinator] Project.sourcePath 사용: \(sourcePath)")
+        }
+
         // 1. 먼저 PIPELINE_CONTEXT.md 확인 (우선순위 높음)
         if let contextPath = getPipelineContextPath(project: project),
            let content = try? String(contentsOfFile: contextPath, encoding: .utf8) {
             print("[PipelineCoordinator] PIPELINE_CONTEXT.md 발견: \(contextPath)")
 
-            // 코드 블록에서 경로 추출
-            if let path = extractPathFromCodeBlock(content) {
+            // 코드 블록에서 경로 추출 (Project.sourcePath가 없을 때만)
+            if info.absolutePath.isEmpty, let path = extractPathFromCodeBlock(content) {
                 info.absolutePath = path
                 print("[PipelineCoordinator] PIPELINE_CONTEXT.md에서 경로 추출: \(path)")
             }

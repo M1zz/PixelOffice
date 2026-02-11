@@ -147,20 +147,23 @@ actor ClaudeCodeService {
     ///   - conversationHistory: 이전 대화 히스토리 (Message 배열)
     ///   - autoApprove: true면 모든 도구 허용, false면 제한된 도구만
     ///   - allowedTools: 직접 허용 도구 지정 (autoApprove보다 우선)
+    ///   - workingDirectory: Claude Code 실행 디렉토리 (nil이면 현재 디렉토리)
     /// - Returns: TokenUsage (응답 + 실제 토큰 사용량)
     func sendMessageWithTokens(
         _ content: String,
         systemPrompt: String? = nil,
         conversationHistory: [Message] = [],
         autoApprove: Bool = false,
-        allowedTools: AllowedTools? = nil
+        allowedTools: AllowedTools? = nil,
+        workingDirectory: String? = nil
     ) async throws -> TokenUsage {
         let tools = allowedTools ?? (autoApprove ? .all : .webOnly)
         let jsonResponse = try await sendMessageJSON(
             content,
             systemPrompt: systemPrompt,
             conversationHistory: conversationHistory,
-            allowedTools: tools
+            allowedTools: tools,
+            workingDirectory: workingDirectory
         )
         return jsonResponse
     }
@@ -170,7 +173,8 @@ actor ClaudeCodeService {
         _ content: String,
         systemPrompt: String? = nil,
         conversationHistory: [Message] = [],
-        allowedTools: AllowedTools = .webOnly
+        allowedTools: AllowedTools = .webOnly,
+        workingDirectory: String? = nil
     ) async throws -> TokenUsage {
         log("=== 새 요청 시작 (JSON 모드) ===")
         log("사용자 메시지: \(content)")
@@ -218,6 +222,12 @@ actor ClaudeCodeService {
         environment["HOME"] = NSHomeDirectory()
         environment["PATH"] = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:\(NSHomeDirectory())/.local/bin"
         process.environment = environment
+
+        // 작업 디렉토리 설정 (프로젝트 경로에서 실행)
+        if let workDir = workingDirectory {
+            process.currentDirectoryURL = URL(fileURLWithPath: workDir)
+            log("📂 작업 디렉토리: \(workDir)")
+        }
 
         let processId = UUID()
 
@@ -338,7 +348,8 @@ actor ClaudeCodeService {
         _ content: String,
         systemPrompt: String? = nil,
         conversationHistory: [Message] = [],
-        autoApprove: Bool = false
+        autoApprove: Bool = false,
+        workingDirectory: String? = nil
     ) async throws -> String {
         log("=== 새 요청 시작 ===")
         log("사용자 메시지: \(content)")
@@ -410,6 +421,12 @@ actor ClaudeCodeService {
         environment["HOME"] = NSHomeDirectory()
         environment["PATH"] = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:\(NSHomeDirectory())/.local/bin"
         process.environment = environment
+
+        // 작업 디렉토리 설정 (프로젝트 경로에서 실행)
+        if let workDir = workingDirectory {
+            process.currentDirectoryURL = URL(fileURLWithPath: workDir)
+            log("📂 작업 디렉토리: \(workDir)")
+        }
 
         let processId = UUID()
 

@@ -10,6 +10,7 @@ struct AddProjectView: View {
     @State private var hasDeadline = false
     @State private var deadline = Date().addingTimeInterval(7 * 24 * 60 * 60)
     @State private var tagsText = ""
+    @State private var sourcePath = ""
     
     var isValid: Bool {
         !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -65,6 +66,21 @@ struct AddProjectView: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
+                
+                Section("소스 코드 경로") {
+                    HStack {
+                        TextField("프로젝트 폴더 경로", text: $sourcePath)
+                            .textFieldStyle(.roundedBorder)
+                        
+                        Button("선택...") {
+                            selectFolder()
+                        }
+                    }
+                    
+                    Text("AI가 코드를 수정할 때 사용할 작업 디렉토리")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             }
             .formStyle(.grouped)
             
@@ -97,16 +113,32 @@ struct AddProjectView: View {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
         
+        let trimmedPath = sourcePath.trimmingCharacters(in: .whitespacesAndNewlines)
+        
         let project = Project(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             description: description.trimmingCharacters(in: .whitespacesAndNewlines),
             deadline: hasDeadline ? deadline : nil,
             tags: tags,
-            priority: priority
+            priority: priority,
+            sourcePath: trimmedPath.isEmpty ? nil : trimmedPath
         )
         
         companyStore.addProject(project)
         dismiss()
+    }
+    
+    private func selectFolder() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = false
+        panel.message = "프로젝트 소스 코드 폴더를 선택하세요"
+        
+        if panel.runModal() == .OK, let url = panel.url {
+            sourcePath = url.path
+        }
     }
 }
 

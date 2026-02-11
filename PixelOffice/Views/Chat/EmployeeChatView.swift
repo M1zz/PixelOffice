@@ -48,6 +48,11 @@ struct EmployeeChatView: View {
         return path
     }
 
+    /// AI 도구 자동 승인 여부 (개발팀은 항상 허용)
+    var shouldAutoApprove: Bool {
+        companyStore.company.settings.autoApproveAI || departmentType == .development
+    }
+
     /// 부서별 전문가 역할이 반영된 시스템 프롬프트 (커스터마이징 가능)
     var customSkills: DepartmentSkillSet {
         companyStore.getDepartmentSkills(for: departmentType)
@@ -341,7 +346,7 @@ struct EmployeeChatView: View {
                     response = try await claudeCodeService.sendMessage(
                         greetingPrompt,
                         systemPrompt: systemPrompt,
-                        autoApprove: companyStore.company.settings.autoApproveAI
+                        autoApprove: shouldAutoApprove
                     )
                     // ClaudeCodeService는 아직 토큰 정보를 반환하지 않음
                 } else if let config = apiConfig, config.isConfigured {
@@ -423,7 +428,7 @@ struct EmployeeChatView: View {
                         messageToSend,
                         systemPrompt: systemPrompt,
                         conversationHistory: employee.conversationHistory,
-                        autoApprove: companyStore.company.settings.autoApproveAI
+                        autoApprove: shouldAutoApprove
                     )
                     response = result.response
                     inputTokens = result.inputTokens
@@ -678,7 +683,7 @@ struct EmployeeChatView: View {
                         mentionResponse = try await claudeCodeService.sendMessage(
                             requestContent,
                             systemPrompt: mentionSystemPrompt,
-                            autoApprove: companyStore.company.settings.autoApproveAI
+                            autoApprove: shouldAutoApprove
                         )
                     } else if let config = apiConfig, config.isConfigured {
                         let result = try await claudeService.sendMessage(
@@ -936,7 +941,7 @@ struct EmployeeChatView: View {
                     response = try await claudeCodeService.sendMessage(
                         conclusionPrompt,
                         systemPrompt: systemPrompt,
-                        autoApprove: companyStore.company.settings.autoApproveAI
+                        autoApprove: shouldAutoApprove
                     )
                 } else if let config = apiConfig, config.isConfigured {
                     let result = try await claudeService.sendMessage(

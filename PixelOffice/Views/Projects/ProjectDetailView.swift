@@ -65,6 +65,8 @@ struct ProjectHeader: View {
     @EnvironmentObject var companyStore: CompanyStore
     @State private var isEditingStatus = false
     @State private var showingProjectInfo = false
+    @State private var showingSourcePathEditor = false
+    @State private var editingSourcePath = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -116,6 +118,39 @@ struct ProjectHeader: View {
                 }
                 .buttonStyle(.plain)
             }
+            
+            // Source Path
+            HStack(spacing: 8) {
+                Image(systemName: "folder.fill")
+                    .foregroundStyle(.secondary)
+                
+                if let path = project.sourcePath, !path.isEmpty {
+                    Text(path)
+                        .font(.callout.monospaced())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                } else {
+                    Text("소스 경로 미설정")
+                        .font(.callout)
+                        .foregroundStyle(.tertiary)
+                }
+                
+                Spacer()
+                
+                Button {
+                    editingSourcePath = project.sourcePath ?? ""
+                    showingSourcePathEditor = true
+                } label: {
+                    Text(project.sourcePath == nil ? "설정" : "변경")
+                        .font(.callout)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+            .padding(8)
+            .background(Color.secondary.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
             
             // Progress Bar
             HStack {
@@ -173,6 +208,115 @@ struct ProjectHeader: View {
         .sheet(isPresented: $showingProjectInfo) {
             ProjectInfoEditorView(projectName: project.name, isPresented: $showingProjectInfo)
         }
+        .sheet(isPresented: $showingSourcePathEditor) {
+            SourcePathEditorSheet(
+                projectId: project.id,
+                sourcePath: $editingSourcePath,
+                isPresented: $showingSourcePathEditor
+            )
+            .environmentObject(companyStore)
+        }
+    }
+}
+
+// MARK: - Source Path Editor Sheet
+
+struct SourcePathEditorSheet: View {
+    let projectId: UUID
+    @Binding var sourcePath: String
+    @Binding var isPresented: Bool
+    @EnvironmentObject var companyStore: CompanyStore
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("소스 코드 경로 설정")
+                    .font(.title2.bold())
+                Spacer()
+                Button {
+                    isPresented = false
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding()
+            
+            Divider()
+            
+            VStack(alignment: .leading, spacing: 16) {
+                Text("AI가 코드를 수정할 때 사용할 프로젝트 폴더를 선택하세요.")
+                    .foregroundStyle(.secondary)
+                
+                HStack {
+                    TextField("프로젝트 폴더 경로", text: $sourcePath)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.body.monospaced())
+                    
+                    Button("선택...") {
+                        selectFolder()
+                    }
+                    .buttonStyle(.bordered)
+                }
+                
+                if !sourcePath.isEmpty {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text(sourcePath)
+                            .font(.callout.monospaced())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding()
+            
+            Spacer()
+            
+            Divider()
+            
+            // Footer
+            HStack {
+                Spacer()
+                
+                Button("취소") {
+                    isPresented = false
+                }
+                .keyboardShortcut(.cancelAction)
+                
+                Button("저장") {
+                    saveSourcePath()
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding()
+        }
+        .frame(width: 500, height: 300)
+    }
+    
+    private func selectFolder() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = false
+        panel.message = "프로젝트 소스 코드 폴더를 선택하세요"
+        
+        if panel.runModal() == .OK, let url = panel.url {
+            sourcePath = url.path
+        }
+    }
+    
+    private func saveSourcePath() {
+        if var project = companyStore.company.projects.first(where: { $0.id == projectId }) {
+            project.sourcePath = sourcePath.isEmpty ? nil : sourcePath
+            companyStore.updateProject(project)
+        }
+        isPresented = false
     }
 }
 

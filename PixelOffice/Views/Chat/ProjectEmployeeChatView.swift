@@ -49,6 +49,11 @@ struct ProjectEmployeeChatView: View {
         return companyStore.getDepartmentSkills(for: emp.departmentType)
     }
 
+    /// AI 도구 자동 승인 여부 (개발팀은 항상 허용)
+    var shouldAutoApprove: Bool {
+        companyStore.company.settings.autoApproveAI || employee?.departmentType == .development
+    }
+
     /// 이전 업무 기록 요약
     var workLogSummary: String {
         guard let emp = employee else { return "" }
@@ -318,7 +323,8 @@ struct ProjectEmployeeChatView: View {
                     response = try await claudeCodeService.sendMessage(
                         greetingPrompt,
                         systemPrompt: systemPrompt,
-                        autoApprove: companyStore.company.settings.autoApproveAI
+                        autoApprove: shouldAutoApprove,
+                        workingDirectory: project?.sourcePath
                     )
                     // ClaudeCodeService는 아직 토큰 정보를 반환하지 않음
                 } else if let config = apiConfig, config.isConfigured {
@@ -395,7 +401,8 @@ struct ProjectEmployeeChatView: View {
                         messageToSend,
                         systemPrompt: systemPrompt,
                         conversationHistory: employee?.conversationHistory ?? [],
-                        autoApprove: companyStore.company.settings.autoApproveAI
+                        autoApprove: shouldAutoApprove,
+                        workingDirectory: project?.sourcePath
                     )
                     // ClaudeCodeService는 아직 토큰 정보를 반환하지 않음
                 } else if let config = apiConfig, config.isConfigured {
@@ -641,7 +648,8 @@ struct ProjectEmployeeChatView: View {
                         mentionResponse = try await claudeCodeService.sendMessage(
                             requestContent,
                             systemPrompt: mentionSystemPrompt,
-                            autoApprove: companyStore.company.settings.autoApproveAI
+                            autoApprove: shouldAutoApprove,
+                            workingDirectory: project?.sourcePath
                         )
                     } else if let config = apiConfig, config.isConfigured {
                         let result = try await claudeService.sendMessage(
