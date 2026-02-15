@@ -103,6 +103,7 @@ struct ProjectCard: View {
     @EnvironmentObject var companyStore: CompanyStore
     @Environment(\.openWindow) private var openWindow
     @State private var isHovering = false
+    @State private var showingDeleteConfirmation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -207,6 +208,51 @@ struct ProjectCard: View {
                 isHovering = hovering
             }
         }
+        .contextMenu {
+            Button {
+                openWindow(id: "kanban", value: project.id)
+            } label: {
+                Label("칸반 보드", systemImage: "rectangle.split.3x1")
+            }
+            
+            Button {
+                openWindow(id: "pipeline", value: project.id)
+            } label: {
+                Label("파이프라인", systemImage: "arrow.triangle.2.circlepath")
+            }
+            
+            Button {
+                openWindow(id: "project-wiki", value: project.id)
+            } label: {
+                Label("위키", systemImage: "book")
+            }
+            
+            Divider()
+            
+            Button(role: .destructive) {
+                showingDeleteConfirmation = true
+            } label: {
+                Label("프로젝트 삭제", systemImage: "trash")
+            }
+        }
+        .alert("프로젝트 삭제", isPresented: $showingDeleteConfirmation) {
+            Button("취소", role: .cancel) { }
+            Button("삭제", role: .destructive) {
+                deleteProject()
+            }
+        } message: {
+            Text("'\(project.name)' 프로젝트를 삭제하시겠습니까?\n\n모든 태스크, 스프린트, 직원 대화 기록이 삭제됩니다. 이 작업은 되돌릴 수 없습니다.")
+        }
+    }
+    
+    private func deleteProject() {
+        // 데이터 폴더도 삭제
+        let basePath = DataPathService.shared.basePath
+        let projectDataPath = "\(basePath)/\(project.name)"
+        try? FileManager.default.removeItem(atPath: projectDataPath)
+        
+        // CompanyStore에서 삭제
+        companyStore.removeProject(project.id)
     }
 }
 
