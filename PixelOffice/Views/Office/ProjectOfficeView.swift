@@ -201,6 +201,26 @@ struct ProjectOfficeHeader: View {
     let onOpenPipeline: () -> Void
     let onEditSourcePath: () -> Void
 
+    /// 현재 스프린트 태스크들
+    var sprintTasks: [ProjectTask] {
+        guard let sprint = project.activeSprint else { return [] }
+        return project.tasks.filter { $0.sprintId == sprint.id }
+    }
+
+    /// 스프린트 진행률 (0.0 ~ 1.0)
+    var sprintProgress: Double {
+        guard !sprintTasks.isEmpty else { return 0 }
+        let completed = sprintTasks.filter { $0.status == .done }.count
+        return Double(completed) / Double(sprintTasks.count)
+    }
+
+    /// 전체 프로젝트 진행률 (완료된 태스크 / 전체 태스크)
+    var overallProgress: Double {
+        guard !project.tasks.isEmpty else { return 0 }
+        let completed = project.tasks.filter { $0.status == .done }.count
+        return Double(completed) / Double(project.tasks.count)
+    }
+
     var body: some View {
         VStack(spacing: 8) {
             HStack {
@@ -267,6 +287,25 @@ struct ProjectOfficeHeader: View {
                         .font(.body)
                         .foregroundStyle(.secondary)
                 }
+            }
+            
+            // 스프린트 진행률 표시
+            if let sprint = project.activeSprint {
+                SprintProgressRow(
+                    sprint: sprint,
+                    sprintTasks: sprintTasks,
+                    sprintProgress: sprintProgress,
+                    onOpenKanban: onOpenKanban
+                )
+            } else if !project.tasks.isEmpty {
+                // 활성 스프린트가 없으면 전체 태스크 진행률 표시
+                OverallProgressRow(
+                    totalTasks: project.tasks.count,
+                    completedTasks: project.tasks.filter { $0.status == .done }.count,
+                    inProgressTasks: project.tasks.filter { $0.status == .inProgress }.count,
+                    progress: overallProgress,
+                    onOpenKanban: onOpenKanban
+                )
             }
             
             // Source Path Row
@@ -643,6 +682,192 @@ struct AddProjectEmployeeContext: Codable, Hashable {
 struct ProjectEmployeeChatContext: Codable, Hashable {
     let projectId: UUID
     let employeeId: UUID
+}
+
+// MARK: - Sprint Progress Row
+
+struct SprintProgressRow: View {
+    let sprint: Sprint
+    let sprintTasks: [ProjectTask]
+    let sprintProgress: Double
+    let onOpenKanban: () -> Void
+
+    var completedCount: Int {
+        sprintTasks.filter { $0.status == .done }.count
+    }
+
+    var inProgressCount: Int {
+        sprintTasks.filter { $0.status == .inProgress }.count
+    }
+
+    var body: some View {
+        HStack(spacing: 16) {
+            // 스프린트 아이콘 + 이름
+            HStack(spacing: 8) {
+                Image(systemName: "flag.fill")
+                    .foregroundStyle(.orange)
+                Text(sprint.name)
+                    .font(.headline)
+                if !sprint.version.isEmpty {
+                    Text(sprint.version)
+                        .font(.caption)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.blue.opacity(0.15))
+                        .foregroundStyle(.blue)
+                        .clipShape(Capsule())
+                }
+            }
+
+            Divider()
+                .frame(height: 20)
+
+            // 진행률 바
+            HStack(spacing: 8) {
+                ProgressView(value: sprintProgress)
+                    .frame(width: 120)
+                    .tint(progressColor)
+                Text("\(Int(sprintProgress * 100))%")
+                    .font(.callout.monospacedDigit().bold())
+                    .foregroundStyle(progressColor)
+            }
+
+            // 태스크 카운트
+            HStack(spacing: 12) {
+                Label("\(completedCount)", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Label("\(inProgressCount)", systemImage: "arrow.triangle.2.circlepath.circle.fill")
+                    .foregroundStyle(.blue)
+                Label("\(sprintTasks.count - completedCount - inProgressCount)", systemImage: "circle")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.callout)
+
+            Divider()
+                .frame(height: 20)
+
+            // 남은 일수
+            HStack(spacing: 4) {
+                if sprint.isOverdue {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                    Text("마감 초과")
+                        .foregroundStyle(.red)
+                } else {
+                    Image(systemName: "calendar")
+                    Text("D-\(sprint.remainingDays)")
+                        .foregroundStyle(sprint.remainingDays <= 3 ? .red : .primary)
+                }
+            }
+            .font(.callout)
+
+            Spacer()
+
+            // 칸반 바로가기
+            Button {
+                onOpenKanban()
+            } label: {
+                Label("칸반 열기", systemImage: "rectangle.split.3x1")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.orange.opacity(0.08))
+                .strokeBorder(Color.orange.opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    var progressColor: Color {
+        if sprintProgress >= 1.0 {
+            return .green
+        } else if sprintProgress >= 0.7 {
+            return .blue
+        } else if sprintProgress >= 0.3 {
+            return .orange
+        } else {
+            return .red
+        }
+    }
+}
+
+// MARK: - Overall Progress Row (스프린트 없을 때)
+
+struct OverallProgressRow: View {
+    let totalTasks: Int
+    let completedTasks: Int
+    let inProgressTasks: Int
+    let progress: Double
+    let onOpenKanban: () -> Void
+
+    var body: some View {
+        HStack(spacing: 16) {
+            // 아이콘 + 라벨
+            HStack(spacing: 8) {
+                Image(systemName: "chart.bar.fill")
+                    .foregroundStyle(.blue)
+                Text("전체 진행률")
+                    .font(.headline)
+            }
+
+            Divider()
+                .frame(height: 20)
+
+            // 진행률 바
+            HStack(spacing: 8) {
+                ProgressView(value: progress)
+                    .frame(width: 120)
+                    .tint(progressColor)
+                Text("\(Int(progress * 100))%")
+                    .font(.callout.monospacedDigit().bold())
+                    .foregroundStyle(progressColor)
+            }
+
+            // 태스크 카운트
+            HStack(spacing: 12) {
+                Label("\(completedTasks)", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Label("\(inProgressTasks)", systemImage: "arrow.triangle.2.circlepath.circle.fill")
+                    .foregroundStyle(.blue)
+                Label("\(totalTasks - completedTasks - inProgressTasks)", systemImage: "circle")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.callout)
+
+            Spacer()
+
+            // 칸반 바로가기
+            Button {
+                onOpenKanban()
+            } label: {
+                Label("칸반 열기", systemImage: "rectangle.split.3x1")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.blue.opacity(0.08))
+                .strokeBorder(Color.blue.opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    var progressColor: Color {
+        if progress >= 1.0 {
+            return .green
+        } else if progress >= 0.7 {
+            return .blue
+        } else if progress >= 0.3 {
+            return .orange
+        } else {
+            return .red
+        }
+    }
 }
 
 #Preview {
