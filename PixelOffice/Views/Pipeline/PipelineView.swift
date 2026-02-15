@@ -175,6 +175,27 @@ struct PipelineView: View {
             coordinator.setCompanyStore(companyStore)
             validateProjectPath()
         }
+        // 크래시 복구 알림
+        .alert("중단된 파이프라인 발견", isPresented: Binding(
+            get: { PipelineStateManager.shared.showRecoveryAlert && PipelineStateManager.shared.interruptedRuns.contains { $0.projectId == projectId } },
+            set: { if !$0 { PipelineStateManager.shared.dismissRecoveryAlert() } }
+        )) {
+            Button("히스토리에서 확인") {
+                selectedTab = .history
+                PipelineStateManager.shared.dismissRecoveryAlert()
+            }
+            Button("무시", role: .cancel) {
+                for run in PipelineStateManager.shared.interruptedRuns where run.projectId == projectId {
+                    PipelineStateManager.shared.acknowledgeInterruptedRun(run.id)
+                }
+            }
+        } message: {
+            if let run = PipelineStateManager.shared.interruptedRuns.first(where: { $0.projectId == projectId }) {
+                Text("이전에 '\(run.requirement.prefix(30))...' 파이프라인이 비정상 종료되었습니다. 히스토리에서 재개할 수 있습니다.")
+            } else {
+                Text("중단된 파이프라인이 있습니다.")
+            }
+        }
         .sheet(isPresented: $showingLogs) {
             if let run = coordinator.currentRun {
                 PipelineLogView(logs: run.logs)
