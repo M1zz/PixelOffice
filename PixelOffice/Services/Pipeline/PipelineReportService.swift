@@ -29,19 +29,39 @@ class PipelineReportService {
         // 요구사항
         md += generateRequirement(run: run)
 
+        // 🧠 결정 사항 (Decision Log)
+        if !run.decisions.isEmpty {
+            md += generateDecisionsSection(run: run)
+        }
+
         // 분해된 태스크
         md += generateTasksSection(run: run)
 
         // 빌드 결과
         md += generateBuildSection(run: run)
 
+        // 📱 앱 실행 결과
+        if let launchResult = run.appLaunchResult {
+            md += generateAppLaunchSection(launchResult: launchResult)
+        }
+
         // Self-Healing (있는 경우)
         if run.healingAttempts > 0 {
             md += generateHealingSection(run: run)
         }
 
+        // 🔀 Git Diff
+        if run.gitDiff != nil || run.gitSnapshot != nil {
+            md += generateGitDiffSection(run: run)
+        }
+
         // 변경된 파일
         md += generateChangedFilesSection(run: run)
+
+        // 🎨 디자인 프리뷰
+        if !run.designPreviewPaths.isEmpty {
+            md += generateDesignPreviewSection(paths: run.designPreviewPaths)
+        }
 
         // 로그
         md += generateLogsSection(run: run)
@@ -153,14 +173,14 @@ class PipelineReportService {
             if !task.createdFiles.isEmpty {
                 md += "\n**생성된 파일:**\n"
                 for file in task.createdFiles {
-                    md += "- `\(file)`\n"
+                    md += "- `\(toRelativePath(file))`\n"
                 }
             }
 
             if !task.modifiedFiles.isEmpty {
                 md += "\n**수정된 파일:**\n"
                 for file in task.modifiedFiles {
-                    md += "- `\(file)`\n"
+                    md += "- `\(toRelativePath(file))`\n"
                 }
             }
 
@@ -271,7 +291,7 @@ class PipelineReportService {
         if !allCreated.isEmpty {
             md += "### 생성된 파일 (\(allCreated.count)개)\n\n"
             for file in allCreated.sorted() {
-                md += "- `\(file)`\n"
+                md += "- `\(toRelativePath(file))`\n"
             }
             md += "\n"
         }
@@ -279,7 +299,7 @@ class PipelineReportService {
         if !allModified.isEmpty {
             md += "### 수정된 파일 (\(allModified.count)개)\n\n"
             for file in allModified.sorted() {
-                md += "- `\(file)`\n"
+                md += "- `\(toRelativePath(file))`\n"
             }
             md += "\n"
         }
@@ -321,6 +341,141 @@ class PipelineReportService {
         """
 
         return md
+    }
+
+    // MARK: - Decision Log Section
+
+    private func generateDecisionsSection(run: PipelineRun) -> String {
+        var md = """
+        ## 🧠 결정 사항 (Decision Log)
+
+        AI가 작업 중 내린 주요 결정들입니다.
+
+        | 결정 | 이유 | 대안 |
+        |------|------|------|
+
+        """
+
+        for decision in run.decisions {
+            let alternativesStr = decision.alternatives.isEmpty ? "-" : decision.alternatives.joined(separator: ", ")
+            let decisionStr = decision.decision.replacingOccurrences(of: "|", with: "\\|")
+            let reasonStr = decision.reason.replacingOccurrences(of: "|", with: "\\|")
+            md += "| \(decisionStr) | \(reasonStr) | \(alternativesStr) |\n"
+        }
+
+        md += "\n"
+        return md
+    }
+
+    // MARK: - Git Diff Section
+
+    private func generateGitDiffSection(run: PipelineRun) -> String {
+        var md = """
+        ## 🔀 코드 변경사항 (Git Diff)
+
+
+        """
+
+        if let snapshot = run.gitSnapshot {
+            md += """
+            ### 시작 시점 스냅샷
+            - **브랜치**: \(snapshot.branch)
+            - **커밋**: `\(snapshot.commitHash.prefix(8))`
+            - **시각**: \(formatDate(snapshot.capturedAt))
+            - **미커밋 변경**: \(snapshot.hasUncommittedChanges ? "있음" : "없음")
+
+
+            """
+        }
+
+        if let diff = run.gitDiff, !diff.isEmpty {
+            md += """
+            ### Diff 상세
+
+            <details>
+            <summary>전체 diff 보기</summary>
+
+            ```diff
+            \(diff)
+            ```
+
+            </details>
+
+
+            """
+        } else {
+            md += "*변경사항 없음*\n\n"
+        }
+
+        return md
+    }
+
+    // MARK: - App Launch Section
+
+    private func generateAppLaunchSection(launchResult: AppLaunchResult) -> String {
+        let statusEmoji = launchResult.success ? "✅" : "❌"
+
+        var md = """
+        ## 📱 앱 실행 결과
+
+        | 항목 | 값 |
+        |------|-----|
+        | **상태** | \(statusEmoji) \(launchResult.success ? "실행 성공" : "실행 실패") |
+        | **플랫폼** | \(launchResult.platform.rawValue) |
+
+        """
+
+        if let simulatorName = launchResult.simulatorName {
+            md += "| **시뮬레이터** | \(simulatorName) |\n"
+        }
+
+        if let bundleId = launchResult.appBundleId {
+            md += "| **Bundle ID** | `\(bundleId)` |\n"
+        }
+
+        md += "\n"
+
+        // 실행 로그
+        if !launchResult.logs.isEmpty {
+            md += """
+            ### 실행 로그
+
+            """
+            for log in launchResult.logs {
+                md += "- \(log)\n"
+            }
+            md += "\n"
+        }
+
+        return md
+    }
+
+    // MARK: - Design Preview Section
+
+    private func generateDesignPreviewSection(paths: [String]) -> String {
+        var md = """
+        ## 🎨 디자인 프리뷰
+
+        생성된 디자인 HTML 파일:
+
+
+        """
+
+        for (index, path) in paths.enumerated() {
+            let fileName = (path as NSString).lastPathComponent
+            md += "\(index + 1). `\(fileName)` - [열기](file://\(path))\n"
+        }
+
+        md += "\n"
+        return md
+    }
+
+    // MARK: - Helpers
+
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter.string(from: date)
     }
 
     private func generateFooter() -> String {
@@ -373,6 +528,37 @@ class PipelineReportService {
         } else {
             return "\(seconds)초"
         }
+    }
+    
+    /// 절대경로를 상대경로로 변환 (프로젝트 루트 기준)
+    /// - 예: /Users/leeo/Documents/code/MyApp/MyApp/View.swift → MyApp/View.swift
+    private func toRelativePath(_ absolutePath: String) -> String {
+        // 일반적인 프로젝트 경로 패턴들
+        let patterns = [
+            "/Users/[^/]+/Documents/code/[^/]+/",
+            "/Users/[^/]+/Developer/[^/]+/",
+            "/Users/[^/]+/Projects/[^/]+/",
+            "/Users/[^/]+/[^/]+/[^/]+/"  // 더 일반적인 패턴
+        ]
+        
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []),
+               let match = regex.firstMatch(in: absolutePath, options: [], range: NSRange(absolutePath.startIndex..., in: absolutePath)),
+               let range = Range(match.range, in: absolutePath) {
+                let relativePart = String(absolutePath[range.upperBound...])
+                if !relativePart.isEmpty {
+                    return relativePart
+                }
+            }
+        }
+        
+        // 패턴 매칭 실패 시 마지막 2-3개 경로 컴포넌트만 표시
+        let components = absolutePath.components(separatedBy: "/")
+        if components.count > 3 {
+            return components.suffix(3).joined(separator: "/")
+        }
+        
+        return absolutePath
     }
 }
 

@@ -134,6 +134,19 @@ struct PipelineRun: Codable, Identifiable {
     var sprintId: UUID?
     var sprintName: String?
 
+    /// 결정 사항 로그 (Decision Log)
+    var decisions: [PipelineDecision] = []
+
+    /// Git Diff 정보
+    var gitSnapshot: GitSnapshot?
+    var gitDiff: String?
+
+    /// 디자인 프리뷰 HTML 파일 경로들
+    var designPreviewPaths: [String] = []
+
+    /// 앱 실행 결과
+    var appLaunchResult: AppLaunchResult?
+
     /// 총 소요 시간 (초)
     var duration: TimeInterval? {
         guard let start = startedAt else { return nil }
@@ -308,5 +321,58 @@ struct DecompositionResult: Codable {
         self.summary = summary
         self.warnings = warnings
         self.estimatedTime = estimatedTime
+    }
+}
+
+// MARK: - Decision Log
+
+/// AI의 결정 사항
+struct PipelineDecision: Codable, Identifiable {
+    var id: UUID = UUID()
+    var timestamp: Date = Date()
+    var decision: String
+    var reason: String
+    var alternatives: [String]
+    var taskId: UUID?
+    var phase: PipelinePhase?
+
+    init(decision: String, reason: String, alternatives: [String] = [], taskId: UUID? = nil, phase: PipelinePhase? = nil) {
+        self.decision = decision
+        self.reason = reason
+        self.alternatives = alternatives
+        self.taskId = taskId
+        self.phase = phase
+    }
+}
+
+// MARK: - Git Snapshot
+
+/// Git 스냅샷 정보
+struct GitSnapshot: Codable {
+    var commitHash: String
+    var branch: String
+    var stashRef: String?
+    var capturedAt: Date = Date()
+    var hasUncommittedChanges: Bool = false
+}
+
+// MARK: - App Launch Result
+
+/// 앱 실행 결과
+struct AppLaunchResult: Codable {
+    var success: Bool
+    var platform: AppPlatform
+    var simulatorId: String?
+    var simulatorName: String?
+    var appBundleId: String?
+    var launchedAt: Date = Date()
+    var logs: [String] = []
+    var screenshotPath: String?
+
+    enum AppPlatform: String, Codable {
+        case iOS = "iOS"
+        case macOS = "macOS"
+        case watchOS = "watchOS"
+        case tvOS = "tvOS"
     }
 }

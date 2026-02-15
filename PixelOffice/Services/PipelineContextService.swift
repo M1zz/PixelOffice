@@ -138,7 +138,7 @@ class PipelineContextService {
         return lines.joined(separator: "\n")
     }
 
-    /// 새 PIPELINE_CONTEXT.md 생성
+    /// 새 PIPELINE_CONTEXT.md 생성 (프로젝트 스캔 결과 활용)
     private func generateContextFile(projectName: String, sourcePath: String) -> String {
         let isRelative = !sourcePath.hasPrefix("/")
         let pathNote = isRelative ?
@@ -193,6 +193,57 @@ class PipelineContextService {
 
         *이 파일은 PixelOffice에서 자동 생성되었습니다.*
         *마지막 업데이트: \(DateFormatter.localizedString(from: Date(), dateStyle: .medium, timeStyle: .short))*
+        """
+    }
+    
+    /// 프로젝트 스캔 결과로 향상된 PIPELINE_CONTEXT.md 생성
+    func generateEnhancedContextFile(projectName: String, sourcePath: String) async -> String {
+        // 프로젝트 스캔 시도
+        if let scanResult = await ProjectScanner.shared.scan(projectPath: sourcePath) {
+            return ProjectScanner.shared.generatePipelineContext(from: scanResult, projectName: projectName)
+        }
+        
+        // 스캔 실패 시 기본 템플릿 반환
+        return generateContextFile(projectName: projectName, sourcePath: sourcePath)
+    }
+    
+    /// 프로젝트 스캔 결과로 PROJECT.md 생성
+    func generateEnhancedProjectMd(projectName: String, sourcePath: String) async -> String {
+        if let scanResult = await ProjectScanner.shared.scan(projectPath: sourcePath) {
+            return ProjectScanner.shared.generateProjectMd(from: scanResult, projectName: projectName)
+        }
+        
+        // 스캔 실패 시 기본 템플릿
+        return """
+        # \(projectName)
+        
+        ## 프로젝트 경로
+        
+        - **절대경로**: `\(sourcePath)`
+        
+        ## 기술 스택
+        
+        - **언어**: Swift
+        - **프레임워크**: SwiftUI
+        - **빌드 도구**: Xcode
+        
+        ## 제품 정보
+        
+        ### 비전/목표
+        
+        > 🔴 **필수 입력** - 프로젝트의 비전과 목표를 작성하세요.
+        
+        ### 타겟 사용자
+        
+        > 🔴 **필수 입력** - 타겟 사용자를 정의하세요.
+        
+        ### 핵심 기능
+        
+        > 🔴 **필수 입력** - 핵심 기능을 나열하세요.
+        
+        ---
+        
+        *이 파일은 PixelOffice에서 자동 생성되었습니다.*
         """
     }
 

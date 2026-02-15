@@ -32,6 +32,21 @@ class PipelineCoordinator: ObservableObject {
         totalInputTokens + totalOutputTokens
     }
 
+    /// 실시간 생각 과정 (Thinking)
+    @Published var currentThinking: String = ""
+
+    /// 인터럽트 요청 (중요 결정 시 사용자 확인)
+    @Published var interruptRequest: InterruptRequest?
+
+    /// 인터럽트 요청
+    struct InterruptRequest: Identifiable {
+        var id: UUID = UUID()
+        var message: String
+        var decision: PipelineDecision
+        var onApprove: () -> Void
+        var onReject: () -> Void
+    }
+
     /// 히스토리 변경 감지용 (뷰 새로고침 트리거)
     @Published var historyUpdateId = UUID()
 
@@ -63,6 +78,7 @@ class PipelineCoordinator: ObservableObject {
     private let decomposer = RequirementDecomposer()
     private var executor: PipelineExecutor
     private let buildService = BuildService()
+    private let gitService = GitService()
     private var cancellationFlag = false
     private var currentProjectName: String = ""
 
@@ -151,6 +167,15 @@ class PipelineCoordinator: ObservableObject {
 
         // 초기 상태 저장
         saveRunProgress(run)
+
+        // Git 스냅샷 캡처 (파이프라인 시작 전)
+        if let projectPath = projectInfo?.absolutePath {
+            run.addLog("📸 Git 스냅샷 캡처 중...", level: .debug)
+            if let snapshot = await gitService.captureSnapshot(projectPath: projectPath) {
+                run.gitSnapshot = snapshot
+                run.addLog("   브랜치: \(snapshot.branch), 커밋: \(String(snapshot.commitHash.prefix(8)))", level: .debug)
+            }
+        }
 
         await executePipelinePhases(run: &run, project: project, startPhase: .decomposition)
     }
@@ -321,6 +346,33 @@ class PipelineCoordinator: ObservableObject {
                 currentRun = try await executeHealingPhase(run: currentRun, project: project)
                 currentRun.markPhaseCompleted(.healing)
                 saveRunProgress(currentRun)
+            }
+
+            // Git Diff 캡처 (파이프라인 완료 후)
+            let projectInfo = loadProjectInfo(for: project)
+            if let projectPath = projectInfo?.absolutePath {
+                currentRun.addLog("🔀 Git Diff 캡처 중...", level: .debug)
+                let diff = await gitService.captureDiff(projectPath: projectPath, snapshot: currentRun.gitSnapshot)
+                currentRun.gitDiff = diff
+                if !diff.isEmpty {
+                    let changedFiles = await gitService.getChangedFiles(projectPath: projectPath, since: currentRun.gitSnapshot?.commitHash)
+                    currentRun.addLog("   변경된 파일: \(changedFiles.count)개", level: .debug)
+                }
+            }
+
+            // 빌드 성공 시 앱 자동 실행
+            if currentRun.isBuildSuccessful, let projectPath = projectInfo?.absolutePath {
+                currentRun.addLog("🚀 앱 자동 실행 시도 중...", level: .info)
+                updateAction("앱 실행 중...")
+                do {
+                    let launchResult = try await buildService.buildAndLaunch(projectPath: projectPath)
+                    currentRun.appLaunchResult = launchResult
+                    for log in launchResult.logs {
+                        currentRun.addLog("   \(log)", level: launchResult.success ? .info : .warning)
+                    }
+                } catch {
+                    currentRun.addLog("   앱 실행 실패: \(error.localizedDescription)", level: .warning)
+                }
             }
 
             // 완료
@@ -516,16 +568,48 @@ class PipelineCoordinator: ObservableObject {
             }
         }
 
+        // ⭐ 코드 분석 단계 추가 (영향 범위 파악)
+        run.addLog("🔍 코드 분석 시작...", level: .info)
+        updateAction("기존 코드 구조 분석 중...")
+        
+        var codeAnalysisSummary = ""
+        if let absolutePath = projectInfo?.absolutePath, !absolutePath.isEmpty {
+            let analysisResult = await CodeAnalyzer.shared.analyze(
+                requirement: run.requirement,
+                projectPath: absolutePath
+            )
+            
+            run.addLog("✓ 코드 분석 완료: \(analysisResult.relevantFiles.count)개 관련 파일 발견", level: .info)
+            
+            // 고관련 파일 로그
+            let highRelevance = analysisResult.relevantFiles.filter { $0.relevance == .high }
+            if !highRelevance.isEmpty {
+                run.addLog("   📁 주요 관련 파일:", level: .debug)
+                for file in highRelevance.prefix(5) {
+                    run.addLog("      - \(file.path) (\(file.reason))", level: .debug)
+                }
+            }
+            
+            // 프롬프트에 포함할 분석 결과
+            codeAnalysisSummary = analysisResult.summaryForAI
+        } else {
+            run.addLog("⚠️ 프로젝트 경로 없음 - 코드 분석 스킵", level: .warning)
+        }
+        
         run.addLog("🤖 AI에게 요구사항 분해 요청 중...", level: .info)
         run.addLog("   요구사항: \(run.requirement.prefix(100))...", level: .debug)
         updateAction("AI에게 요구사항 분해 요청 중...")
 
         let autoApprove = companyStore?.company.settings.autoApproveAI ?? true
         let decomposeStartTime = Date()
+        
+        // 코드 분석 결과를 컨텍스트에 추가
+        let enrichedContext = projectContext + "\n\n" + codeAnalysisSummary
+        
         let result = try await decomposer.decompose(
             requirement: run.requirement,
             projectInfo: projectInfo,
-            projectContext: projectContext,
+            projectContext: enrichedContext,
             autoApprove: autoApprove
         )
         let decomposeElapsed = Date().timeIntervalSince(decomposeStartTime)
@@ -620,6 +704,32 @@ class PipelineCoordinator: ObservableObject {
             onTokenUsage: { [weak self] inputTokens, outputTokens, costUSD in
                 Task { @MainActor in
                     self?.addTokenUsage(input: inputTokens, output: outputTokens, cost: costUSD)
+                }
+            },
+            onTaskResult: { [weak self] task, result in
+                Task { @MainActor in
+                    guard let self = self else { return }
+
+                    // Decision Log 수집
+                    if !result.decisions.isEmpty {
+                        if var updatedRun = self.currentRun {
+                            updatedRun.decisions.append(contentsOf: result.decisions)
+                            self.currentRun = updatedRun
+                        }
+                        for decision in result.decisions {
+                            self.currentRun?.addLog("🧠 결정: \(decision.decision)", level: .info)
+                        }
+                    }
+
+                    // Thinking 업데이트
+                    if !result.thinking.isEmpty {
+                        self.currentThinking = result.thinking
+                    }
+
+                    // 디자인 HTML 저장
+                    if let html = result.designHTML, !html.isEmpty {
+                        await self.saveDesignHTML(html: html, taskTitle: task.title, projectName: self.currentProjectName)
+                    }
                 }
             },
             onEmployeeStatus: { [weak self] employeeId, employeeName, isWorking in
@@ -1319,6 +1429,45 @@ class PipelineCoordinator: ObservableObject {
         let completed = tasks.filter { $0.status == .done }
         let pending = tasks.filter { $0.status != .done }
         return (pending, completed)
+    }
+}
+
+// MARK: - Design HTML Storage
+
+extension PipelineCoordinator {
+    /// 디자인 HTML 저장
+    func saveDesignHTML(html: String, taskTitle: String, projectName: String) async {
+        let basePath = DataPathService.shared.basePath
+        let previewsPath = "\(basePath)/\(projectName)/디자인/previews"
+
+        // 디렉토리 생성
+        try? FileManager.default.createDirectory(atPath: previewsPath, withIntermediateDirectories: true)
+
+        // 파일명 생성 (태스크 제목 기반)
+        let safeTitle = taskTitle
+            .replacingOccurrences(of: " ", with: "_")
+            .replacingOccurrences(of: "/", with: "-")
+            .prefix(50)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMdd-HHmmss"
+        let timestamp = dateFormatter.string(from: Date())
+        let fileName = "\(timestamp)-\(safeTitle).html"
+        let filePath = "\(previewsPath)/\(fileName)"
+
+        // HTML 파일 저장
+        do {
+            try html.write(toFile: filePath, atomically: true, encoding: .utf8)
+            print("[PipelineCoordinator] 디자인 HTML 저장됨: \(filePath)")
+
+            // 현재 실행에 경로 추가
+            if var run = currentRun {
+                run.designPreviewPaths.append(filePath)
+                run.addLog("🎨 디자인 HTML 저장: \(fileName)", level: .info)
+                currentRun = run
+            }
+        } catch {
+            print("[PipelineCoordinator] 디자인 HTML 저장 실패: \(error)")
+        }
     }
 }
 

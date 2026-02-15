@@ -16,6 +16,7 @@
 		0B1ACB3F81DB8D1BBC7A52A8 /* CommunityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9423358B6E193D0F1CAE6B0D /* CommunityStore.swift */; };
 		0F0E5F08BB51F0F91E42917B /* KanbanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC72CFD2CF8F23F86574BF32 /* KanbanView.swift */; };
 		12471A366FE6C1BD62AA517B /* Company.swift in Sources */ = {isa = PBXBuildFile; fileRef = C021B1E59B0CDD3DC2719478 /* Company.swift */; };
+		16946D39C0F51287F1B51B75 /* GitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD5708FFF8F7A10F55DC0A3 /* GitService.swift */; };
 		17ACE1524FD733889FDCED2B /* Debate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EADF7602C22ED8A3D1C37EE5 /* Debate.swift */; };
 		184A13552113C918363A6F18 /* EmployeeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A04A26D6533370EFE23AF6 /* EmployeeStore.swift */; };
 		1E5DE610A3056ACC4CEB7184 /* ProjectListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79F563540545CE12A8062E30 /* ProjectListView.swift */; };
@@ -23,6 +24,7 @@
 		209B283173F75850D220567E /* StoreCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D99F25149E017D17D22291A /* StoreCoordinator.swift */; };
 		237F7D328F0E31F79E7096B0 /* ProjectEmployeeChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C00E505A2DE858128473D24 /* ProjectEmployeeChatView.swift */; };
 		2496EC974AECDF8B81AE27F1 /* RequirementDecomposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09E463FCCA9AC3702DCDC891 /* RequirementDecomposer.swift */; };
+		25141659BE7EB3336C269815 /* ProjectScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9659B16615CD953C40ABCEA /* ProjectScanner.swift */; };
 		2D91C93E0FBC1E0EBD8C30C5 /* ProjectContextEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 057BCE3E50B6351D2234CEF0 /* ProjectContextEditorView.swift */; };
 		31D176D798278468AEDBBE8F /* EmployeeWorkLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D6EA2E38C3E5D61E594F3D /* EmployeeWorkLogView.swift */; };
 		34076C73A96217EB82047681 /* AIActionParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD4F5F95D922420AEAF29B2 /* AIActionParser.swift */; };
@@ -47,6 +49,8 @@
 		6B17E2019E2AC832BC59F3EB /* PipelineCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2C527BACAEC64E71E03C367 /* PipelineCoordinator.swift */; };
 		6B8B54369C4C73036913A3B8 /* OfficeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12A16590245AE8254851087 /* OfficeLayout.swift */; };
 		6D08F473F46B68CB5EDD1EBE /* AutoApprovalRulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B947C13BC0FEAEEA9342E746 /* AutoApprovalRulesView.swift */; };
+		6D1F2873998578C8BF9461FD /* DesignPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DDA48C584AFB1C398C34365 /* DesignPreviewView.swift */; };
+		74DD73DEE5DD9198D12DA0C7 /* CodeAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F22F8B206B500B42F2DA019 /* CodeAnalyzer.swift */; };
 		772568186E9B2E348866D543 /* BuildService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC619B0B26680399DE30A63 /* BuildService.swift */; };
 		77B2201F5AE4A74A99CCDC99 /* PermissionRequestDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EBB211B28DB610C2B466B57 /* PermissionRequestDetailView.swift */; };
 		7B096B068534CA1CE399EE12 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60AF703FA7A7789328BEC671 /* Project.swift */; };
@@ -60,6 +64,7 @@
 		83EDDF13E71852EEBF2137BE /* AddEmployeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62E8C7D9D13EA8D4D44D0D4 /* AddEmployeeView.swift */; };
 		85F0B6227EF7CA33EEB44FDB /* XcodeProjectGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4D2E87A5DA6AF76734152E /* XcodeProjectGenerator.swift */; };
 		88C5AC55CE6EF57496B8E573 /* EmployeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA72A5FA0C47A7414D8FD79 /* EmployeeView.swift */; };
+		8CDEC488FF44A4E1C11704EE /* ThinkingPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ABFBFCC537FB39F52F83602 /* ThinkingPanelView.swift */; };
 		8EEF6F0A432DC14A217FB8C3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC521E8BDA27062502FD747 /* ContentView.swift */; };
 		8F511F63D8CCA7D7290ECE13 /* EmployeeIDCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E1AB37A14A087DDBCB7F477 /* EmployeeIDCardView.swift */; };
 		8FD9E900FA7857385378DAD2 /* PixelArtRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33D4C6EC96F804DF4F889233 /* PixelArtRenderer.swift */; };
@@ -68,6 +73,7 @@
 		94E1211399F8973A73C8171C /* DebateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3893F261FD2045CF78BF6500 /* DebateView.swift */; };
 		97A9DE8BCE5D53FF1F3D02AD /* CollaborationRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8737E4C5D2F5F71AABE06EE3 /* CollaborationRecord.swift */; };
 		99D33F4F7D3224B48CC40049 /* ProjectInfoEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC92880BF2983E73F91E288A /* ProjectInfoEditorView.swift */; };
+		9A222459AE384E15980AC3B8 /* DiffViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE1A58CC094926B865F9B94 /* DiffViewerView.swift */; };
 		9A645D88956CEF23F89B058B /* EmployeeBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9083E6C5D2149547A85AD1 /* EmployeeBadgeView.swift */; };
 		9C41C61F1C75C9A2101A5207 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25AE95CF1FA5EB7163AD72D1 /* OnboardingView.swift */; };
 		9FFDAE61027D3D3E3A227499 /* DepartmentSkills.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0BD33957A8CD4FAEB868D26 /* DepartmentSkills.swift */; };
@@ -138,9 +144,11 @@
 		0B33C3BEAD234726621167D0 /* OfficeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeView.swift; sourceTree = "<group>"; };
 		0C3A0B8EC19D6C81E19ED058 /* Employee.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Employee.swift; sourceTree = "<group>"; };
 		0C484404A467617FB6A22ABC /* Department.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Department.swift; sourceTree = "<group>"; };
+		0DDA48C584AFB1C398C34365 /* DesignPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignPreviewView.swift; sourceTree = "<group>"; };
 		122E5D64E27E17B9DD3254D6 /* PermissionRequestCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequestCard.swift; sourceTree = "<group>"; };
 		1B41A3B5FE8E45BC717B9765 /* PipelineExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineExecutor.swift; sourceTree = "<group>"; };
 		1B4D2E87A5DA6AF76734152E /* XcodeProjectGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XcodeProjectGenerator.swift; sourceTree = "<group>"; };
+		1BD5708FFF8F7A10F55DC0A3 /* GitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitService.swift; sourceTree = "<group>"; };
 		1DC521E8BDA27062502FD747 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1E22EBAA40F9B133389F7068 /* OfficeDecoration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeDecoration.swift; sourceTree = "<group>"; };
 		1F79895E6E7A87B64E077DFE /* ProjectWikiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWikiView.swift; sourceTree = "<group>"; };
@@ -154,11 +162,13 @@
 		3893F261FD2045CF78BF6500 /* DebateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebateView.swift; sourceTree = "<group>"; };
 		3BCC43784DA4624A85A7F488 /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
 		3CC0ACACE5D7F45661BA5823 /* WikiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiService.swift; sourceTree = "<group>"; };
+		3F22F8B206B500B42F2DA019 /* CodeAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeAnalyzer.swift; sourceTree = "<group>"; };
 		412B9F5BCFE7561BB639409B /* DepartmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartmentView.swift; sourceTree = "<group>"; };
 		42F2671EDFF69007794A9653 /* ProjectInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectInfo.swift; sourceTree = "<group>"; };
 		4887307B5BFD66BE8E330FEF /* PermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsView.swift; sourceTree = "<group>"; };
 		48B30F23EF3CDD8A9FFD7DA1 /* Sprint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sprint.swift; sourceTree = "<group>"; };
 		49497933A19EE14A481767B5 /* AITool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITool.swift; sourceTree = "<group>"; };
+		4ABFBFCC537FB39F52F83602 /* ThinkingPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThinkingPanelView.swift; sourceTree = "<group>"; };
 		500B13F05BE44BDA6373B13B /* ProjectPathSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectPathSetupView.swift; sourceTree = "<group>"; };
 		543818918AD8C6AACB739670 /* WalkingEmployeesLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkingEmployeesLayer.swift; sourceTree = "<group>"; };
 		55108A5D91AA7D25C1ACDD8E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -207,6 +217,7 @@
 		BA68AEA61B457C0F18E964BB /* ProjectDepartment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDepartment.swift; sourceTree = "<group>"; };
 		BA87F1D95AEE3005E7BFE7B3 /* CompanyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanyStore.swift; sourceTree = "<group>"; };
 		BDA3901B33F5B536492B4792 /* JobRole.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobRole.swift; sourceTree = "<group>"; };
+		BEE1A58CC094926B865F9B94 /* DiffViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiffViewerView.swift; sourceTree = "<group>"; };
 		C021B1E59B0CDD3DC2719478 /* Company.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Company.swift; sourceTree = "<group>"; };
 		C06D7612B318BA375B90A981 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		C1BF96E15C6187C71C37BE89 /* APIConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIConfiguration.swift; sourceTree = "<group>"; };
@@ -224,6 +235,7 @@
 		E53E5CAF7CDBA09EF8807235 /* EmployeeChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeChatView.swift; sourceTree = "<group>"; };
 		E553CCE6D56253D03477F564 /* PermissionRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequest.swift; sourceTree = "<group>"; };
 		E5DC5FCC05AC6B73BD575A75 /* FlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
+		E9659B16615CD953C40ABCEA /* ProjectScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectScanner.swift; sourceTree = "<group>"; };
 		EADF7602C22ED8A3D1C37EE5 /* Debate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debate.swift; sourceTree = "<group>"; };
 		EAFA7A174A015164C2EE6E3E /* PermissionRequestHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequestHistoryView.swift; sourceTree = "<group>"; };
 		EC72CFD2CF8F23F86574BF32 /* KanbanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KanbanView.swift; sourceTree = "<group>"; };
@@ -284,9 +296,12 @@
 		365DDF6C00944365046535A7 /* Pipeline */ = {
 			isa = PBXGroup;
 			children = (
+				0DDA48C584AFB1C398C34365 /* DesignPreviewView.swift */,
+				BEE1A58CC094926B865F9B94 /* DiffViewerView.swift */,
 				9341B250520D34456947E420 /* NewXcodeProjectView.swift */,
 				66B1A2B428E01E3EE9B40397 /* PipelineView.swift */,
 				500B13F05BE44BDA6373B13B /* ProjectPathSetupView.swift */,
+				4ABFBFCC537FB39F52F83602 /* ThinkingPanelView.swift */,
 			);
 			path = Pipeline;
 			sourceTree = "<group>";
@@ -476,6 +491,8 @@
 			isa = PBXGroup;
 			children = (
 				FFC619B0B26680399DE30A63 /* BuildService.swift */,
+				3F22F8B206B500B42F2DA019 /* CodeAnalyzer.swift */,
+				1BD5708FFF8F7A10F55DC0A3 /* GitService.swift */,
 				F2C527BACAEC64E71E03C367 /* PipelineCoordinator.swift */,
 				1B41A3B5FE8E45BC717B9765 /* PipelineExecutor.swift */,
 				03AF50B020DD3805C08B0FFA /* PipelineReportService.swift */,
@@ -540,6 +557,7 @@
 				CA9CD1626097C533A9E24CB5 /* PermissionManager.swift */,
 				B7D4D4F9E9D68F72AC2A8B94 /* PipelineContextService.swift */,
 				97A9CB482FD52C7CC52CFCB7 /* ProjectRecoveryService.swift */,
+				E9659B16615CD953C40ABCEA /* ProjectScanner.swift */,
 				DC6B079A3FDF151282A2BD0C /* Repositories.swift */,
 				290DF008621301A4FC3570E4 /* StructuredDebateService.swift */,
 				A3F838A6D789B8AB73EF47C5 /* ToastManager.swift */,
@@ -673,12 +691,15 @@
 				08B35536085DD48C8CDFF90D /* EmployeeWorkLogService.swift in Sources */,
 				B418930899C1AB3BF0D14173 /* PermissionManager.swift in Sources */,
 				772568186E9B2E348866D543 /* BuildService.swift in Sources */,
+				74DD73DEE5DD9198D12DA0C7 /* CodeAnalyzer.swift in Sources */,
+				16946D39C0F51287F1B51B75 /* GitService.swift in Sources */,
 				6B17E2019E2AC832BC59F3EB /* PipelineCoordinator.swift in Sources */,
 				FC4EE6B1B8A92BFF3D4C707E /* PipelineExecutor.swift in Sources */,
 				CE48E81D5E1FB051AAAE97B9 /* PipelineReportService.swift in Sources */,
 				2496EC974AECDF8B81AE27F1 /* RequirementDecomposer.swift in Sources */,
 				7E68B31FDD69E5DE81BADA36 /* PipelineContextService.swift in Sources */,
 				49F70D04B201AFD7CF0A1FC5 /* ProjectRecoveryService.swift in Sources */,
+				25141659BE7EB3336C269815 /* ProjectScanner.swift in Sources */,
 				908760EAD693C2A23F102EC8 /* Repositories.swift in Sources */,
 				049BDE6760D270EA57D33BF5 /* CollaborationStore.swift in Sources */,
 				0B1ACB3F81DB8D1BBC7A52A8 /* CommunityStore.swift in Sources */,
@@ -724,9 +745,12 @@
 				6D08F473F46B68CB5EDD1EBE /* AutoApprovalRulesView.swift in Sources */,
 				77B2201F5AE4A74A99CCDC99 /* PermissionRequestDetailView.swift in Sources */,
 				CE27CCDB534A4A12A92A8B14 /* PermissionsView.swift in Sources */,
+				6D1F2873998578C8BF9461FD /* DesignPreviewView.swift in Sources */,
+				9A222459AE384E15980AC3B8 /* DiffViewerView.swift in Sources */,
 				81E0AC8E8E9CD03BB6F92B7B /* NewXcodeProjectView.swift in Sources */,
 				B5D18B92F7E5AE8EC30AF210 /* PipelineView.swift in Sources */,
 				039FB5771CAB44AF472ABD19 /* ProjectPathSetupView.swift in Sources */,
+				8CDEC488FF44A4E1C11704EE /* ThinkingPanelView.swift in Sources */,
 				F7D194DBFCDD5C92C18C98C1 /* AddProjectView.swift in Sources */,
 				4A34F9B36EEB7C7DF95ED99C /* AddTaskView.swift in Sources */,
 				5E04F7F1530049FA6C6D0A38 /* ConversationView.swift in Sources */,

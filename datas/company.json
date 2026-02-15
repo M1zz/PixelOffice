@@ -1,102 +1,82 @@
 {
-  "wikiDocuments" : [
+  "employeeThinkings" : [
 
   ],
   "departments" : [
     {
-      "maxCapacity" : 4,
       "position" : {
         "column" : 0,
         "row" : 0
       },
       "id" : "33ECD453-A0DB-4764-9A46-DED2C471140B",
-      "name" : "기획팀",
       "type" : "기획",
       "employees" : [
 
-      ]
+      ],
+      "name" : "기획팀",
+      "maxCapacity" : 4
     },
     {
-      "maxCapacity" : 4,
       "position" : {
         "column" : 1,
         "row" : 0
       },
       "id" : "3E4A812C-6EE1-48EF-8668-056101D5F7D8",
-      "name" : "디자인팀",
       "type" : "디자인",
       "employees" : [
 
-      ]
+      ],
+      "name" : "디자인팀",
+      "maxCapacity" : 4
     },
     {
-      "maxCapacity" : 4,
       "position" : {
         "column" : 0,
         "row" : 1
       },
       "id" : "92A50A9E-365E-435E-9F44-6D7B824EEE18",
-      "name" : "개발팀",
       "type" : "개발",
       "employees" : [
 
-      ]
+      ],
+      "name" : "개발팀",
+      "maxCapacity" : 4
     },
     {
-      "maxCapacity" : 4,
       "position" : {
         "column" : 1,
         "row" : 1
       },
       "id" : "0157452D-8720-439E-BF68-6CA4AE090BAC",
-      "name" : "마케팅팀",
       "type" : "마케팅",
       "employees" : [
 
-      ]
+      ],
+      "name" : "마케팅팀",
+      "maxCapacity" : 4
     },
     {
-      "maxCapacity" : 4,
       "position" : {
         "column" : 0,
         "row" : 2
       },
       "id" : "ED0F8941-DBCA-4BAC-8E79-1DAB3AFA7647",
-      "name" : "QA팀",
       "type" : "QA",
       "employees" : [
 
-      ]
+      ],
+      "name" : "QA팀",
+      "maxCapacity" : 4
     }
   ],
-  "createdAt" : "2026-02-10T00:46:42Z",
   "collaborationRecords" : [
 
   ],
   "updatedAt" : "2026-02-11T00:32:00Z",
   "settings" : {
-    "notificationsEnabled" : true,
-    "autoApproveAI" : false,
-    "wikiSettings" : {
-      "autoSync" : true,
-      "wikiPath" : "",
-      "openInEditor" : ""
-    },
     "cloudSyncEnabled" : false,
+    "notificationsEnabled" : true,
     "departmentSkills" : {
-      "일반" : {
-        "roleName" : "10년차 베테랑 직원",
-        "expertise" : [
-          "다양한 업무 경험",
-          "회사 전반 이해"
-        ],
-        "workStyle" : "다방면에서 도움을 줄 수 있습니다",
-        "customPrompt" : "",
-        "skills" : [
-
-        ],
-        "role" : "10년차 베테랑 직원"
-      },
       "개발" : {
         "roleName" : "10년차 시니어 개발자 (풀스택 + 아키텍트)",
         "expertise" : [
@@ -106,44 +86,25 @@
           "성능 최적화 및 확장성 설계",
           "DevOps 및 CI\/CD 파이프라인"
         ],
-        "workStyle" : "- 기술적 실현 가능성을 먼저 검토합니다\n- 확장성과 유지보수성을 고려합니다\n- 구체적인 기술 스택과 구현 방안을 제안합니다",
         "customPrompt" : "",
+        "role" : "10년차 시니어 개발자 (풀스택 + 아키텍트)",
         "skills" : [
 
         ],
-        "role" : "10년차 시니어 개발자 (풀스택 + 아키텍트)"
+        "workStyle" : "- 기술적 실현 가능성을 먼저 검토합니다\n- 확장성과 유지보수성을 고려합니다\n- 구체적인 기술 스택과 구현 방안을 제안합니다"
       },
-      "디자인" : {
-        "roleName" : "10년차 시니어 디자이너 (UI\/UX 전문가)",
+      "일반" : {
+        "roleName" : "10년차 베테랑 직원",
         "expertise" : [
-          "UI\/UX 디자인 및 사용자 경험 설계",
-          "디자인 시스템 구축 및 운영",
-          "프로토타이핑 및 사용성 테스트",
-          "브랜드 아이덴티티 및 비주얼 디자인",
-          "디자인-개발 협업 프로세스"
+          "다양한 업무 경험",
+          "회사 전반 이해"
         ],
-        "workStyle" : "- 사용자 관점에서 문제를 바라봅니다\n- 심미성과 사용성의 균형을 중시합니다\n- 구체적인 디자인 방향과 레퍼런스를 제시합니다",
         "customPrompt" : "",
+        "role" : "10년차 베테랑 직원",
         "skills" : [
 
         ],
-        "role" : "10년차 시니어 디자이너 (UI\/UX 전문가)"
-      },
-      "마케팅" : {
-        "roleName" : "10년차 시니어 마케터 (디지털 마케팅 + 그로스 해킹)",
-        "expertise" : [
-          "마케팅 전략 및 캠페인 기획",
-          "콘텐츠 마케팅 및 브랜딩",
-          "퍼포먼스 마케팅 및 데이터 분석",
-          "사용자 획득 및 리텐션 전략",
-          "PR 및 커뮤니케이션"
-        ],
-        "workStyle" : "- 타겟 고객과 시장 포지셔닝을 파악하려 합니다\n- 데이터 기반 의사결정을 중시합니다\n- 측정 가능한 마케팅 목표를 설정합니다",
-        "customPrompt" : "",
-        "skills" : [
-
-        ],
-        "role" : "10년차 시니어 마케터 (디지털 마케팅 + 그로스 해킹)"
+        "workStyle" : "다방면에서 도움을 줄 수 있습니다"
       },
       "기획" : {
         "roleName" : "10년차 시니어 기획자",
@@ -154,12 +115,44 @@
           "프로젝트 로드맵 및 마일스톤 관리",
           "이해관계자 커뮤니케이션"
         ],
-        "workStyle" : "- 프로젝트의 목표와 비전을 명확히 이해하려고 합니다\n- 타겟 사용자와 핵심 가치를 파악하려 합니다\n- 실현 가능성과 리소스를 고려한 현실적인 조언을 합니다",
         "customPrompt" : "",
+        "role" : "10년차 시니어 기획자",
         "skills" : [
 
         ],
-        "role" : "10년차 시니어 기획자"
+        "workStyle" : "- 프로젝트의 목표와 비전을 명확히 이해하려고 합니다\n- 타겟 사용자와 핵심 가치를 파악하려 합니다\n- 실현 가능성과 리소스를 고려한 현실적인 조언을 합니다"
+      },
+      "디자인" : {
+        "roleName" : "10년차 시니어 디자이너 (UI\/UX 전문가)",
+        "expertise" : [
+          "UI\/UX 디자인 및 사용자 경험 설계",
+          "디자인 시스템 구축 및 운영",
+          "프로토타이핑 및 사용성 테스트",
+          "브랜드 아이덴티티 및 비주얼 디자인",
+          "디자인-개발 협업 프로세스"
+        ],
+        "customPrompt" : "",
+        "role" : "10년차 시니어 디자이너 (UI\/UX 전문가)",
+        "skills" : [
+
+        ],
+        "workStyle" : "- 사용자 관점에서 문제를 바라봅니다\n- 심미성과 사용성의 균형을 중시합니다\n- 구체적인 디자인 방향과 레퍼런스를 제시합니다"
+      },
+      "마케팅" : {
+        "roleName" : "10년차 시니어 마케터 (디지털 마케팅 + 그로스 해킹)",
+        "expertise" : [
+          "마케팅 전략 및 캠페인 기획",
+          "콘텐츠 마케팅 및 브랜딩",
+          "퍼포먼스 마케팅 및 데이터 분석",
+          "사용자 획득 및 리텐션 전략",
+          "PR 및 커뮤니케이션"
+        ],
+        "customPrompt" : "",
+        "role" : "10년차 시니어 마케터 (디지털 마케팅 + 그로스 해킹)",
+        "skills" : [
+
+        ],
+        "workStyle" : "- 타겟 고객과 시장 포지셔닝을 파악하려 합니다\n- 데이터 기반 의사결정을 중시합니다\n- 측정 가능한 마케팅 목표를 설정합니다"
       },
       "QA" : {
         "roleName" : "10년차 시니어 QA 엔지니어",
@@ -170,19 +163,34 @@
           "성능\/보안\/접근성 테스트",
           "릴리즈 품질 게이트 관리"
         ],
-        "workStyle" : "- 엣지 케이스와 예외 상황을 먼저 고려합니다\n- 품질 기준과 테스트 범위를 명확히 합니다\n- 리스크 기반 테스트 우선순위를 제안합니다",
         "customPrompt" : "",
+        "role" : "10년차 시니어 QA 엔지니어",
         "skills" : [
 
         ],
-        "role" : "10년차 시니어 QA 엔지니어"
+        "workStyle" : "- 엣지 케이스와 예외 상황을 먼저 고려합니다\n- 품질 기준과 테스트 범위를 명확히 합니다\n- 리스크 기반 테스트 우선순위를 제안합니다"
       }
     },
+    "wikiSettings" : {
+      "autoSync" : true,
+      "wikiPath" : "",
+      "openInEditor" : ""
+    },
+    "autoSaveEnabled" : true,
     "apiConfigurations" : [
 
     ],
-    "autoSaveEnabled" : true
+    "autoApproveAI" : false
   },
+  "createdAt" : "2026-02-10T00:46:42Z",
+  "autoApprovalRules" : [
+
+  ],
+  "id" : "4A33F5B2-61D6-4938-918F-E8E71A9942C9",
+  "name" : "My Pixel Office",
+  "employeeOnboardings" : [
+
+  ],
   "permissionRequests" : [
 
   ],
@@ -191,23 +199,16 @@
   ],
   "projects" : [
     {
-      "projectContext" : "",
-      "tasks" : [
-
-      ],
+      "status" : "기획 중",
       "tags" : [
 
       ],
-      "sprints" : [
+      "createdAt" : "2026-02-10T00:46:42Z",
+      "tasks" : [
 
       ],
-      "status" : "기획 중",
-      "createdAt" : "2026-02-10T00:46:42Z",
-      "id" : "DDD117AC-1018-4E00-AA4F-4E11768C2DD4",
-      "priority" : "보통",
       "departments" : [
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 0,
             "row" : 0
@@ -216,53 +217,53 @@
           "type" : "기획",
           "employees" : [
             {
+              "employeeNumber" : "PRJ-1257",
+              "departmentType" : "일반",
+              "status" : "휴식 중",
+              "createdAt" : "2026-02-10T00:46:42Z",
               "jobRoles" : [
                 "일반"
               ],
-              "characterAppearance" : {
-                "hairColor" : 0,
-                "shirtColor" : 8,
-                "accessory" : 3,
-                "hairStyle" : 5,
-                "expression" : 1,
-                "skinTone" : 0
-              },
-              "createdAt" : "2026-02-10T00:46:42Z",
+              "personality" : "성실하고 책임감 있는",
               "strengths" : [
                 "적응력",
                 "책임감",
                 "성실함"
               ],
-              "conversationHistory" : [
-
-              ],
-              "departmentType" : "일반",
-              "employeeNumber" : "PRJ-1257",
+              "characterAppearance" : {
+                "accessory" : 3,
+                "shirtColor" : 8,
+                "skinTone" : 0,
+                "hairStyle" : 5,
+                "expression" : 1,
+                "hairColor" : 0
+              },
+              "id" : "6555BC90-B1B0-422C-B744-5B8525D19B3A",
+              "name" : "마이클",
               "workStyle" : "독립적으로 집중해서 완성",
-              "totalTasksCompleted" : 0,
               "statistics" : {
-                "documentsCreated" : 0,
                 "totalActiveTime" : 0,
-                "collaborationCount" : 0,
+                "outputTokens" : 0,
                 "inputTokens" : 0,
+                "collaborationCount" : 0,
+                "conversationCount" : 0,
+                "documentsCreated" : 0,
+                "tasksCompleted" : 0,
+                "totalTokensUsed" : 0,
                 "tokenUsageHistory" : [
 
-                ],
-                "tasksCompleted" : 0,
-                "outputTokens" : 0,
-                "conversationCount" : 0,
-                "totalTokensUsed" : 0
+                ]
               },
               "aiType" : "Claude",
-              "id" : "6555BC90-B1B0-422C-B744-5B8525D19B3A",
-              "status" : "휴식 중",
-              "name" : "마이클",
-              "personality" : "성실하고 책임감 있는"
+              "totalTasksCompleted" : 0,
+              "conversationHistory" : [
+
+              ]
             }
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 1,
             "row" : 0
@@ -271,53 +272,53 @@
           "type" : "디자인",
           "employees" : [
             {
+              "employeeNumber" : "PRJ-3099",
+              "departmentType" : "일반",
+              "status" : "휴식 중",
+              "createdAt" : "2026-02-10T00:46:42Z",
               "jobRoles" : [
                 "일반"
               ],
-              "characterAppearance" : {
-                "hairColor" : 1,
-                "shirtColor" : 2,
-                "accessory" : 5,
-                "hairStyle" : 1,
-                "expression" : 1,
-                "skinTone" : 0
-              },
-              "createdAt" : "2026-02-10T00:46:42Z",
+              "personality" : "배움에 열린",
               "strengths" : [
                 "팀워크",
                 "유연성",
                 "꼼꼼함"
               ],
-              "conversationHistory" : [
-
-              ],
-              "departmentType" : "일반",
-              "employeeNumber" : "PRJ-3099",
+              "characterAppearance" : {
+                "accessory" : 5,
+                "shirtColor" : 2,
+                "skinTone" : 0,
+                "hairStyle" : 1,
+                "expression" : 1,
+                "hairColor" : 1
+              },
+              "id" : "231FE9C0-ECD9-4FA9-957E-A77F3AD5F21E",
+              "name" : "제니",
               "workStyle" : "배우며 성장하는 자세로 임함",
-              "totalTasksCompleted" : 0,
               "statistics" : {
-                "documentsCreated" : 0,
                 "totalActiveTime" : 0,
-                "collaborationCount" : 0,
+                "outputTokens" : 0,
                 "inputTokens" : 0,
+                "collaborationCount" : 0,
+                "conversationCount" : 0,
+                "documentsCreated" : 0,
+                "tasksCompleted" : 0,
+                "totalTokensUsed" : 0,
                 "tokenUsageHistory" : [
 
-                ],
-                "tasksCompleted" : 0,
-                "outputTokens" : 0,
-                "conversationCount" : 0,
-                "totalTokensUsed" : 0
+                ]
               },
               "aiType" : "Claude",
-              "id" : "231FE9C0-ECD9-4FA9-957E-A77F3AD5F21E",
-              "status" : "휴식 중",
-              "name" : "제니",
-              "personality" : "배움에 열린"
+              "totalTasksCompleted" : 0,
+              "conversationHistory" : [
+
+              ]
             }
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 0,
             "row" : 1
@@ -326,53 +327,53 @@
           "type" : "개발",
           "employees" : [
             {
+              "employeeNumber" : "PRJ-9820",
+              "departmentType" : "일반",
+              "status" : "휴식 중",
+              "createdAt" : "2026-02-10T00:46:42Z",
               "jobRoles" : [
                 "일반"
               ],
-              "characterAppearance" : {
-                "hairColor" : 2,
-                "shirtColor" : 8,
-                "accessory" : 1,
-                "hairStyle" : 3,
-                "expression" : 0,
-                "skinTone" : 1
-              },
-              "createdAt" : "2026-02-10T00:46:42Z",
+              "personality" : "다재다능하고 적응력 있는",
               "strengths" : [
                 "빠른 학습",
                 "문서 작성",
                 "협업"
               ],
-              "conversationHistory" : [
-
-              ],
-              "departmentType" : "일반",
-              "employeeNumber" : "PRJ-9820",
+              "characterAppearance" : {
+                "accessory" : 1,
+                "shirtColor" : 8,
+                "skinTone" : 1,
+                "hairStyle" : 3,
+                "expression" : 0,
+                "hairColor" : 2
+              },
+              "id" : "8DAB128A-CC61-488D-8477-8E8C8B2E7002",
+              "name" : "켄트백",
               "workStyle" : "체계적으로 계획하고 단계별로 실행",
-              "totalTasksCompleted" : 0,
               "statistics" : {
-                "documentsCreated" : 0,
                 "totalActiveTime" : 0,
-                "collaborationCount" : 0,
+                "outputTokens" : 0,
                 "inputTokens" : 0,
+                "collaborationCount" : 0,
+                "conversationCount" : 0,
+                "documentsCreated" : 0,
+                "tasksCompleted" : 0,
+                "totalTokensUsed" : 0,
                 "tokenUsageHistory" : [
 
-                ],
-                "tasksCompleted" : 0,
-                "outputTokens" : 0,
-                "conversationCount" : 0,
-                "totalTokensUsed" : 0
+                ]
               },
               "aiType" : "Claude",
-              "id" : "8DAB128A-CC61-488D-8477-8E8C8B2E7002",
-              "status" : "휴식 중",
-              "name" : "켄트백",
-              "personality" : "다재다능하고 적응력 있는"
+              "totalTasksCompleted" : 0,
+              "conversationHistory" : [
+
+              ]
             }
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 1,
             "row" : 1
@@ -381,10 +382,10 @@
           "type" : "마케팅",
           "employees" : [
 
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 0,
             "row" : 2
@@ -393,31 +394,31 @@
           "type" : "QA",
           "employees" : [
 
-          ]
+          ],
+          "maxCapacity" : 4
         }
       ],
-      "name" : "클립 키보드",
+      "id" : "DDD117AC-1018-4E00-AA4F-4E11768C2DD4",
       "updatedAt" : "2026-02-10T00:46:42Z",
-      "description" : ""
-    },
-    {
-      "projectContext" : "",
-      "tasks" : [
-
-      ],
-      "tags" : [
-
-      ],
+      "priority" : "보통",
       "sprints" : [
 
       ],
+      "name" : "클립 키보드",
+      "projectContext" : "",
+      "description" : ""
+    },
+    {
       "status" : "기획 중",
+      "tags" : [
+
+      ],
       "createdAt" : "2026-02-10T00:46:42Z",
-      "id" : "4BA2562D-8636-4D8F-837E-934DC9FD42C2",
-      "priority" : "보통",
+      "tasks" : [
+
+      ],
       "departments" : [
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 0,
             "row" : 0
@@ -426,53 +427,53 @@
           "type" : "기획",
           "employees" : [
             {
+              "employeeNumber" : "PRJ-3345",
+              "departmentType" : "일반",
+              "status" : "휴식 중",
+              "createdAt" : "2026-02-10T00:46:42Z",
               "jobRoles" : [
                 "일반"
               ],
-              "characterAppearance" : {
-                "hairColor" : 1,
-                "shirtColor" : 7,
-                "accessory" : 1,
-                "hairStyle" : 4,
-                "expression" : 2,
-                "skinTone" : 1
-              },
-              "createdAt" : "2026-02-10T00:46:42Z",
+              "personality" : "다재다능하고 적응력 있는",
               "strengths" : [
                 "빠른 학습",
                 "문서 작성",
                 "협업"
               ],
-              "conversationHistory" : [
-
-              ],
-              "departmentType" : "일반",
-              "employeeNumber" : "PRJ-3345",
+              "characterAppearance" : {
+                "accessory" : 1,
+                "shirtColor" : 7,
+                "skinTone" : 1,
+                "hairStyle" : 4,
+                "expression" : 2,
+                "hairColor" : 1
+              },
+              "id" : "B6863EB9-C266-4DB4-85E3-BDF83321400B",
+              "name" : "리이오",
               "workStyle" : "체계적으로 계획하고 단계별로 실행",
-              "totalTasksCompleted" : 0,
               "statistics" : {
-                "documentsCreated" : 0,
                 "totalActiveTime" : 0,
-                "collaborationCount" : 0,
+                "outputTokens" : 0,
                 "inputTokens" : 0,
+                "collaborationCount" : 0,
+                "conversationCount" : 0,
+                "documentsCreated" : 0,
+                "tasksCompleted" : 0,
+                "totalTokensUsed" : 0,
                 "tokenUsageHistory" : [
 
-                ],
-                "tasksCompleted" : 0,
-                "outputTokens" : 0,
-                "conversationCount" : 0,
-                "totalTokensUsed" : 0
+                ]
               },
               "aiType" : "Claude",
-              "id" : "B6863EB9-C266-4DB4-85E3-BDF83321400B",
-              "status" : "휴식 중",
-              "name" : "리이오",
-              "personality" : "다재다능하고 적응력 있는"
+              "totalTasksCompleted" : 0,
+              "conversationHistory" : [
+
+              ]
             }
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 1,
             "row" : 0
@@ -481,10 +482,10 @@
           "type" : "디자인",
           "employees" : [
 
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 0,
             "row" : 1
@@ -493,10 +494,10 @@
           "type" : "개발",
           "employees" : [
 
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 1,
             "row" : 1
@@ -505,10 +506,10 @@
           "type" : "마케팅",
           "employees" : [
 
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 0,
             "row" : 2
@@ -517,18 +518,26 @@
           "type" : "QA",
           "employees" : [
 
-          ]
+          ],
+          "maxCapacity" : 4
         }
       ],
-      "name" : "픽셀 오피스",
+      "id" : "4BA2562D-8636-4D8F-837E-934DC9FD42C2",
       "updatedAt" : "2026-02-10T00:46:42Z",
+      "priority" : "보통",
+      "sprints" : [
+
+      ],
+      "name" : "픽셀 오피스",
+      "projectContext" : "",
       "description" : ""
     },
     {
-      "name" : "돌아보다",
+      "tags" : [
+
+      ],
       "departments" : [
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 0,
             "row" : 0
@@ -537,55 +546,55 @@
           "type" : "기획",
           "employees" : [
             {
+              "employeeNumber" : "PRJ-9747",
+              "departmentType" : "기획",
+              "status" : "휴식 중",
+              "createdAt" : "2026-02-10T00:47:37Z",
               "jobRoles" : [
                 "서비스 기획자",
                 "Product Owner",
                 "Product Manager"
               ],
-              "characterAppearance" : {
-                "hairColor" : 4,
-                "shirtColor" : 7,
-                "accessory" : 1,
-                "hairStyle" : 2,
-                "expression" : 3,
-                "skinTone" : 3
-              },
-              "createdAt" : "2026-02-10T00:47:37Z",
+              "personality" : "커뮤니케이션이 뛰어난",
               "strengths" : [
                 "요구사항 정의",
                 "기획서 작성",
                 "데이터 분석"
               ],
-              "conversationHistory" : [
-
-              ],
-              "departmentType" : "기획",
-              "employeeNumber" : "PRJ-9747",
+              "characterAppearance" : {
+                "accessory" : 1,
+                "shirtColor" : 7,
+                "skinTone" : 3,
+                "hairStyle" : 2,
+                "expression" : 3,
+                "hairColor" : 4
+              },
+              "id" : "71B50B8C-5F01-4BDF-A39A-202D574A4A17",
+              "name" : "파이퍼",
               "workStyle" : "이해관계자들과 긴밀히 소통하며 조율",
-              "totalTasksCompleted" : 0,
               "statistics" : {
-                "documentsCreated" : 0,
                 "totalActiveTime" : 0,
-                "collaborationCount" : 0,
+                "outputTokens" : 0,
                 "inputTokens" : 0,
+                "collaborationCount" : 0,
+                "conversationCount" : 0,
+                "documentsCreated" : 0,
+                "tasksCompleted" : 0,
+                "totalTokensUsed" : 0,
                 "tokenUsageHistory" : [
 
-                ],
-                "tasksCompleted" : 0,
-                "outputTokens" : 0,
-                "conversationCount" : 0,
-                "totalTokensUsed" : 0
+                ]
               },
               "aiType" : "Claude",
-              "id" : "71B50B8C-5F01-4BDF-A39A-202D574A4A17",
-              "status" : "휴식 중",
-              "name" : "파이퍼",
-              "personality" : "커뮤니케이션이 뛰어난"
+              "totalTasksCompleted" : 0,
+              "conversationHistory" : [
+
+              ]
             }
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 1,
             "row" : 0
@@ -594,55 +603,55 @@
           "type" : "디자인",
           "employees" : [
             {
+              "employeeNumber" : "PRJ-1641",
+              "departmentType" : "디자인",
+              "status" : "휴식 중",
+              "createdAt" : "2026-02-10T00:47:59Z",
               "jobRoles" : [
                 "UX 디자이너",
                 "비주얼 디자이너",
                 "UI 디자이너"
               ],
-              "characterAppearance" : {
-                "hairColor" : 2,
-                "shirtColor" : 3,
-                "accessory" : 8,
-                "hairStyle" : 1,
-                "expression" : 4,
-                "skinTone" : 2
-              },
-              "createdAt" : "2026-02-10T00:47:59Z",
+              "personality" : "디테일에 집중하는",
               "strengths" : [
                 "사용자 조사",
                 "와이어프레임",
                 "컬러 감각"
               ],
-              "conversationHistory" : [
-
-              ],
-              "departmentType" : "디자인",
-              "employeeNumber" : "PRJ-1641",
+              "characterAppearance" : {
+                "accessory" : 8,
+                "shirtColor" : 3,
+                "skinTone" : 2,
+                "hairStyle" : 1,
+                "expression" : 4,
+                "hairColor" : 2
+              },
+              "id" : "451A5614-E94E-479D-B213-82CCF4D53050",
+              "name" : "테리",
               "workStyle" : "빠르게 프로토타입을 만들고 피드백 반영",
-              "totalTasksCompleted" : 0,
               "statistics" : {
-                "documentsCreated" : 0,
                 "totalActiveTime" : 0,
-                "collaborationCount" : 0,
+                "outputTokens" : 0,
                 "inputTokens" : 0,
+                "collaborationCount" : 0,
+                "conversationCount" : 0,
+                "documentsCreated" : 0,
+                "tasksCompleted" : 0,
+                "totalTokensUsed" : 0,
                 "tokenUsageHistory" : [
 
-                ],
-                "tasksCompleted" : 0,
-                "outputTokens" : 0,
-                "conversationCount" : 0,
-                "totalTokensUsed" : 0
+                ]
               },
               "aiType" : "Claude",
-              "id" : "451A5614-E94E-479D-B213-82CCF4D53050",
-              "status" : "휴식 중",
-              "name" : "테리",
-              "personality" : "디테일에 집중하는"
+              "totalTasksCompleted" : 0,
+              "conversationHistory" : [
+
+              ]
             }
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 0,
             "row" : 1
@@ -651,70 +660,70 @@
           "type" : "개발",
           "employees" : [
             {
+              "employeeNumber" : "PRJ-3362",
+              "departmentType" : "개발",
+              "status" : "휴식 중",
+              "createdAt" : "2026-02-10T00:48:16Z",
               "jobRoles" : [
                 "iOS 개발자"
               ],
-              "characterAppearance" : {
-                "hairColor" : 1,
-                "shirtColor" : 0,
-                "accessory" : 1,
-                "hairStyle" : 11,
-                "expression" : 1,
-                "skinTone" : 1
-              },
-              "createdAt" : "2026-02-10T00:48:16Z",
+              "personality" : "최신 기술에 열정적인",
               "strengths" : [
                 "성능 최적화",
                 "버그 수정",
                 "코드 리뷰"
               ],
-              "conversationHistory" : [
-                {
-                  "content" : "안녕하세요, 개발팀 사나입니다. 10년차 풀스택 개발자로 아키텍처 설계와 기술 멘토링을 주로 담당하고 있습니다.\n\n\"돌아보다\" 프로젝트에 합류하게 되어 기대가 큽니다. 기획 단계부터 참여할 수 있어서 기술적으로 탄탄한 기반을 만들 수 있을 것 같습니다.\n\n본격적으로 업무를 시작하기 전에 몇 가지 확인하고 싶습니다.\n- 프로젝트의 핵심 목표와 타겟 사용자가 정의되어 있나요?\n- 코드 컨벤션이나 개발 가이드라인이 있나요?\n\n기획팀 문서를 먼저 확인해보는 게 좋을까요?",
-                  "id" : "66B7102F-FF52-4AE2-AE92-798F25D433EE",
-                  "timestamp" : "2026-02-11T00:37:09Z",
-                  "role" : "assistant"
-                },
-                {
-                  "content" : "배경색 빨간색으로 만들어 줘 ",
-                  "id" : "485BBF41-21D2-47E7-8914-B056E6D7B5FE",
-                  "timestamp" : "2026-02-11T00:37:09Z",
-                  "role" : "user"
-                },
-                {
-                  "content" : "완료했습니다! 🎨\n\nContentView의 배경색을 빨간색(Color.red)으로 설정했습니다. \n\n변경 사항:\n- VStack에 `.frame(maxWidth: .infinity, maxHeight: .infinity)` 추가로 전체 화면 크기 적용\n- `.background(Color.red)` 추가로 빨간색 배경 설정\n\nXcode에서 프로젝트를 실행하시면 빨간색 배경을 확인하실 수 있습니다.\n\n다른 색상이나 추가 스타일 조정이 필요하시면 말씀해주세요!",
-                  "id" : "C8DF731A-22A3-444E-8593-D295BE8B6382",
-                  "timestamp" : "2026-02-11T00:37:09Z",
-                  "role" : "assistant"
-                }
-              ],
-              "departmentType" : "개발",
-              "employeeNumber" : "PRJ-3362",
+              "characterAppearance" : {
+                "accessory" : 1,
+                "shirtColor" : 0,
+                "skinTone" : 1,
+                "hairStyle" : 11,
+                "expression" : 1,
+                "hairColor" : 1
+              },
+              "id" : "A57C34DA-D258-4D5E-8C89-AE9FA619F8E1",
+              "name" : "사나",
               "workStyle" : "테스트 코드를 작성하며 안정성 확보",
-              "totalTasksCompleted" : 0,
               "statistics" : {
-                "documentsCreated" : 0,
                 "totalActiveTime" : 0,
-                "collaborationCount" : 0,
+                "outputTokens" : 0,
                 "inputTokens" : 0,
+                "collaborationCount" : 0,
+                "conversationCount" : 0,
+                "documentsCreated" : 0,
+                "tasksCompleted" : 0,
+                "totalTokensUsed" : 0,
                 "tokenUsageHistory" : [
 
-                ],
-                "tasksCompleted" : 0,
-                "outputTokens" : 0,
-                "conversationCount" : 0,
-                "totalTokensUsed" : 0
+                ]
               },
               "aiType" : "Claude",
-              "id" : "A57C34DA-D258-4D5E-8C89-AE9FA619F8E1",
-              "status" : "휴식 중",
-              "name" : "사나",
-              "personality" : "최신 기술에 열정적인"
+              "totalTasksCompleted" : 0,
+              "conversationHistory" : [
+                {
+                  "timestamp" : "2026-02-11T00:37:09Z",
+                  "id" : "66B7102F-FF52-4AE2-AE92-798F25D433EE",
+                  "role" : "assistant",
+                  "content" : "안녕하세요, 개발팀 사나입니다. 10년차 풀스택 개발자로 아키텍처 설계와 기술 멘토링을 주로 담당하고 있습니다.\n\n\"돌아보다\" 프로젝트에 합류하게 되어 기대가 큽니다. 기획 단계부터 참여할 수 있어서 기술적으로 탄탄한 기반을 만들 수 있을 것 같습니다.\n\n본격적으로 업무를 시작하기 전에 몇 가지 확인하고 싶습니다.\n- 프로젝트의 핵심 목표와 타겟 사용자가 정의되어 있나요?\n- 코드 컨벤션이나 개발 가이드라인이 있나요?\n\n기획팀 문서를 먼저 확인해보는 게 좋을까요?"
+                },
+                {
+                  "timestamp" : "2026-02-11T00:37:09Z",
+                  "id" : "485BBF41-21D2-47E7-8914-B056E6D7B5FE",
+                  "role" : "user",
+                  "content" : "배경색 빨간색으로 만들어 줘 "
+                },
+                {
+                  "timestamp" : "2026-02-11T00:37:09Z",
+                  "id" : "C8DF731A-22A3-444E-8593-D295BE8B6382",
+                  "role" : "assistant",
+                  "content" : "완료했습니다! 🎨\n\nContentView의 배경색을 빨간색(Color.red)으로 설정했습니다. \n\n변경 사항:\n- VStack에 `.frame(maxWidth: .infinity, maxHeight: .infinity)` 추가로 전체 화면 크기 적용\n- `.background(Color.red)` 추가로 빨간색 배경 설정\n\nXcode에서 프로젝트를 실행하시면 빨간색 배경을 확인하실 수 있습니다.\n\n다른 색상이나 추가 스타일 조정이 필요하시면 말씀해주세요!"
+                }
+              ]
             }
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 1,
             "row" : 1
@@ -723,10 +732,10 @@
           "type" : "마케팅",
           "employees" : [
 
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 0,
             "row" : 2
@@ -735,88 +744,80 @@
           "type" : "QA",
           "employees" : [
             {
+              "employeeNumber" : "PRJ-2486",
+              "departmentType" : "QA",
+              "status" : "휴식 중",
+              "createdAt" : "2026-02-10T01:04:12Z",
               "jobRoles" : [
                 "QA 엔지니어"
               ],
-              "characterAppearance" : {
-                "hairColor" : 1,
-                "shirtColor" : 2,
-                "accessory" : 2,
-                "hairStyle" : 7,
-                "expression" : 4,
-                "skinTone" : 2
-              },
-              "createdAt" : "2026-02-10T01:04:12Z",
+              "personality" : "분석적이고 체계적인",
               "strengths" : [
                 "회귀 테스트",
                 "성능 테스트",
                 "보안 테스트"
               ],
-              "conversationHistory" : [
-
-              ],
-              "departmentType" : "QA",
-              "employeeNumber" : "PRJ-2486",
+              "characterAppearance" : {
+                "accessory" : 2,
+                "shirtColor" : 2,
+                "skinTone" : 2,
+                "hairStyle" : 7,
+                "expression" : 4,
+                "hairColor" : 1
+              },
+              "id" : "90B0F8D4-618D-47C6-AAA9-1B035872F2B6",
+              "name" : "제드",
               "workStyle" : "꼼꼼하게 엣지 케이스까지 검증",
-              "totalTasksCompleted" : 0,
               "statistics" : {
-                "documentsCreated" : 0,
                 "totalActiveTime" : 0,
-                "collaborationCount" : 0,
+                "outputTokens" : 0,
                 "inputTokens" : 0,
+                "collaborationCount" : 0,
+                "conversationCount" : 0,
+                "documentsCreated" : 0,
+                "tasksCompleted" : 0,
+                "totalTokensUsed" : 0,
                 "tokenUsageHistory" : [
 
-                ],
-                "tasksCompleted" : 0,
-                "outputTokens" : 0,
-                "conversationCount" : 0,
-                "totalTokensUsed" : 0
+                ]
               },
               "aiType" : "Claude",
-              "id" : "90B0F8D4-618D-47C6-AAA9-1B035872F2B6",
-              "status" : "휴식 중",
-              "name" : "제드",
-              "personality" : "분석적이고 체계적인"
+              "totalTasksCompleted" : 0,
+              "conversationHistory" : [
+
+              ]
             }
-          ]
+          ],
+          "maxCapacity" : 4
         }
       ],
-      "priority" : "보통",
-      "description" : "",
-      "createdAt" : "2026-02-10T00:46:53Z",
       "updatedAt" : "2026-02-10T01:04:12Z",
-      "sprints" : [
+      "status" : "기획 중",
+      "tasks" : [
 
       ],
+      "createdAt" : "2026-02-10T00:46:53Z",
+      "id" : "C9D617C0-0009-4DD5-ADCD-B064A3C58E18",
+      "name" : "돌아보다",
       "projectContext" : "",
       "sourcePath" : "\/Users\/leeo\/Documents\/code\/LookBack",
-      "status" : "기획 중",
-      "id" : "C9D617C0-0009-4DD5-ADCD-B064A3C58E18",
-      "tasks" : [
-
-      ],
-      "tags" : [
-
-      ]
-    },
-    {
-      "projectContext" : "",
-      "tasks" : [
-
-      ],
-      "tags" : [
-
-      ],
+      "description" : "",
       "sprints" : [
 
       ],
+      "priority" : "보통"
+    },
+    {
       "status" : "기획 중",
+      "tags" : [
+
+      ],
       "createdAt" : "2026-02-11T00:32:00Z",
-      "id" : "945F8B1C-52AE-409E-AEEA-1B6F00CD4220",
-      "priority" : "보통",
+      "tasks" : [
+
+      ],
       "departments" : [
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 0,
             "row" : 0
@@ -825,10 +826,10 @@
           "type" : "기획",
           "employees" : [
 
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 1,
             "row" : 0
@@ -837,10 +838,10 @@
           "type" : "디자인",
           "employees" : [
 
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 0,
             "row" : 1
@@ -849,10 +850,10 @@
           "type" : "개발",
           "employees" : [
 
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 1,
             "row" : 1
@@ -861,10 +862,10 @@
           "type" : "마케팅",
           "employees" : [
 
-          ]
+          ],
+          "maxCapacity" : 4
         },
         {
-          "maxCapacity" : 4,
           "position" : {
             "column" : 0,
             "row" : 2
@@ -873,23 +874,22 @@
           "type" : "QA",
           "employees" : [
 
-          ]
+          ],
+          "maxCapacity" : 4
         }
       ],
-      "name" : "테스트",
+      "id" : "945F8B1C-52AE-409E-AEEA-1B6F00CD4220",
       "updatedAt" : "2026-02-11T00:32:00Z",
+      "priority" : "보통",
+      "sprints" : [
+
+      ],
+      "name" : "테스트",
+      "projectContext" : "",
       "description" : ""
     }
   ],
-  "autoApprovalRules" : [
+  "wikiDocuments" : [
 
-  ],
-  "employeeOnboardings" : [
-
-  ],
-  "id" : "4A33F5B2-61D6-4938-918F-E8E71A9942C9",
-  "employeeThinkings" : [
-
-  ],
-  "name" : "My Pixel Office"
+  ]
 }

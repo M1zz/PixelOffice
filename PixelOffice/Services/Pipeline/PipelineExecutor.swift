@@ -34,6 +34,9 @@ actor PipelineExecutor {
     /// 직원 상태 변경 콜백 (employeeId, employeeName, isWorking)
     typealias EmployeeStatusCallback = @Sendable (UUID, String, Bool) -> Void
 
+    /// 태스크 완료 콜백 (task, result) - Decision, Thinking, DesignHTML 전달용
+    typealias TaskResultCallback = @Sendable (DecomposedTask, TaskExecutionResult) -> Void
+
     init(maxConcurrentTasks: Int = 3, executionMode: PipelineExecutionMode = .lightweight) {
         self.maxConcurrentTasks = maxConcurrentTasks
         self.executionMode = executionMode
@@ -58,6 +61,7 @@ actor PipelineExecutor {
         autoApprove: Bool = true,
         onProgress: ProgressCallback? = nil,
         onTokenUsage: TokenCallback? = nil,
+        onTaskResult: TaskResultCallback? = nil,
         onEmployeeStatus: EmployeeStatusCallback? = nil
     ) async throws -> [DecomposedTask] {
         // 태스크 상태를 추적할 actor
@@ -84,6 +88,7 @@ actor PipelineExecutor {
                             taskState: taskState,
                             onProgress: onProgress,
                             onTokenUsage: onTokenUsage,
+                            onTaskResult: onTaskResult,
                             onEmployeeStatus: onEmployeeStatus
                         )
                     }
@@ -110,6 +115,7 @@ actor PipelineExecutor {
         taskState: TaskStateManager,
         onProgress: ProgressCallback?,
         onTokenUsage: TokenCallback?,
+        onTaskResult: TaskResultCallback?,
         onEmployeeStatus: EmployeeStatusCallback?
     ) async -> (UUID, TaskExecutionResult?, Error?) {
         // 태스크 시작 표시
@@ -189,6 +195,9 @@ actor PipelineExecutor {
 
             // 직원 상태를 '휴식 중'으로 변경
             onEmployeeStatus?(employee.id, employee.name, false)
+
+            // 태스크 결과 콜백 (Decision, Thinking, DesignHTML 전달)
+            onTaskResult?(task, result)
 
             return (task.id, result, nil)
 
@@ -297,6 +306,15 @@ actor PipelineExecutor {
         // 응답에서 파일 변경사항 추출
         let (createdFiles, modifiedFiles) = parseFileChanges(from: tokenResult.response)
 
+        // Decision Log 파싱
+        let decisions = parseDecisions(from: tokenResult.response, taskId: task.id, phase: .development)
+
+        // Thinking 파싱
+        let thinking = parseThinking(from: tokenResult.response)
+
+        // 디자인 HTML 파싱 (디자인 태스크인 경우)
+        let designHTML = task.department == .design ? parseDesignHTML(from: tokenResult.response) : nil
+
         return TaskExecutionResult(
             response: tokenResult.response,
             createdFiles: createdFiles,
@@ -306,7 +324,10 @@ actor PipelineExecutor {
             cacheReadTokens: tokenResult.cacheReadInputTokens,
             cacheCreationTokens: tokenResult.cacheCreationInputTokens,
             costUSD: tokenResult.totalCostUSD,
-            model: tokenResult.model
+            model: tokenResult.model,
+            decisions: decisions,
+            thinking: thinking,
+            designHTML: designHTML
         )
     }
 
@@ -438,6 +459,96 @@ actor PipelineExecutor {
         return nil
     }
 
+    /// 응답에서 Decision Log 파싱
+    /// 형식: <<<DECISION>>>결정|이유|대안1,대안2<<<END_DECISION>>>
+    private func parseDecisions(from response: String, taskId: UUID?, phase: PipelinePhase?) -> [PipelineDecision] {
+        var decisions: [PipelineDecision] = []
+
+        // <<<DECISION>>>...<<<END_DECISION>>> 패턴 찾기
+        let pattern = #"<<<DECISION>>>([\s\S]*?)<<<END_DECISION>>>"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return decisions
+        }
+
+        let matches = regex.matches(in: response, options: [], range: NSRange(response.startIndex..., in: response))
+
+        for match in matches {
+            guard let range = Range(match.range(at: 1), in: response) else { continue }
+            let content = String(response[range]).trimmingCharacters(in: .whitespacesAndNewlines)
+
+            // 파이프(|)로 구분된 형식 파싱
+            let parts = content.components(separatedBy: "|").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+            if parts.count >= 2 {
+                let decision = parts[0]
+                let reason = parts[1]
+                let alternatives = parts.count > 2 ? parts[2].components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) } : []
+
+                decisions.append(PipelineDecision(
+                    decision: decision,
+                    reason: reason,
+                    alternatives: alternatives,
+                    taskId: taskId,
+                    phase: phase
+                ))
+            }
+        }
+
+        return decisions
+    }
+
+    /// 응답에서 Thinking/Reasoning 파싱
+    /// 형식: <thinking>...</thinking> 또는 [THINKING]...[/THINKING]
+    private func parseThinking(from response: String) -> String {
+        var thinkingParts: [String] = []
+
+        // <thinking>...</thinking> 패턴
+        let pattern1 = #"<thinking>([\s\S]*?)</thinking>"#
+        if let regex = try? NSRegularExpression(pattern: pattern1, options: [.caseInsensitive]) {
+            let matches = regex.matches(in: response, options: [], range: NSRange(response.startIndex..., in: response))
+            for match in matches {
+                if let range = Range(match.range(at: 1), in: response) {
+                    thinkingParts.append(String(response[range]).trimmingCharacters(in: .whitespacesAndNewlines))
+                }
+            }
+        }
+
+        // [THINKING]...[/THINKING] 패턴
+        let pattern2 = #"\[THINKING\]([\s\S]*?)\[/THINKING\]"#
+        if let regex = try? NSRegularExpression(pattern: pattern2, options: [.caseInsensitive]) {
+            let matches = regex.matches(in: response, options: [], range: NSRange(response.startIndex..., in: response))
+            for match in matches {
+                if let range = Range(match.range(at: 1), in: response) {
+                    thinkingParts.append(String(response[range]).trimmingCharacters(in: .whitespacesAndNewlines))
+                }
+            }
+        }
+
+        return thinkingParts.joined(separator: "\n\n")
+    }
+
+    /// 응답에서 디자인 HTML 파싱
+    /// 형식: ```html ... ``` 또는 <<<DESIGN_HTML>>>...<<<END_DESIGN_HTML>>>
+    private func parseDesignHTML(from response: String) -> String? {
+        // <<<DESIGN_HTML>>>...<<<END_DESIGN_HTML>>> 패턴 우선
+        let pattern1 = #"<<<DESIGN_HTML>>>([\s\S]*?)<<<END_DESIGN_HTML>>>"#
+        if let regex = try? NSRegularExpression(pattern: pattern1, options: []),
+           let match = regex.firstMatch(in: response, options: [], range: NSRange(response.startIndex..., in: response)),
+           let range = Range(match.range(at: 1), in: response) {
+            return String(response[range]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        // ```html ... ``` 패턴
+        let pattern2 = #"```html\s*([\s\S]*?)```"#
+        if let regex = try? NSRegularExpression(pattern: pattern2, options: []),
+           let match = regex.firstMatch(in: response, options: [], range: NSRange(response.startIndex..., in: response)),
+           let range = Range(match.range(at: 1), in: response) {
+            return String(response[range]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        return nil
+    }
+
     /// 부서에 맞는 직원 찾기
     private func findEmployee(for department: DepartmentType, from employees: [ProjectEmployee]) -> (employee: ProjectEmployee?, warning: String?) {
         let targetDepartment = (department == .general) ? .development : department
@@ -517,6 +628,15 @@ struct TaskExecutionResult: Sendable {
     var cacheCreationTokens: Int = 0
     var costUSD: Double = 0
     var model: String = "unknown"
+
+    // 결정 사항 (Decision Log)
+    var decisions: [PipelineDecision] = []
+
+    // 생각 과정 (Thinking)
+    var thinking: String = ""
+
+    // 디자인 HTML (디자인 태스크용)
+    var designHTML: String?
 
     var totalTokens: Int {
         inputTokens + outputTokens

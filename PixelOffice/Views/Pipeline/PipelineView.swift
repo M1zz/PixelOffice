@@ -17,6 +17,10 @@ struct PipelineView: View {
     @State private var selectedKanbanTasks: Set<UUID> = []
     @State private var showingPathSetup = false  // 프로젝트 경로 설정
     @State private var pathValidation: ProjectPathValidation = .notSet
+    @State private var showingDiffViewer = false  // Git Diff 뷰어
+    @State private var showingDesignPreview = false  // 디자인 프리뷰
+    @State private var showingDecisionLog = false  // 결정 로그
+    @State private var isThinkingExpanded = true  // Thinking 패널 확장 상태
 
     enum PipelineTab: String, CaseIterable {
         case current = "현재 실행"
@@ -187,6 +191,34 @@ struct PipelineView: View {
                 }
             }
         }
+        .sheet(isPresented: $showingDiffViewer) {
+            if let run = coordinator.currentRun {
+                DiffViewerView(
+                    diff: run.gitDiff ?? "",
+                    snapshot: run.gitSnapshot
+                )
+            }
+        }
+        .sheet(isPresented: $showingDesignPreview) {
+            if let run = coordinator.currentRun, let firstPath = run.designPreviewPaths.first {
+                DesignPreviewView(
+                    htmlContent: nil,
+                    filePath: firstPath
+                )
+            }
+        }
+        .sheet(isPresented: $showingDecisionLog) {
+            if let run = coordinator.currentRun {
+                DecisionLogView(decisions: run.decisions)
+            }
+        }
+        .sheet(item: $coordinator.interruptRequest) { request in
+            InterruptDialogView(
+                decision: request.decision,
+                onApprove: request.onApprove,
+                onReject: request.onReject
+            )
+        }
     }
 
     /// 프로젝트 경로 검증
@@ -224,6 +256,15 @@ struct PipelineView: View {
                         ResumableRunsCard(
                             runs: resumableRuns,
                             onResume: { run in resumePipeline(run) }
+                        )
+                    }
+
+                    // 실시간 Thinking 패널 (AI가 생각 중일 때)
+                    if coordinator.isRunning && !coordinator.currentThinking.isEmpty {
+                        ThinkingPanelView(
+                            thinking: coordinator.currentThinking,
+                            isExpanded: isThinkingExpanded,
+                            onToggle: { isThinkingExpanded.toggle() }
                         )
                     }
 
@@ -316,6 +357,33 @@ struct PipelineView: View {
                     openReport(at: reportPath)
                 } label: {
                     Label("리포트 열기", systemImage: "doc.richtext")
+                }
+            }
+
+            // Git Diff 뷰어 (diff가 있을 때)
+            if let run = coordinator.currentRun, run.gitDiff != nil || run.gitSnapshot != nil {
+                Button {
+                    showingDiffViewer = true
+                } label: {
+                    Label("Diff 보기", systemImage: "arrow.left.arrow.right")
+                }
+            }
+
+            // 디자인 프리뷰 (디자인 HTML이 있을 때)
+            if let run = coordinator.currentRun, !run.designPreviewPaths.isEmpty {
+                Button {
+                    showingDesignPreview = true
+                } label: {
+                    Label("디자인 프리뷰", systemImage: "paintbrush")
+                }
+            }
+
+            // 결정 로그 (decisions가 있을 때)
+            if let run = coordinator.currentRun, !run.decisions.isEmpty {
+                Button {
+                    showingDecisionLog = true
+                } label: {
+                    Label("결정 로그 (\(run.decisions.count))", systemImage: "brain")
                 }
             }
 

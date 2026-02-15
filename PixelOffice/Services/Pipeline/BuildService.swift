@@ -299,4 +299,327 @@ actor BuildService {
 
         return []
     }
+
+    // MARK: - Simulator Launch
+
+    /// 프로젝트 플랫폼 감지
+    func detectPlatform(projectPath: String) async -> AppLaunchResult.AppPlatform {
+        // xcodeproj 또는 xcworkspace에서 플랫폼 정보 추출
+        let fileManager = FileManager.default
+
+        // Package.swift가 있으면 macOS로 추정
+        let packagePath = (projectPath as NSString).appendingPathComponent("Package.swift")
+        if fileManager.fileExists(atPath: packagePath) {
+            // Package.swift 내용 확인
+            if let content = try? String(contentsOfFile: packagePath, encoding: .utf8) {
+                if content.contains(".iOS") { return .iOS }
+                if content.contains(".watchOS") { return .watchOS }
+                if content.contains(".tvOS") { return .tvOS }
+            }
+            return .macOS
+        }
+
+        // xcodeproj 내 project.pbxproj 분석
+        if let contents = try? fileManager.contentsOfDirectory(atPath: projectPath) {
+            for item in contents {
+                if item.hasSuffix(".xcodeproj") {
+                    let pbxprojPath = (projectPath as NSString)
+                        .appendingPathComponent(item)
+                        .appending("/project.pbxproj")
+
+                    if let content = try? String(contentsOfFile: pbxprojPath, encoding: .utf8) {
+                        if content.contains("SDKROOT = iphoneos") { return .iOS }
+                        if content.contains("SDKROOT = watchos") { return .watchOS }
+                        if content.contains("SDKROOT = appletvos") { return .tvOS }
+                        if content.contains("SDKROOT = macosx") { return .macOS }
+                    }
+                }
+            }
+        }
+
+        return .macOS  // 기본값
+    }
+
+    /// 사용 가능한 시뮬레이터 목록 가져오기
+    func listSimulators() async -> [SimulatorInfo] {
+        var simulators: [SimulatorInfo] = []
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+        process.arguments = ["simctl", "list", "devices", "-j"]
+
+        let outputPipe = Pipe()
+        process.standardOutput = outputPipe
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+
+            let data = outputPipe.fileHandleForReading.readDataToEndOfFile()
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let devices = json["devices"] as? [String: [[String: Any]]] {
+                for (runtime, deviceList) in devices {
+                    for device in deviceList {
+                        if let udid = device["udid"] as? String,
+                           let name = device["name"] as? String,
+                           let state = device["state"] as? String,
+                           let isAvailable = device["isAvailable"] as? Bool,
+                           isAvailable {
+                            simulators.append(SimulatorInfo(
+                                udid: udid,
+                                name: name,
+                                state: state,
+                                runtime: runtime
+                            ))
+                        }
+                    }
+                }
+            }
+        } catch {
+            print("[BuildService] Failed to list simulators: \(error)")
+        }
+
+        return simulators
+    }
+
+    /// 시뮬레이터 부팅
+    func bootSimulator(udid: String) async -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+        process.arguments = ["simctl", "boot", udid]
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            return process.terminationStatus == 0
+        } catch {
+            print("[BuildService] Failed to boot simulator: \(error)")
+            return false
+        }
+    }
+
+    /// 앱 설치
+    func installApp(simulatorId: String, appPath: String) async -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+        process.arguments = ["simctl", "install", simulatorId, appPath]
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            return process.terminationStatus == 0
+        } catch {
+            print("[BuildService] Failed to install app: \(error)")
+            return false
+        }
+    }
+
+    /// 앱 실행
+    func launchApp(simulatorId: String, bundleId: String) async -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+        process.arguments = ["simctl", "launch", simulatorId, bundleId]
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            return process.terminationStatus == 0
+        } catch {
+            print("[BuildService] Failed to launch app: \(error)")
+            return false
+        }
+    }
+
+    /// 빌드 후 자동 실행 (통합)
+    func buildAndLaunch(
+        projectPath: String,
+        scheme: String? = nil
+    ) async throws -> AppLaunchResult {
+        var logs: [String] = []
+
+        // 1. 플랫폼 감지
+        let platform = await detectPlatform(projectPath: projectPath)
+        logs.append("📱 플랫폼 감지: \(platform.rawValue)")
+
+        // 2. macOS인 경우 바로 빌드 후 실행
+        if platform == .macOS {
+            logs.append("🖥️ macOS 앱 빌드 중...")
+            let buildAttempt = try await build(projectPath: projectPath, scheme: scheme)
+
+            if buildAttempt.success {
+                logs.append("✅ 빌드 성공")
+
+                // DerivedData에서 앱 찾기 및 실행
+                if let appPath = findBuiltApp(projectPath: projectPath, scheme: scheme) {
+                    logs.append("🚀 앱 실행 중: \(appPath)")
+                    let launchSuccess = await launchMacApp(appPath: appPath)
+                    logs.append(launchSuccess ? "✅ 앱 실행 성공" : "❌ 앱 실행 실패")
+
+                    return AppLaunchResult(
+                        success: launchSuccess,
+                        platform: .macOS,
+                        appBundleId: extractBundleId(from: appPath),
+                        logs: logs
+                    )
+                }
+            }
+
+            return AppLaunchResult(
+                success: false,
+                platform: .macOS,
+                logs: logs + ["❌ 빌드 실패"]
+            )
+        }
+
+        // 3. iOS/watchOS/tvOS인 경우 시뮬레이터 사용
+        logs.append("📱 \(platform.rawValue) 시뮬레이터 준비 중...")
+
+        // 적합한 시뮬레이터 찾기
+        let simulators = await listSimulators()
+        let targetRuntime: String
+        switch platform {
+        case .iOS: targetRuntime = "iOS"
+        case .watchOS: targetRuntime = "watchOS"
+        case .tvOS: targetRuntime = "tvOS"
+        default: targetRuntime = "iOS"
+        }
+
+        guard let simulator = simulators.first(where: { $0.runtime.contains(targetRuntime) }) else {
+            logs.append("❌ \(targetRuntime) 시뮬레이터를 찾을 수 없습니다")
+            return AppLaunchResult(success: false, platform: platform, logs: logs)
+        }
+
+        logs.append("📱 시뮬레이터 선택: \(simulator.name) (\(simulator.udid))")
+
+        // 시뮬레이터 부팅
+        if simulator.state != "Booted" {
+            logs.append("🔄 시뮬레이터 부팅 중...")
+            let bootSuccess = await bootSimulator(udid: simulator.udid)
+            if !bootSuccess {
+                logs.append("❌ 시뮬레이터 부팅 실패")
+                return AppLaunchResult(success: false, platform: platform, simulatorId: simulator.udid, simulatorName: simulator.name, logs: logs)
+            }
+            logs.append("✅ 시뮬레이터 부팅 완료")
+        }
+
+        // 빌드 (시뮬레이터 타겟)
+        logs.append("🔨 빌드 중...")
+        let config = BuildConfiguration(
+            projectPath: projectPath,
+            scheme: scheme,
+            destination: "platform=\(targetRuntime) Simulator,id=\(simulator.udid)"
+        )
+        let buildAttempt = try await build(config: config)
+
+        if !buildAttempt.success {
+            logs.append("❌ 빌드 실패: \(buildAttempt.errors.count)개 에러")
+            return AppLaunchResult(success: false, platform: platform, simulatorId: simulator.udid, simulatorName: simulator.name, logs: logs)
+        }
+
+        logs.append("✅ 빌드 성공")
+
+        // 앱 설치 및 실행
+        if let appPath = findBuiltApp(projectPath: projectPath, scheme: scheme) {
+            logs.append("📲 앱 설치 중...")
+            let installSuccess = await installApp(simulatorId: simulator.udid, appPath: appPath)
+            if !installSuccess {
+                logs.append("❌ 앱 설치 실패")
+                return AppLaunchResult(success: false, platform: platform, simulatorId: simulator.udid, simulatorName: simulator.name, logs: logs)
+            }
+
+            let bundleId = extractBundleId(from: appPath) ?? ""
+            logs.append("🚀 앱 실행 중 (Bundle ID: \(bundleId))...")
+            let launchSuccess = await launchApp(simulatorId: simulator.udid, bundleId: bundleId)
+
+            return AppLaunchResult(
+                success: launchSuccess,
+                platform: platform,
+                simulatorId: simulator.udid,
+                simulatorName: simulator.name,
+                appBundleId: bundleId,
+                logs: logs + [launchSuccess ? "✅ 앱 실행 성공" : "❌ 앱 실행 실패"]
+            )
+        }
+
+        logs.append("❌ 빌드된 앱을 찾을 수 없습니다")
+        return AppLaunchResult(success: false, platform: platform, simulatorId: simulator.udid, simulatorName: simulator.name, logs: logs)
+    }
+
+    /// 빌드된 앱 경로 찾기
+    private func findBuiltApp(projectPath: String, scheme: String?) -> String? {
+        let derivedDataPath = NSHomeDirectory() + "/Library/Developer/Xcode/DerivedData"
+        let fileManager = FileManager.default
+
+        guard let contents = try? fileManager.contentsOfDirectory(atPath: derivedDataPath) else {
+            return nil
+        }
+
+        // 프로젝트 이름과 일치하는 DerivedData 폴더 찾기
+        let projectName = (projectPath as NSString).lastPathComponent
+            .replacingOccurrences(of: ".xcodeproj", with: "")
+            .replacingOccurrences(of: ".xcworkspace", with: "")
+
+        for folder in contents {
+            if folder.hasPrefix(projectName) {
+                let buildPath = "\(derivedDataPath)/\(folder)/Build/Products/Debug"
+                // macOS 앱
+                let macAppPath = "\(buildPath)/\(scheme ?? projectName).app"
+                if fileManager.fileExists(atPath: macAppPath) {
+                    return macAppPath
+                }
+                // iOS 앱
+                let iosAppPath = "\(buildPath)-iphonesimulator/\(scheme ?? projectName).app"
+                if fileManager.fileExists(atPath: iosAppPath) {
+                    return iosAppPath
+                }
+            }
+        }
+
+        return nil
+    }
+
+    /// Bundle ID 추출
+    private func extractBundleId(from appPath: String) -> String? {
+        let plistPath = (appPath as NSString).appendingPathComponent("Contents/Info.plist")
+        let iosPlistPath = (appPath as NSString).appendingPathComponent("Info.plist")
+
+        let pathToUse = FileManager.default.fileExists(atPath: plistPath) ? plistPath : iosPlistPath
+
+        guard let plistData = try? Data(contentsOf: URL(fileURLWithPath: pathToUse)),
+              let plist = try? PropertyListSerialization.propertyList(from: plistData, format: nil) as? [String: Any],
+              let bundleId = plist["CFBundleIdentifier"] as? String else {
+            return nil
+        }
+
+        return bundleId
+    }
+
+    /// macOS 앱 실행
+    private func launchMacApp(appPath: String) async -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = [appPath]
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            return process.terminationStatus == 0
+        } catch {
+            print("[BuildService] Failed to launch macOS app: \(error)")
+            return false
+        }
+    }
+}
+
+// MARK: - Simulator Info
+
+struct SimulatorInfo {
+    let udid: String
+    let name: String
+    let state: String
+    let runtime: String
+
+    var isBooted: Bool {
+        state == "Booted"
+    }
 }
