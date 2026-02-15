@@ -64,6 +64,9 @@ class CompanyStore: ObservableObject, StoreCoordinator {
         projectStore.ensureProjectDirectoriesExist()
         employeeStore.ensureEmployeeProfilesExist()
         wikiStore.syncWikiDocumentsToFiles()
+        
+        // 🆕 태스크 파일 동기화 (tasks/*.md → 칸반)
+        syncAllProjectTasks()
 
         print("✅ CompanyStore init completed")
         print("👥 Final employee count: \(company.allEmployees.count)")
@@ -260,6 +263,34 @@ class CompanyStore: ObservableObject, StoreCoordinator {
 
     func completeTask(taskId: UUID, projectId: UUID) {
         projectStore.completeTask(taskId: taskId, projectId: projectId)
+    }
+    
+    /// 🆕 모든 프로젝트의 태스크 파일 동기화 (tasks/*.md → 칸반)
+    @MainActor
+    func syncAllProjectTasks() {
+        print("📋 태스크 파일 동기화 시작...")
+        var totalCreated = 0
+        var totalUpdated = 0
+        
+        for project in company.projects {
+            let result = TaskFileSyncService.shared.syncTasksFromFiles(
+                project: project,
+                companyStore: self
+            )
+            totalCreated += result.created
+            totalUpdated += result.updated
+        }
+        
+        if totalCreated > 0 || totalUpdated > 0 {
+            print("📋 태스크 동기화 완료 - 생성: \(totalCreated), 업데이트: \(totalUpdated)")
+        }
+    }
+    
+    /// 🆕 특정 프로젝트의 태스크 파일 동기화
+    @MainActor
+    func syncProjectTasks(projectId: UUID) {
+        guard let project = company.projects.first(where: { $0.id == projectId }) else { return }
+        _ = TaskFileSyncService.shared.syncTasksFromFiles(project: project, companyStore: self)
     }
 
     // MARK: - Workflow Operations (→ ProjectStore 위임)

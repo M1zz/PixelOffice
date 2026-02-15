@@ -960,6 +960,20 @@ class PipelineCoordinator: ObservableObject {
                     if let currentRun = self.currentRun {
                         self.stateManager.markTaskCompleted(currentRun, task: task)
                         self.saveRunProgress(currentRun)  // 히스토리에도 저장
+                        
+                        // 🆕 칸반에 태스크 기록
+                        if let store = self.companyStore {
+                            let outputs = result.createdFiles ?? []
+                            let employee = project.allEmployees.first { $0.departmentType == task.department }
+                            TaskTrackingService.shared.trackPipelineTask(
+                                phase: task.department.rawValue,
+                                taskName: task.title,
+                                employee: employee,
+                                outputs: outputs,
+                                project: project,
+                                companyStore: store
+                            )
+                        }
                     }
                 }
             },

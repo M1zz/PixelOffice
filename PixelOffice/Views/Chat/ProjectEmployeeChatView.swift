@@ -462,6 +462,16 @@ struct ProjectEmployeeChatView: View {
                 await MainActor.run {
                     let assistantMessage = ChatMessage(role: .assistant, content: cleanedResponse)
                     messages.append(assistantMessage)
+                    
+                    // 🆕 태스크 자동 추적
+                    if let project = companyStore.company.projects.first(where: { $0.id == projectId }) {
+                        TaskTrackingService.shared.detectAndTrackTask(
+                            from: cleanedResponse,
+                            employee: emp,
+                            project: project,
+                            companyStore: companyStore
+                        )
+                    }
 
                     // 액션 실행 결과 표시
                     if !actionResults.isEmpty {
