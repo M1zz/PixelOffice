@@ -48,6 +48,7 @@
 		49F70D04B201AFD7CF0A1FC5 /* ProjectRecoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97A9CB482FD52C7CC52CFCB7 /* ProjectRecoveryService.swift */; };
 		4A34F9B36EEB7C7DF95ED99C /* AddTaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F06F09BFEBCC94CAA3C7AF /* AddTaskView.swift */; };
 		4B4CAADE30D64909105BB8F8 /* OfficeLayoutEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B99B1C37E52942DC30A3B262 /* OfficeLayoutEditor.swift */; };
+		4E84CF868E9E56C73B1007EC /* MeetingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EDA61A3D20EF5F8EF9A687E /* MeetingsView.swift */; };
 		4F1718CF7751867202640293 /* TuistAssets+PixelOffice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BD28884ED96234431FA522 /* TuistAssets+PixelOffice.swift */; };
 		55A17229A825F12E5E51B3AF /* HandoffHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79BBF6930C38A7AB2967551B /* HandoffHistoryView.swift */; };
 		565EB8C3999BAD1617793FA1 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C06D7612B318BA375B90A981 /* SettingsStore.swift */; };
@@ -76,6 +77,7 @@
 		81E0AC8E8E9CD03BB6F92B7B /* NewXcodeProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9341B250520D34456947E420 /* NewXcodeProjectView.swift */; };
 		823AC979ACF3F10DAE38FE2B /* TaskFileSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5432225C65EAF4FCB8653CCF /* TaskFileSyncService.swift */; };
 		83EDDF13E71852EEBF2137BE /* AddEmployeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62E8C7D9D13EA8D4D44D0D4 /* AddEmployeeView.swift */; };
+		855DBFDADEA2A4303A00DC17 /* CommunityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F43F97459CE34DA21DDECD7F /* CommunityService.swift */; };
 		85F0B6227EF7CA33EEB44FDB /* XcodeProjectGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4D2E87A5DA6AF76734152E /* XcodeProjectGenerator.swift */; };
 		88C5AC55CE6EF57496B8E573 /* EmployeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA72A5FA0C47A7414D8FD79 /* EmployeeView.swift */; };
 		8CDEC488FF44A4E1C11704EE /* ThinkingPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ABFBFCC537FB39F52F83602 /* ThinkingPanelView.swift */; };
@@ -134,6 +136,7 @@
 		D8FF292ECB9F35EFA4AE315E /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC41F04EE419D424CB4912B4 /* CommunityView.swift */; };
 		DA349F89DD1F4C3884A1358B /* PermissionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73047683B9B6475A0850F255 /* PermissionStore.swift */; };
 		DECACD9CB459D62A3813382B /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DC5FCC05AC6B73BD575A75 /* FlowLayout.swift */; };
+		E7712DCADE6DDA1CA00E236B /* ProjectFeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A07BBD91F619A2E5DA974E09 /* ProjectFeedbackView.swift */; };
 		E8612181D7F1D52F543535D1 /* EmployeeSkill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41CCA1CBF8C4028A73A5111B /* EmployeeSkill.swift */; };
 		EA56ED14748C038069752767 /* ProjectInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42F2671EDFF69007794A9653 /* ProjectInfo.swift */; };
 		EDBFD7CA1E6169D43C06D8E3 /* ProjectDepartment.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA68AEA61B457C0F18E964BB /* ProjectDepartment.swift */; };
@@ -196,6 +199,7 @@
 		3893F261FD2045CF78BF6500 /* DebateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebateView.swift; sourceTree = "<group>"; };
 		3BCC43784DA4624A85A7F488 /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
 		3CC0ACACE5D7F45661BA5823 /* WikiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiService.swift; sourceTree = "<group>"; };
+		3EDA61A3D20EF5F8EF9A687E /* MeetingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingsView.swift; sourceTree = "<group>"; };
 		3F22F8B206B500B42F2DA019 /* CodeAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeAnalyzer.swift; sourceTree = "<group>"; };
 		40F1EF38FC53F8790600BC5C /* SkillExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillExecutor.swift; sourceTree = "<group>"; };
 		412B9F5BCFE7561BB639409B /* DepartmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartmentView.swift; sourceTree = "<group>"; };
@@ -248,6 +252,7 @@
 		998D9A599169ABCC53770C8C /* CollaborationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollaborationStore.swift; sourceTree = "<group>"; };
 		9C00E505A2DE858128473D24 /* ProjectEmployeeChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectEmployeeChatView.swift; sourceTree = "<group>"; };
 		9DD4F5F95D922420AEAF29B2 /* AIActionParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIActionParser.swift; sourceTree = "<group>"; };
+		A07BBD91F619A2E5DA974E09 /* ProjectFeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFeedbackView.swift; sourceTree = "<group>"; };
 		A19E25728C8EE94FD98C3977 /* PipelineModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineModels.swift; sourceTree = "<group>"; };
 		A3F838A6D789B8AB73EF47C5 /* ToastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastManager.swift; sourceTree = "<group>"; };
 		A6777D6D9A271E2A52533A66 /* ProjectEmployee.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectEmployee.swift; sourceTree = "<group>"; };
@@ -295,6 +300,7 @@
 		F12A16590245AE8254851087 /* OfficeLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeLayout.swift; sourceTree = "<group>"; };
 		F1F6C163C8361A9A8935D6C6 /* PixelOffice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PixelOffice.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F2C527BACAEC64E71E03C367 /* PipelineCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineCoordinator.swift; sourceTree = "<group>"; };
+		F43F97459CE34DA21DDECD7F /* CommunityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityService.swift; sourceTree = "<group>"; };
 		F62E8C7D9D13EA8D4D44D0D4 /* AddEmployeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEmployeeView.swift; sourceTree = "<group>"; };
 		FC41F04EE419D424CB4912B4 /* CommunityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
 		FED6BC0E75B4DFC21B77D73D /* ProjectOfficeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectOfficeView.swift; sourceTree = "<group>"; };
@@ -411,8 +417,17 @@
 				FC41F04EE419D424CB4912B4 /* CommunityView.swift */,
 				015FA461CDC31087F17CB505 /* EmployeeDirectoryView.swift */,
 				6E1AB37A14A087DDBCB7F477 /* EmployeeIDCardView.swift */,
+				3EDA61A3D20EF5F8EF9A687E /* MeetingsView.swift */,
 			);
 			path = Community;
+			sourceTree = "<group>";
+		};
+		59BCD8B8286F3B3C8AE5E07B /* Feedback */ = {
+			isa = PBXGroup;
+			children = (
+				A07BBD91F619A2E5DA974E09 /* ProjectFeedbackView.swift */,
+			);
+			path = Feedback;
 			sourceTree = "<group>";
 		};
 		5BA7665AD39D208703BF012D /* Pipeline */ = {
@@ -549,6 +564,7 @@
 				C4B1033F57A45D61E72D45A7 /* Components */,
 				C00886A39C71D71CA91BE184 /* Debate */,
 				68C72C2F95AC2195BC79AC25 /* Employee */,
+				59BCD8B8286F3B3C8AE5E07B /* Feedback */,
 				951473606C637970C0D47690 /* Kanban */,
 				2277805A567660F523169864 /* Monitoring */,
 				2C589FA17CC9305930A96A13 /* Office */,
@@ -691,6 +707,7 @@
 				9DD4F5F95D922420AEAF29B2 /* AIActionParser.swift */,
 				80A9376C646173A9E4FECA71 /* ClaudeCodeService.swift */,
 				3BCC43784DA4624A85A7F488 /* ClaudeService.swift */,
+				F43F97459CE34DA21DDECD7F /* CommunityService.swift */,
 				BA87F1D95AEE3005E7BFE7B3 /* CompanyStore.swift */,
 				0989B97043D4D9B65446C072 /* DataManager.swift */,
 				278DBFF64525307C7513CEAF /* DataPathService.swift */,
@@ -845,6 +862,7 @@
 				001534C844CD50A9E7E6CA8B /* RequirementAnalyzer.swift in Sources */,
 				7B770B6398A3CFD05727C3EE /* ClaudeCodeService.swift in Sources */,
 				FA27168132E3A6BBCA8D39FE /* ClaudeService.swift in Sources */,
+				855DBFDADEA2A4303A00DC17 /* CommunityService.swift in Sources */,
 				5E9B11B72F0703A54AC1046E /* CompanyStore.swift in Sources */,
 				02515BA00F7D3019D07932D0 /* DataManager.swift in Sources */,
 				C70E0F7C5B59DD681E2D3405 /* DataPathService.swift in Sources */,
@@ -897,6 +915,7 @@
 				D8FF292ECB9F35EFA4AE315E /* CommunityView.swift in Sources */,
 				A743E1521AC43CAFC49F65B8 /* EmployeeDirectoryView.swift in Sources */,
 				8F511F63D8CCA7D7290ECE13 /* EmployeeIDCardView.swift in Sources */,
+				4E84CF868E9E56C73B1007EC /* MeetingsView.swift in Sources */,
 				83EDDF13E71852EEBF2137BE /* AddEmployeeView.swift in Sources */,
 				BBC8DA9BE799625FF59527DA /* AddProjectEmployeeView.swift in Sources */,
 				9A645D88956CEF23F89B058B /* EmployeeBadgeView.swift in Sources */,
@@ -905,6 +924,7 @@
 				F85479C4FE7F5070B9D58B74 /* WalkingCharacter.swift in Sources */,
 				94E1211399F8973A73C8171C /* DebateView.swift in Sources */,
 				BB112AF4E3F36912A1C4A6AB /* SkillEditorView.swift in Sources */,
+				E7712DCADE6DDA1CA00E236B /* ProjectFeedbackView.swift in Sources */,
 				0F0E5F08BB51F0F91E42917B /* KanbanView.swift in Sources */,
 				ACCB4EDD27333CF9BB665053 /* AgentCardView.swift in Sources */,
 				AB07729799EFEE7596C9DE02 /* AgentDashboardView.swift in Sources */,

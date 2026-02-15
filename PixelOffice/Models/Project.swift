@@ -144,9 +144,19 @@ struct Project: Codable, Identifiable, Hashable {
 
     /// 직원 추가
     mutating func addEmployee(_ employee: ProjectEmployee, toDepartment departmentType: DepartmentType) {
+        // 🔒 중복 체크: ID 또는 이름으로 이미 존재하는 직원인지 확인
+        let alreadyExistsById = allEmployees.contains { $0.id == employee.id }
+        let alreadyExistsByName = allEmployees.contains { $0.name == employee.name }
+        
+        if alreadyExistsById || alreadyExistsByName {
+            print("⚠️ [Project] 직원 중복 방지: \(employee.name) 이미 존재함")
+            return
+        }
+        
         if let index = departments.firstIndex(where: { $0.type == departmentType }) {
             departments[index].employees.append(employee)
             updatedAt = Date()
+            print("✅ [Project] 직원 추가됨: \(employee.name)")
         }
     }
 

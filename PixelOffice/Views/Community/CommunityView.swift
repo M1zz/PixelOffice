@@ -53,6 +53,8 @@ struct CommunityView: View {
                         allContentSection
                     case .thoughts:
                         thoughtsSection
+                    case .meetings:
+                        meetingsSection
                     case .communications:
                         communicationsSection
                     case .employees:
@@ -122,6 +124,14 @@ struct CommunityView: View {
         }
     }
 
+    // MARK: - Meetings Section
+    
+    @ViewBuilder
+    private var meetingsSection: some View {
+        MeetingsView()
+            .environmentObject(companyStore)
+    }
+    
     // MARK: - Communications Section
 
     @ViewBuilder
@@ -563,6 +573,7 @@ struct CommunityCollaborationCard: View {
 enum CommunityFilter: String, CaseIterable {
     case all = "전체"
     case thoughts = "생각"
+    case meetings = "회의"
     case communications = "소통"
     case employees = "사원들"
     case guides = "가이드"
@@ -571,10 +582,202 @@ enum CommunityFilter: String, CaseIterable {
         switch self {
         case .all: return "square.grid.2x2"
         case .thoughts: return "thought.bubble"
+        case .meetings: return "person.3.fill"
         case .communications: return "bubble.left.and.bubble.right"
         case .employees: return "person.2"
         case .guides: return "book.fill"
         }
+    }
+}
+
+// MARK: - Conversation Card
+
+struct ConversationCard: View {
+    let conversation: CommunityConversation
+    let isActive: Bool
+    @State private var showingDetail = false
+    
+    var body: some View {
+        Button {
+            showingDetail = true
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                // 헤더
+                HStack {
+                    // 상태 표시
+                    Circle()
+                        .fill(isActive ? Color.red : Color.green)
+                        .frame(width: 8, height: 8)
+                    
+                    Text(conversation.topic)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Text(formatDate(conversation.started))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                // 참석자
+                HStack(spacing: 4) {
+                    Image(systemName: "person.2")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(conversation.participants.joined(separator: ", "))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                
+                // 메시지 수
+                HStack(spacing: 4) {
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(conversation.messages.count)개 메시지")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if let summary = conversation.summary {
+                        Spacer()
+                        Text(summary)
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                            .lineLimit(1)
+                    }
+                }
+                
+                // 마지막 메시지 미리보기
+                if let lastMessage = conversation.messages.last {
+                    HStack(alignment: .top, spacing: 8) {
+                        Text(lastMessage.author)
+                            .font(.caption.bold())
+                            .foregroundColor(.primary)
+                        Text(lastMessage.content)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                    }
+                    .padding(8)
+                    .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+            }
+            .padding()
+            .background(Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(isActive ? Color.red.opacity(0.3) : Color.clear, lineWidth: 2)
+            )
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingDetail) {
+            ConversationDetailView(conversation: conversation)
+        }
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
+}
+
+// MARK: - Conversation Detail View
+
+struct ConversationDetailView: View {
+    let conversation: CommunityConversation
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // 헤더
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Circle()
+                            .fill(conversation.status == .inProgress ? Color.red : Color.green)
+                            .frame(width: 10, height: 10)
+                        Text(conversation.topic)
+                            .font(.title2.bold())
+                    }
+                    Text("주최: \(conversation.initiator)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding()
+            
+            Divider()
+            
+            // 참석자
+            HStack {
+                Image(systemName: "person.3.fill")
+                    .foregroundColor(.blue)
+                Text("참석자: \(conversation.participants.joined(separator: ", "))")
+                    .font(.subheadline)
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(Color.blue.opacity(0.1))
+            
+            // 대화 내용
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    ForEach(conversation.messages, id: \.id) { message in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(message.author)
+                                    .font(.subheadline.bold())
+                                Spacer()
+                                Text(formatTime(message.timestamp))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Text(message.content)
+                                .font(.body)
+                        }
+                        .padding()
+                        .background(Color(nsColor: .controlBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+                .padding()
+            }
+            
+            // 요약 (완료된 경우)
+            if let summary = conversation.summary {
+                Divider()
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("📋 회의 요약")
+                        .font(.headline)
+                    Text(summary)
+                        .font(.body)
+                }
+                .padding()
+                .background(Color.green.opacity(0.1))
+            }
+        }
+        .frame(width: 500, height: 600)
+    }
+    
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: date)
     }
 }
 

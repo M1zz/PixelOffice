@@ -7,6 +7,9 @@ final class CommunityStore {
     // MARK: - Properties
 
     unowned let coordinator: StoreCoordinator
+    
+    /// 파일 기반 커뮤니티 서비스
+    private let fileService = CommunityService.shared
 
     /// 댓글 템플릿 (부서별)
     private let commentTemplates: [DepartmentType: [String]] = [
@@ -130,6 +133,9 @@ final class CommunityStore {
         }
 
         coordinator.saveCompany()
+        
+        // 📁 파일로도 저장 (동기화)
+        syncPostToFile(post)
 
         // 자동 댓글 추가
         if autoComment {
@@ -140,6 +146,46 @@ final class CommunityStore {
                 self.addRandomComments(to: post.id, count: count)
             }
         }
+    }
+    
+    // MARK: - 파일 동기화
+    
+    /// 게시글을 마크다운 파일로 저장
+    private func syncPostToFile(_ post: CommunityPost) {
+        let thought = CommunityThought(
+            id: fileService.generateThoughtId(),
+            title: post.title,
+            content: post.content,
+            author: post.employeeName,
+            authorId: post.employeeId.uuidString,
+            department: post.departmentType.rawValue,
+            project: nil,
+            created: post.createdAt,
+            tags: post.tags,
+            comments: post.comments.map { comment in
+                ThoughtComment(
+                    id: comment.id.uuidString,
+                    author: comment.employeeName,
+                    authorId: comment.employeeId.uuidString,
+                    department: "",
+                    content: comment.content,
+                    created: comment.createdAt
+                )
+            }
+        )
+        
+        do {
+            try fileService.saveThought(thought)
+            print("📁 [CommunityStore] 파일로 동기화됨: \(thought.fileName)")
+        } catch {
+            print("⚠️ [CommunityStore] 파일 동기화 실패: \(error)")
+        }
+    }
+    
+    /// 댓글 추가 시 파일도 업데이트
+    private func syncCommentsToFile(postId: UUID) {
+        guard let post = coordinator.company.communityPosts.first(where: { $0.id == postId }) else { return }
+        syncPostToFile(post)
     }
 
     /// 사고 과정에서 게시글 생성
@@ -201,11 +247,103 @@ final class CommunityStore {
         guard let index = coordinator.company.communityPosts.firstIndex(where: { $0.id == postId }) else { return }
         coordinator.company.communityPosts[index].comments.append(comment)
         coordinator.saveCompany()
+        
+        // 📁 파일도 업데이트
+        syncCommentsToFile(postId: postId)
     }
 
     /// 게시글 삭제
     func removeCommunityPost(_ postId: UUID) {
         coordinator.company.communityPosts.removeAll { $0.id == postId }
+        coordinator.saveCompany()
+    }
+    
+    // MARK: - 회의 (Conversations)
+    
+    /// 회의 시작
+    func startConversation(topic: String, project: String?, participants: [String], initiator: String) -> CommunityConversation {
+        fileService.startConversation(
+            topic: topic,
+            project: project,
+            participants: participants,
+            initiator: initiator
+        )
+    }
+    
+    /// 회의에 메시지 추가
+    func addMessageToConversation(_ conversationId: String, author: String, department: String, content: String) {
+        let message = ConversationMessage(
+            id: UUID().uuidString,
+            author: author,
+            department: department,
+            content: content,
+            timestamp: Date()
+        )
+        try? fileService.addMessage(to: conversationId, message: message)
+    }
+    
+    /// 회의 종료
+    func endConversation(_ conversationId: String, summary: String?) {
+        try? fileService.endConversation(id: conversationId, summary: summary)
+    }
+    
+    /// 진행 중인 회의 목록
+    var activeConversations: [CommunityConversation] {
+        fileService.getActiveConversations()
+    }
+    
+    /// 모든 회의 목록
+    var allConversations: [CommunityConversation] {
+        fileService.listConversations()
+    }
+    
+    /// 특정 회의 조회
+    func getConversation(id: String) -> CommunityConversation? {
+        fileService.getConversation(id: id)
+    }
+    
+    // MARK: - 파일에서 게시글 로드
+    
+    /// 파일에서 게시글 불러오기 (앱 시작 시 동기화)
+    func loadPostsFromFiles() {
+        let thoughts = fileService.listThoughts()
+        print("📁 [CommunityStore] 파일에서 \(thoughts.count)개 생각 글 발견")
+        
+        for thought in thoughts {
+            // 이미 앱에 있는지 확인 (제목+작성자로 중복 체크)
+            let exists = coordinator.company.communityPosts.contains {
+                $0.title == thought.title && $0.employeeName == thought.author
+            }
+            
+            if !exists {
+                // 파일에서 불러온 게시글 추가
+                let post = CommunityPost(
+                    employeeId: UUID(uuidString: thought.authorId) ?? UUID(),
+                    employeeName: thought.author,
+                    departmentType: DepartmentType(rawValue: thought.department) ?? .general,
+                    thinkingId: nil,
+                    title: thought.title,
+                    content: thought.content,
+                    summary: String(thought.content.prefix(100)),
+                    tags: thought.tags,
+                    source: .manual,
+                    likes: 0,
+                    comments: thought.comments.map { comment in
+                        PostComment(
+                            id: UUID(uuidString: comment.id) ?? UUID(),
+                            employeeId: UUID(uuidString: comment.authorId) ?? UUID(),
+                            employeeName: comment.author,
+                            content: comment.content,
+                            createdAt: comment.created
+                        )
+                    },
+                    createdAt: thought.created
+                )
+                coordinator.company.communityPosts.append(post)
+                print("📥 [CommunityStore] 파일에서 로드: \(thought.title)")
+            }
+        }
+        
         coordinator.saveCompany()
     }
 

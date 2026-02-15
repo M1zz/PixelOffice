@@ -12,6 +12,7 @@ struct ProjectOfficeView: View {
     @State private var showingProjectContext = false
     @State private var showingSourcePathEditor = false
     @State private var editingSourcePath = ""
+    @State private var showingFeedback = false
 
     let columns = 2
 
@@ -58,6 +59,9 @@ struct ProjectOfficeView: View {
                                 },
                                 onOpenPipeline: {
                                     openWindow(id: "pipeline", value: projectId)
+                                },
+                                onOpenFeedback: {
+                                    showingFeedback = true
                                 },
                                 onEditSourcePath: {
                                     editingSourcePath = project.sourcePath ?? ""
@@ -186,6 +190,10 @@ struct ProjectOfficeView: View {
                 )
                 .environmentObject(companyStore)
             }
+            .sheet(isPresented: $showingFeedback) {
+                ProjectFeedbackView(projectId: projectId, isPresented: $showingFeedback)
+                    .environmentObject(companyStore)
+            }
         } else {
             Text("프로젝트를 찾을 수 없습니다")
         }
@@ -199,6 +207,7 @@ struct ProjectOfficeHeader: View {
     let onOpenCollaboration: () -> Void
     let onOpenProjectContext: () -> Void
     let onOpenPipeline: () -> Void
+    let onOpenFeedback: () -> Void
     let onEditSourcePath: () -> Void
 
     /// 현재 스프린트 태스크들
@@ -248,14 +257,6 @@ struct ProjectOfficeHeader: View {
             }
             .buttonStyle(.bordered)
 
-            // 칸반 보드 버튼
-            Button {
-                onOpenKanban()
-            } label: {
-                Label("칸반", systemImage: "rectangle.split.3x1")
-            }
-            .buttonStyle(.bordered)
-
             // 위키 버튼
             Button {
                 onOpenWiki()
@@ -279,6 +280,15 @@ struct ProjectOfficeHeader: View {
                 Label("파이프라인", systemImage: "gearshape.arrow.triangle.2.circlepath")
             }
             .buttonStyle(.bordered)
+            
+            // 피드백 버튼
+            Button {
+                onOpenFeedback()
+            } label: {
+                Label("피드백", systemImage: "text.bubble")
+            }
+            .buttonStyle(.bordered)
+            .tint(.orange)
 
                 VStack(alignment: .trailing) {
                     Text("직원 \(project.allEmployees.count)명")

@@ -175,6 +175,52 @@ struct EmployeeChatView: View {
         - 사용자가 제공한 중요한 수치나 데이터를 받았을 때
 
         충분한 인사이트가 모이면 자동으로 커뮤니티에 게시됩니다.
+
+        🗣️ 커뮤니티 참여:
+        당신은 다른 AI 동료들과 생각을 나눌 수 있습니다.
+
+        **대화가 끝날 때:**
+        작업하면서 다른 부서에도 도움이 될 만한 인사이트나 생각이 있다면,
+        커뮤니티에 공유해주세요:
+
+        <<<COMMUNITY_POST>>>
+        제목: (생각의 제목)
+        태그: (관련 태그들, 쉼표로 구분)
+        ---
+        (본문 내용 - 발견한 인사이트, 제안, 질문 등)
+        <<<END_COMMUNITY_POST>>>
+
+        **언제 글을 쓰나요?**
+        - 다른 부서도 알면 좋을 발견을 했을 때
+        - 협업 과정에서 배운 점이 있을 때
+        - 새로운 아이디어나 제안이 있을 때
+        - 동료들의 의견을 구하고 싶을 때
+
+        **회의 요청:**
+        중요한 결정이 필요하거나 여러 부서의 의견이 필요하면:
+
+        <<<REQUEST_MEETING>>>
+        주제: (회의 주제)
+        참석자: (필요한 부서들, 쉼표로 구분)
+        안건: (논의할 내용)
+        <<<END_REQUEST_MEETING>>>
+
+        📝 피드백 → 태스크 변환:
+        사용자가 피드백, 개선 요청, 버그 리포트를 말하면 태스크로 변환하세요:
+        - "이 기능 개선해줘", "버그 있어", "~하면 좋겠다" 등의 요청을 감지
+        - 자동으로 태스크로 변환하여 칸반에 추가
+
+        <<<CREATE_TASK>>>
+        제목: (태스크 제목)
+        유형: (버그|개선|기능요청|질문)
+        우선순위: (낮음|보통|높음|긴급)
+        설명: (상세 설명)
+        <<<END_CREATE_TASK>>>
+
+        피드백을 받으면:
+        1. 태스크 생성
+        2. 사용자에게 "태스크로 등록했습니다" 안내
+        3. 필요시 추가 정보 질문
         """
     }
 
@@ -495,9 +541,19 @@ struct EmployeeChatView: View {
                 let insightCleanedResponse = await MainActor.run {
                     extractAndProcessInsights(from: fileCleanedResponse, userMessage: messageToSend)
                 }
+                
+                // 응답에서 커뮤니티 포스트 추출 및 게시
+                let (communityCleanedResponse, communityResults) = await MainActor.run {
+                    extractAndProcessCommunityPosts(from: insightCleanedResponse)
+                }
+                
+                // 응답에서 태스크 생성 추출 및 처리
+                let (taskCleanedResponse, taskResults) = await MainActor.run {
+                    extractAndProcessTaskCreation(from: communityCleanedResponse)
+                }
 
                 // 응답에서 멘션 추출 및 처리
-                let (cleanedResponse, mentionResponses) = await extractAndProcessMentions(from: insightCleanedResponse)
+                let (cleanedResponse, mentionResponses) = await extractAndProcessMentions(from: taskCleanedResponse)
 
                 await MainActor.run {
                     let assistantMessage = ChatMessage(role: .assistant, content: cleanedResponse)
@@ -517,6 +573,24 @@ struct EmployeeChatView: View {
                         let fileNames = savedFiles.joined(separator: ", ")
                         let fileMessage = ChatMessage(role: .assistant, content: "📄 문서가 저장되었습니다: \(fileNames)\n위치: datas/_shared/wiki/")
                         messages.append(fileMessage)
+                    }
+                    
+                    // 커뮤니티 활동이 있으면 표시
+                    if !communityResults.isEmpty {
+                        let communityMessage = ChatMessage(
+                            role: .system,
+                            content: "🗣️ 커뮤니티 활동:\n" + communityResults.map { "  • \($0)" }.joined(separator: "\n")
+                        )
+                        messages.append(communityMessage)
+                    }
+                    
+                    // 태스크 생성 결과 표시
+                    if !taskResults.isEmpty {
+                        let taskMessage = ChatMessage(
+                            role: .system,
+                            content: "✅ 태스크 생성:\n" + taskResults.map { "  • \($0)" }.joined(separator: "\n")
+                        )
+                        messages.append(taskMessage)
                     }
 
                     // 멘션 응답이 있으면 표시
@@ -780,6 +854,251 @@ struct EmployeeChatView: View {
         }
     }
 
+    // MARK: - 커뮤니티 포스트 처리
+    
+    /// 응답에서 커뮤니티 포스트 추출 및 게시
+    private func extractAndProcessCommunityPosts(from response: String) -> (cleanedResponse: String, results: [String]) {
+        var cleanedResponse = response
+        var results: [String] = []
+        
+        // <<<COMMUNITY_POST>>> ... <<<END_COMMUNITY_POST>>> 패턴 찾기
+        let pattern = "<<<COMMUNITY_POST>>>([\\s\\S]*?)<<<END_COMMUNITY_POST>>>"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return (response, [])
+        }
+        
+        let nsString = response as NSString
+        let matches = regex.matches(in: response, options: [], range: NSRange(location: 0, length: nsString.length))
+        
+        for match in matches.reversed() {
+            guard match.numberOfRanges >= 2 else { continue }
+            
+            let contentRange = match.range(at: 1)
+            let fullRange = match.range(at: 0)
+            
+            let content = nsString.substring(with: contentRange).trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // 제목, 태그, 본문 파싱
+            var title = ""
+            var tags: [String] = []
+            var body = ""
+            
+            let lines = content.components(separatedBy: "\n")
+            var isBody = false
+            var bodyLines: [String] = []
+            
+            for line in lines {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                
+                if trimmed.hasPrefix("제목:") {
+                    title = trimmed.replacingOccurrences(of: "제목:", with: "").trimmingCharacters(in: .whitespaces)
+                } else if trimmed.hasPrefix("태그:") {
+                    let tagString = trimmed.replacingOccurrences(of: "태그:", with: "").trimmingCharacters(in: .whitespaces)
+                    tags = tagString.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                } else if trimmed == "---" {
+                    isBody = true
+                } else if isBody {
+                    bodyLines.append(line)
+                }
+            }
+            
+            body = bodyLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // 제목이 없으면 본문 첫 줄 사용
+            if title.isEmpty {
+                title = String(body.prefix(50))
+                if body.count > 50 { title += "..." }
+            }
+            
+            // CommunityPost 생성 및 저장
+            if !body.isEmpty {
+                let post = CommunityPost(
+                    employeeId: employee.id,
+                    employeeName: employee.name,
+                    departmentType: departmentType,
+                    thinkingId: nil,
+                    title: title,
+                    content: body,
+                    summary: String(body.prefix(100)),
+                    tags: tags.isEmpty ? [departmentType.rawValue] : tags,
+                    source: .manual
+                )
+                
+                companyStore.addCommunityPost(post, autoComment: true)
+                results.append("📝 커뮤니티에 글 게시: \(title)")
+                print("🗣️ [Community] 새 글 게시됨: \(title)")
+            }
+            
+            // 응답에서 커뮤니티 포스트 블록 제거
+            cleanedResponse = (cleanedResponse as NSString).replacingCharacters(in: fullRange, with: "")
+        }
+        
+        // 회의 요청도 처리
+        let (meetingCleanedResponse, meetingResults) = extractAndProcessMeetingRequests(from: cleanedResponse)
+        results.append(contentsOf: meetingResults)
+        
+        return (meetingCleanedResponse.trimmingCharacters(in: .whitespacesAndNewlines), results)
+    }
+    
+    /// 응답에서 회의 요청 추출 및 처리
+    private func extractAndProcessMeetingRequests(from response: String) -> (cleanedResponse: String, results: [String]) {
+        var cleanedResponse = response
+        var results: [String] = []
+        
+        // <<<REQUEST_MEETING>>> ... <<<END_REQUEST_MEETING>>> 패턴 찾기
+        let pattern = "<<<REQUEST_MEETING>>>([\\s\\S]*?)<<<END_REQUEST_MEETING>>>"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return (response, [])
+        }
+        
+        let nsString = response as NSString
+        let matches = regex.matches(in: response, options: [], range: NSRange(location: 0, length: nsString.length))
+        
+        for match in matches.reversed() {
+            guard match.numberOfRanges >= 2 else { continue }
+            
+            let contentRange = match.range(at: 1)
+            let fullRange = match.range(at: 0)
+            
+            let content = nsString.substring(with: contentRange).trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // 주제, 참석자, 안건 파싱
+            var topic = ""
+            var participants: [String] = []
+            var agenda = ""
+            
+            let lines = content.components(separatedBy: "\n")
+            
+            for line in lines {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                
+                if trimmed.hasPrefix("주제:") {
+                    topic = trimmed.replacingOccurrences(of: "주제:", with: "").trimmingCharacters(in: .whitespaces)
+                } else if trimmed.hasPrefix("참석자:") {
+                    let participantString = trimmed.replacingOccurrences(of: "참석자:", with: "").trimmingCharacters(in: .whitespaces)
+                    participants = participantString.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                } else if trimmed.hasPrefix("안건:") {
+                    agenda = trimmed.replacingOccurrences(of: "안건:", with: "").trimmingCharacters(in: .whitespaces)
+                }
+            }
+            
+            // 회의 시작
+            if !topic.isEmpty {
+                let conversation = companyStore.startConversation(
+                    topic: topic,
+                    project: nil,
+                    participants: [employee.name] + participants,
+                    initiator: employee.name
+                )
+                
+                // 첫 메시지로 안건 추가
+                if !agenda.isEmpty {
+                    companyStore.addMessageToConversation(
+                        conversation.id,
+                        author: employee.name,
+                        department: departmentType.rawValue,
+                        content: "📋 안건: \(agenda)"
+                    )
+                }
+                
+                results.append("🗓️ 회의 소집: \(topic) (참석자: \(participants.joined(separator: ", ")))")
+                print("🗓️ [Meeting] 회의 시작됨: \(topic)")
+            }
+            
+            // 응답에서 회의 요청 블록 제거
+            cleanedResponse = (cleanedResponse as NSString).replacingCharacters(in: fullRange, with: "")
+        }
+        
+        return (cleanedResponse.trimmingCharacters(in: .whitespacesAndNewlines), results)
+    }
+    
+    /// 응답에서 태스크 생성 추출 및 처리
+    private func extractAndProcessTaskCreation(from response: String) -> (cleanedResponse: String, results: [String]) {
+        var cleanedResponse = response
+        var results: [String] = []
+        
+        // <<<CREATE_TASK>>> ... <<<END_CREATE_TASK>>> 패턴 찾기
+        let pattern = "<<<CREATE_TASK>>>([\\s\\S]*?)<<<END_CREATE_TASK>>>"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return (response, [])
+        }
+        
+        let nsString = response as NSString
+        let matches = regex.matches(in: response, options: [], range: NSRange(location: 0, length: nsString.length))
+        
+        for match in matches.reversed() {
+            guard match.numberOfRanges >= 2 else { continue }
+            
+            let contentRange = match.range(at: 1)
+            let fullRange = match.range(at: 0)
+            
+            let content = nsString.substring(with: contentRange).trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // 제목, 유형, 우선순위, 설명 파싱
+            var title = ""
+            var taskType = ""
+            var priorityStr = ""
+            var description = ""
+            
+            let lines = content.components(separatedBy: "\n")
+            var isDescription = false
+            var descriptionLines: [String] = []
+            
+            for line in lines {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                
+                if trimmed.hasPrefix("제목:") {
+                    title = trimmed.replacingOccurrences(of: "제목:", with: "").trimmingCharacters(in: .whitespaces)
+                } else if trimmed.hasPrefix("유형:") {
+                    taskType = trimmed.replacingOccurrences(of: "유형:", with: "").trimmingCharacters(in: .whitespaces)
+                } else if trimmed.hasPrefix("우선순위:") {
+                    priorityStr = trimmed.replacingOccurrences(of: "우선순위:", with: "").trimmingCharacters(in: .whitespaces)
+                } else if trimmed.hasPrefix("설명:") {
+                    description = trimmed.replacingOccurrences(of: "설명:", with: "").trimmingCharacters(in: .whitespaces)
+                    isDescription = true
+                } else if isDescription {
+                    descriptionLines.append(line)
+                }
+            }
+            
+            if !descriptionLines.isEmpty {
+                description += "\n" + descriptionLines.joined(separator: "\n")
+            }
+            
+            // 우선순위 변환
+            let priority: TaskPriority
+            switch priorityStr {
+            case "낮음": priority = .low
+            case "높음": priority = .high
+            case "긴급": priority = .critical
+            default: priority = .medium
+            }
+            
+            // 태스크 생성
+            if !title.isEmpty {
+                // 프로젝트 직원이면 해당 프로젝트에, 아니면 첫 프로젝트에 추가
+                if let firstProject = companyStore.company.projects.first {
+                    let task = ProjectTask(
+                        title: "[\(taskType)] \(title)",
+                        description: description.trimmingCharacters(in: .whitespacesAndNewlines),
+                        status: .todo,
+                        priority: priority,
+                        departmentType: departmentType
+                    )
+                    
+                    companyStore.addTask(task, toProject: firstProject.id)
+                    results.append("📋 태스크 생성: \(title) (\(priorityStr))")
+                    print("📋 [Task] 태스크 생성됨: \(title)")
+                }
+            }
+            
+            // 응답에서 태스크 블록 제거
+            cleanedResponse = (cleanedResponse as NSString).replacingCharacters(in: fullRange, with: "")
+        }
+        
+        return (cleanedResponse.trimmingCharacters(in: .whitespacesAndNewlines), results)
+    }
+    
     // MARK: - 사고 축적 시스템
 
     /// 응답에서 인사이트 추출 및 사고 과정 업데이트

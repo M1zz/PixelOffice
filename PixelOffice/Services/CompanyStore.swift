@@ -43,7 +43,16 @@ class CompanyStore: ObservableObject, StoreCoordinator {
     init() {
         print("🏢 CompanyStore init started")
         let loadedCompany = dataManager.loadCompany()
-        if let loaded = loadedCompany {
+        if var loaded = loadedCompany {
+            // 🔒 중복 직원 정리
+            let beforeCount = loaded.allEmployees.count
+            CompanyStore.removeDuplicateEmployees(from: &loaded)
+            let afterCount = loaded.allEmployees.count
+            
+            if beforeCount != afterCount {
+                print("🔧 [중복 정리] 직원 수: \(beforeCount) → \(afterCount) (중복 \(beforeCount - afterCount)명 제거)")
+            }
+            
             self.company = loaded
             print("✅ Loaded existing company with \(loaded.allEmployees.count) employees")
         } else {
@@ -484,6 +493,28 @@ class CompanyStore: ObservableObject, StoreCoordinator {
     func removeCommunityPost(_ postId: UUID) {
         communityStore.removeCommunityPost(postId)
     }
+    
+    // MARK: - Conversations (→ CommunityStore 위임)
+    
+    func startConversation(topic: String, project: String?, participants: [String], initiator: String) -> CommunityConversation {
+        communityStore.startConversation(topic: topic, project: project, participants: participants, initiator: initiator)
+    }
+    
+    func addMessageToConversation(_ conversationId: String, author: String, department: String, content: String) {
+        communityStore.addMessageToConversation(conversationId, author: author, department: department, content: content)
+    }
+    
+    func endConversation(_ conversationId: String, summary: String?) {
+        communityStore.endConversation(conversationId, summary: summary)
+    }
+    
+    var activeConversations: [CommunityConversation] {
+        communityStore.activeConversations
+    }
+    
+    var allConversations: [CommunityConversation] {
+        communityStore.allConversations
+    }
 
     // MARK: - Permission Requests (→ PermissionStore 위임)
 
@@ -604,5 +635,47 @@ class CompanyStore: ObservableObject, StoreCoordinator {
 
     func getActiveSprint(forProject projectId: UUID) -> Sprint? {
         company.projects.first { $0.id == projectId }?.activeSprint
+    }
+    
+    // MARK: - 중복 직원 정리
+    
+    /// 중복된 직원 제거 (ID 또는 이름 기준)
+    private static func removeDuplicateEmployees(from company: inout Company) {
+        var seenIds = Set<UUID>()
+        var seenNames = Set<String>()
+        
+        // 일반 직원 중복 제거
+        for deptIndex in company.departments.indices {
+            var uniqueEmployees: [Employee] = []
+            for employee in company.departments[deptIndex].employees {
+                if !seenIds.contains(employee.id) && !seenNames.contains(employee.name) {
+                    seenIds.insert(employee.id)
+                    seenNames.insert(employee.name)
+                    uniqueEmployees.append(employee)
+                } else {
+                    print("🔧 [중복 제거] 일반 직원: \(employee.name)")
+                }
+            }
+            company.departments[deptIndex].employees = uniqueEmployees
+        }
+        
+        // 프로젝트 직원 중복 제거 (프로젝트별로 별도 체크)
+        for projectIndex in company.projects.indices {
+            var projectSeenNames = Set<String>()
+            
+            for deptIndex in company.projects[projectIndex].departments.indices {
+                var uniqueEmployees: [ProjectEmployee] = []
+                for employee in company.projects[projectIndex].departments[deptIndex].employees {
+                    if !seenIds.contains(employee.id) && !projectSeenNames.contains(employee.name) {
+                        seenIds.insert(employee.id)
+                        projectSeenNames.insert(employee.name)
+                        uniqueEmployees.append(employee)
+                    } else {
+                        print("🔧 [중복 제거] 프로젝트 직원: \(employee.name)")
+                    }
+                }
+                company.projects[projectIndex].departments[deptIndex].employees = uniqueEmployees
+            }
+        }
     }
 }
