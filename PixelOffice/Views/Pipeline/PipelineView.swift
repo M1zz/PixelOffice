@@ -21,6 +21,7 @@ struct PipelineView: View {
     @State private var showingDesignPreview = false  // 디자인 프리뷰
     @State private var showingDecisionLog = false  // 결정 로그
     @State private var isThinkingExpanded = true  // Thinking 패널 확장 상태
+    @State private var showingCancelConfirmation = false  // 취소 확인 다이얼로그
 
     enum PipelineTab: String, CaseIterable {
         case current = "현재 실행"
@@ -219,6 +220,35 @@ struct PipelineView: View {
                 onReject: request.onReject
             )
         }
+        // 질문-답변 시트
+        .sheet(isPresented: $coordinator.showClarificationSheet) {
+            if coordinator.isAnalyzingRequirement {
+                ClarificationLoadingView()
+            } else {
+                ClarificationView(
+                    manager: coordinator.clarificationManager,
+                    onComplete: { enrichedRequirement in
+                        guard let project = project else { return }
+                        Task {
+                            await coordinator.startPipelineAfterClarification(
+                                enrichedRequirement: enrichedRequirement,
+                                project: project,
+                                sprint: selectedSprint
+                            )
+                        }
+                    },
+                    onSkip: {
+                        guard let project = project else { return }
+                        Task {
+                            await coordinator.skipClarificationAndStart(
+                                project: project,
+                                sprint: selectedSprint
+                            )
+                        }
+                    }
+                )
+            }
+        }
     }
 
     /// 프로젝트 경로 검증
@@ -415,6 +445,36 @@ struct PipelineView: View {
             }
 
             if coordinator.isRunning {
+                // 타임아웃 카운트다운 표시
+                if let remaining = coordinator.currentPhaseRemainingTime {
+                    HStack(spacing: 4) {
+                        Image(systemName: remaining <= 30 ? "exclamationmark.triangle.fill" : "timer")
+                            .foregroundStyle(remaining <= 30 ? .orange : .blue)
+                        Text("남은 시간: \(formatRemainingTime(remaining))")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(remaining <= 30 ? .orange : .primary)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(remaining <= 30 ? Color.orange.opacity(0.1) : Color.blue.opacity(0.1))
+                    .clipShape(Capsule())
+                    .animation(.easeInOut, value: remaining <= 30)
+                }
+                
+                // 칸반 동기화 상태 표시
+                if let syncResult = coordinator.kanbanSyncResult, syncResult.total > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "square.stack.3d.up.fill")
+                            .foregroundStyle(.purple)
+                        Text(syncResult.description)
+                            .font(.caption)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.purple.opacity(0.1))
+                    .clipShape(Capsule())
+                }
+                
                 // 실시간 토큰 사용량 표시
                 if coordinator.totalTokens > 0 {
                     HStack(spacing: 4) {
@@ -444,13 +504,26 @@ struct PipelineView: View {
                 }
                 .buttonStyle(.bordered)
 
+                // 취소 버튼 (빨간색, 확인 다이얼로그 포함)
                 Button {
-                    coordinator.stopAllProcesses()
+                    showingCancelConfirmation = true
                 } label: {
-                    Label("전체 중지", systemImage: "stop.fill")
+                    Label("취소", systemImage: "xmark.circle.fill")
                 }
                 .buttonStyle(.bordered)
                 .tint(.red)
+                .confirmationDialog(
+                    "파이프라인을 취소하시겠습니까?",
+                    isPresented: $showingCancelConfirmation,
+                    titleVisibility: .visible
+                ) {
+                    Button("취소하고 결과 저장", role: .destructive) {
+                        coordinator.forceCancel()
+                    }
+                    Button("계속 실행", role: .cancel) {}
+                } message: {
+                    Text("취소해도 현재까지의 결과는 저장됩니다.\n중단된 파이프라인은 나중에 재개할 수 있습니다.")
+                }
             } else {
                 // 실행 모드 선택
                 VStack(alignment: .leading, spacing: 4) {
@@ -485,10 +558,18 @@ struct PipelineView: View {
                 Button {
                     startPipeline()
                 } label: {
-                    Label(canStartWithSprint ? "스프린트 태스크 실행" : "새 파이프라인", systemImage: "play.fill")
+                    if coordinator.isAnalyzingRequirement {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .controlSize(.small)
+                            Text("분석 중...")
+                        }
+                    } else {
+                        Label(canStartWithSprint ? "스프린트 태스크 실행" : "새 파이프라인", systemImage: "play.fill")
+                    }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(!canStartPipeline)
+                .disabled(!canStartPipeline || coordinator.isAnalyzingRequirement || coordinator.isRunning)
             }
         }
         .padding()
@@ -511,9 +592,9 @@ struct PipelineView: View {
             }
             coordinator.showNotification("스프린트 '\(selectedSprint?.name ?? "")' 태스크 \(tasks.count)개를 시작합니다.", type: .info)
         } else {
-            // 요구사항이 있으면 일반 파이프라인 시작
+            // 요구사항이 있으면 질문-답변 단계를 포함한 파이프라인 시작
             Task {
-                await coordinator.startPipeline(
+                await coordinator.startPipelineWithClarification(
                     requirement: requirement,
                     project: project,
                     sprint: selectedSprint
@@ -552,6 +633,17 @@ struct PipelineView: View {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         return formatter.string(from: NSNumber(value: number)) ?? "\(number)"
+    }
+    
+    /// 남은 시간 포맷팅
+    private func formatRemainingTime(_ seconds: TimeInterval) -> String {
+        let mins = Int(seconds) / 60
+        let secs = Int(seconds) % 60
+        if mins > 0 {
+            return String(format: "%d:%02d", mins, secs)
+        } else {
+            return "\(secs)초"
+        }
     }
 }
 
@@ -680,7 +772,17 @@ struct PipelineHistoryRow: View {
     let onSelect: () -> Void
     let onResume: () -> Void
     let onDelete: () -> Void
+    let onCopyRequirement: ((String) -> Void)?
     @State private var showDeleteConfirmation = false
+    @State private var showRequirementPopover = false
+    
+    init(run: PipelineRun, onSelect: @escaping () -> Void, onResume: @escaping () -> Void, onDelete: @escaping () -> Void, onCopyRequirement: ((String) -> Void)? = nil) {
+        self.run = run
+        self.onSelect = onSelect
+        self.onResume = onResume
+        self.onDelete = onDelete
+        self.onCopyRequirement = onCopyRequirement
+    }
     
     /// 표시할 요구사항 (비어있으면 대체 텍스트 표시)
     private var displayRequirement: String {
@@ -763,6 +865,43 @@ struct PipelineHistoryRow: View {
 
                 // 버튼들
                 HStack(spacing: 8) {
+                    // 요구사항 보기/복사 버튼
+                    Button {
+                        showRequirementPopover = true
+                    } label: {
+                        Image(systemName: "doc.text")
+                    }
+                    .buttonStyle(.bordered)
+                    .popover(isPresented: $showRequirementPopover) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("요구사항")
+                                    .font(.headline)
+                                Spacer()
+                                Button {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(run.requirement, forType: .string)
+                                    onCopyRequirement?(run.requirement)
+                                } label: {
+                                    Label("복사", systemImage: "doc.on.doc")
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                            
+                            Divider()
+                            
+                            ScrollView {
+                                Text(run.requirement.isEmpty ? "(요구사항 없음)" : run.requirement)
+                                    .font(.body)
+                                    .textSelection(.enabled)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .frame(maxHeight: 200)
+                        }
+                        .padding()
+                        .frame(width: 400)
+                    }
+                    
                     if run.state.canResume {
                         Button("재개") {
                             onResume()

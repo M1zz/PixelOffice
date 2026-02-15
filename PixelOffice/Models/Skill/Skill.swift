@@ -111,13 +111,14 @@ struct SchemaProperty: Codable, Hashable {
     var description: String?
     var enumValues: [String]?  // enum 타입일 때
     var defaultValue: String?
-    var items: SchemaProperty?  // array 타입일 때
+    var itemType: String?  // array 타입일 때 요소 타입 (재귀 방지)
+    var itemDescription: String?  // array 요소 설명
     
     enum CodingKeys: String, CodingKey {
         case type, description
         case enumValues = "enum"
         case defaultValue = "default"
-        case items
+        case itemType, itemDescription
     }
 }
 

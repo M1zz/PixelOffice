@@ -667,6 +667,15 @@ struct WikiDocumentView: View {
                         }
                         .buttonStyle(.bordered)
 
+                        // 내용 복사 버튼
+                        Button {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(document.content, forType: .string)
+                        } label: {
+                            Label("복사", systemImage: "doc.on.doc")
+                        }
+                        .buttonStyle(.bordered)
+                        
                         Button {
                             WikiService.shared.openDocument(document, at: wikiPath)
                         } label: {

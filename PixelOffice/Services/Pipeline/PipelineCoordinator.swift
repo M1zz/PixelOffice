@@ -50,6 +50,20 @@ class PipelineCoordinator: ObservableObject {
     /// 히스토리 변경 감지용 (뷰 새로고침 트리거)
     @Published var historyUpdateId = UUID()
 
+    // MARK: - Clarification Properties
+
+    /// 현재 질문-답변 세션
+    @Published var clarificationSession: ClarificationSession?
+
+    /// 질문-답변 시트 표시 여부
+    @Published var showClarificationSheet: Bool = false
+
+    /// 질문 생성 중 여부
+    @Published var isAnalyzingRequirement: Bool = false
+
+    /// Clarification 매니저
+    let clarificationManager = ClarificationManager()
+
     enum NotificationType {
         case info, success, warning, error
 
@@ -72,21 +86,43 @@ class PipelineCoordinator: ObservableObject {
         }
     }
 
-    // MARK: - Private Properties
+    // MARK: - Internal Properties (for extension access)
 
-    private weak var companyStore: CompanyStore?
-    private let decomposer = RequirementDecomposer()
-    private var executor: PipelineExecutor
-    private let buildService = BuildService()
-    private let gitService = GitService()
-    private var cancellationFlag = false
-    private var currentProjectName: String = ""
+    weak var companyStore: CompanyStore?
+    let decomposer = RequirementDecomposer()
+    var executor: PipelineExecutor
+    let buildService = BuildService()
+    let gitService = GitService()
+    var cancellationFlag = false
+    var currentProjectName: String = ""
 
     /// 최대 동시 실행 태스크 수 (기본 3개)
     nonisolated static let defaultMaxConcurrentTasks = 3
 
     /// 현재 실행 모드
     @Published var executionMode: PipelineExecutionMode = .full  // 기본값을 full로 변경 (파일 생성 가능)
+    
+    // MARK: - Timeout Configuration
+    
+    /// 단계별 타임아웃 (초)
+    enum PhaseTimeout {
+        static let decomposition: TimeInterval = 120  // 2분
+        static let developmentPerTask: TimeInterval = 300  // 태스크당 5분
+        static let build: TimeInterval = 180  // 3분
+        static let healing: TimeInterval = 180  // 3분
+    }
+    
+    /// 현재 Phase의 남은 시간 (UI 표시용)
+    @Published var currentPhaseRemainingTime: TimeInterval?
+    
+    /// 현재 Phase 시작 시간
+    private var currentPhaseStartTime: Date?
+    
+    /// 현재 Phase 타임아웃
+    private var currentPhaseTimeout: TimeInterval?
+    
+    /// 칸반 동기화 결과 (UI 표시용)
+    @Published var kanbanSyncResult: PipelineKanbanService.SyncResult?
 
     // MARK: - Init
 
@@ -178,6 +214,79 @@ class PipelineCoordinator: ObservableObject {
         }
 
         await executePipelinePhases(run: &run, project: project, startPhase: .decomposition)
+    }
+
+    // MARK: - Pipeline with Clarification
+
+    /// 질문-답변 단계를 포함한 파이프라인 시작
+    /// - Parameters:
+    ///   - requirement: 요구사항 텍스트
+    ///   - project: 대상 프로젝트
+    ///   - sprint: 스프린트 (태스크가 할당될 스프린트)
+    ///   - skipClarification: 질문 단계 건너뛰기
+    func startPipelineWithClarification(
+        requirement: String,
+        project: Project,
+        sprint: Sprint? = nil,
+        skipClarification: Bool = false
+    ) async {
+        // 질문 단계 건너뛰기
+        if skipClarification {
+            await startPipeline(requirement: requirement, project: project, sprint: sprint)
+            return
+        }
+
+        isAnalyzingRequirement = true
+        showNotification("요구사항 분석 중...", type: .info)
+
+        // 질문 생성
+        let session = await clarificationManager.startSession(
+            requirement: requirement,
+            project: project
+        )
+        
+        if let session = session {
+            // 질문이 있으면 시트 표시
+            clarificationSession = session
+            showClarificationSheet = true
+            isAnalyzingRequirement = false
+        } else {
+            // 질문이 없거나 분석 실패 시 바로 파이프라인 시작
+            isAnalyzingRequirement = false
+            
+            // 에러 메시지가 있으면 표시
+            if let errorMsg = clarificationManager.errorMessage {
+                showNotification("분석 실패: \(errorMsg) - 바로 진행합니다.", type: .warning)
+            } else {
+                showNotification("질문 없이 바로 진행합니다.", type: .info)
+            }
+            
+            await startPipeline(requirement: requirement, project: project, sprint: sprint)
+        }
+    }
+
+    /// 질문-답변 완료 후 파이프라인 시작
+    /// - Parameters:
+    ///   - enrichedRequirement: 보강된 요구사항
+    ///   - project: 대상 프로젝트
+    ///   - sprint: 스프린트
+    func startPipelineAfterClarification(
+        enrichedRequirement: String,
+        project: Project,
+        sprint: Sprint? = nil
+    ) async {
+        showClarificationSheet = false
+        clarificationSession = nil
+        await startPipeline(requirement: enrichedRequirement, project: project, sprint: sprint)
+    }
+
+    /// 질문 단계 스킵 후 파이프라인 시작
+    func skipClarificationAndStart(project: Project, sprint: Sprint? = nil) async {
+        let requirement = clarificationSession?.requirement ?? ""
+        showClarificationSheet = false
+        clarificationSession = nil
+        clarificationManager.resetSession()
+        await startPipeline(requirement: requirement, project: project, sprint: sprint)
     }
 
     /// 파이프라인 재개
@@ -319,33 +428,109 @@ class PipelineCoordinator: ObservableObject {
 
             // Phase 1: 요구사항 분해 (재개 시 이미 완료되었으면 스킵)
             if startPhase.rawValue <= PipelinePhase.decomposition.rawValue && !currentRun.completedPhases.contains(.decomposition) {
-                currentRun = try await executeDecompositionPhase(run: currentRun, project: project)
+                do {
+                    currentRun = try await withPhaseTimeout(
+                        phase: .decomposition,
+                        timeout: PhaseTimeout.decomposition
+                    ) {
+                        try await self.executeDecompositionPhase(run: currentRun, project: project)
+                    }
+                } catch PipelineTimeoutError.timeout(let phase) {
+                    currentRun.timedOut = true
+                    currentRun.timedOutPhase = phase
+                    currentRun.addLog("⏱️ 타임아웃: \(phase.name) 단계가 시간 초과됨", level: .error)
+                    showNotification("타임아웃: \(phase.name) 단계가 \(Int(PhaseTimeout.decomposition))초를 초과했습니다.", type: .warning)
+                    return cancelWithSave(&currentRun)
+                }
                 if cancellationFlag { return cancelWithSave(&currentRun) }
                 currentRun.markPhaseCompleted(.decomposition)
                 saveRunProgress(currentRun)
+                
+                // 분해 완료 후 위키 저장 및 칸반 동기화
+                PipelineWikiService.shared.savePhaseResult(run: currentRun, projectName: project.name, phase: .decomposition)
+                if let store = companyStore {
+                    kanbanSyncResult = PipelineKanbanService.shared.syncTasksToKanban(run: currentRun, project: project, companyStore: store)
+                    if let result = kanbanSyncResult, result.total > 0 {
+                        currentRun.addLog("📋 칸반 동기화: \(result.description)", level: .info)
+                    }
+                }
             }
 
             // Phase 2: 개발 (코드 생성)
             if startPhase.rawValue <= PipelinePhase.development.rawValue && !currentRun.completedPhases.contains(.development) {
-                currentRun = try await executeDevelopmentPhase(run: currentRun, project: project)
+                let taskCount = max(1, currentRun.decomposedTasks.count)
+                let devTimeout = PhaseTimeout.developmentPerTask * Double(taskCount)
+                
+                do {
+                    currentRun = try await withPhaseTimeout(
+                        phase: .development,
+                        timeout: devTimeout
+                    ) {
+                        try await self.executeDevelopmentPhase(run: currentRun, project: project)
+                    }
+                } catch PipelineTimeoutError.timeout(let phase) {
+                    currentRun.timedOut = true
+                    currentRun.timedOutPhase = phase
+                    currentRun.addLog("⏱️ 타임아웃: \(phase.name) 단계가 시간 초과됨", level: .error)
+                    showNotification("타임아웃: \(phase.name) 단계가 시간 초과되었습니다.", type: .warning)
+                    return cancelWithSave(&currentRun)
+                }
                 if cancellationFlag { return cancelWithSave(&currentRun) }
                 currentRun.markPhaseCompleted(.development)
                 saveRunProgress(currentRun)
+                
+                // 개발 완료 후 위키 저장 및 칸반 동기화
+                PipelineWikiService.shared.savePhaseResult(run: currentRun, projectName: project.name, phase: .development)
+                if let store = companyStore {
+                    kanbanSyncResult = PipelineKanbanService.shared.syncTasksToKanban(run: currentRun, project: project, companyStore: store)
+                }
             }
 
             // Phase 3: 빌드
             if startPhase.rawValue <= PipelinePhase.build.rawValue && !currentRun.completedPhases.contains(.build) {
-                currentRun = try await executeBuildPhase(run: currentRun, project: project)
+                do {
+                    currentRun = try await withPhaseTimeout(
+                        phase: .build,
+                        timeout: PhaseTimeout.build
+                    ) {
+                        try await self.executeBuildPhase(run: currentRun, project: project)
+                    }
+                } catch PipelineTimeoutError.timeout(let phase) {
+                    currentRun.timedOut = true
+                    currentRun.timedOutPhase = phase
+                    currentRun.addLog("⏱️ 타임아웃: \(phase.name) 단계가 시간 초과됨", level: .error)
+                    showNotification("타임아웃: 빌드가 \(Int(PhaseTimeout.build))초를 초과했습니다.", type: .warning)
+                    return cancelWithSave(&currentRun)
+                }
                 if cancellationFlag { return cancelWithSave(&currentRun) }
                 currentRun.markPhaseCompleted(.build)
                 saveRunProgress(currentRun)
+                
+                // 빌드 완료 후 위키 저장
+                PipelineWikiService.shared.savePhaseResult(run: currentRun, projectName: project.name, phase: .build)
             }
 
             // Phase 4: Self-Healing (빌드 실패 시)
             if !currentRun.isBuildSuccessful && currentRun.canHeal {
-                currentRun = try await executeHealingPhase(run: currentRun, project: project)
+                do {
+                    currentRun = try await withPhaseTimeout(
+                        phase: .healing,
+                        timeout: PhaseTimeout.healing
+                    ) {
+                        try await self.executeHealingPhase(run: currentRun, project: project)
+                    }
+                } catch PipelineTimeoutError.timeout(let phase) {
+                    currentRun.timedOut = true
+                    currentRun.timedOutPhase = phase
+                    currentRun.addLog("⏱️ 타임아웃: \(phase.name) 단계가 시간 초과됨", level: .error)
+                    showNotification("타임아웃: Self-Healing이 \(Int(PhaseTimeout.healing))초를 초과했습니다.", type: .warning)
+                    return cancelWithSave(&currentRun)
+                }
                 currentRun.markPhaseCompleted(.healing)
                 saveRunProgress(currentRun)
+                
+                // 힐링 완료 후 위키 저장
+                PipelineWikiService.shared.savePhaseResult(run: currentRun, projectName: project.name, phase: .healing)
             }
 
             // Git Diff 캡처 (파이프라인 완료 후)
@@ -399,6 +584,17 @@ class PipelineCoordinator: ObservableObject {
             } else {
                 showNotification("파이프라인이 실패했습니다. 로그를 확인하세요.", type: .error)
             }
+            
+            // 최종 위키 저장 (부서별 문서 생성)
+            let wikiPaths = PipelineWikiService.shared.saveToWiki(run: currentRun, projectName: project.name)
+            if !wikiPaths.isEmpty {
+                currentRun.addLog("📚 위키 저장 완료: \(wikiPaths.count)개 문서", level: .info)
+            }
+            
+            // 최종 칸반 동기화
+            if let store = companyStore {
+                PipelineKanbanService.shared.syncFinalStatus(run: currentRun, project: project, companyStore: store)
+            }
 
         } catch {
             run.state = .failed
@@ -421,7 +617,7 @@ class PipelineCoordinator: ObservableObject {
     }
 
     /// 진행 상태 저장 (각 Phase 완료 시)
-    private func saveRunProgress(_ run: PipelineRun) {
+    func saveRunProgress(_ run: PipelineRun) {
         var runToSave = run
         runToSave.lastSavedAt = Date()
         savePipelineRun(runToSave)
@@ -946,7 +1142,7 @@ class PipelineCoordinator: ObservableObject {
     }
 
     /// PIPELINE_CONTEXT.md 또는 PROJECT.md에서 ProjectInfo 로드
-    private func loadProjectInfo(for project: Project) -> ProjectInfo? {
+    func loadProjectInfo(for project: Project) -> ProjectInfo? {
         let basePath = DataPathService.shared.basePath
         var info = ProjectInfo()
 
@@ -1225,7 +1421,7 @@ class PipelineCoordinator: ObservableObject {
     }
 
     /// 프로젝트 경로 오류 메시지 생성
-    private func buildProjectPathErrorMessage(project: Project, projectInfo: ProjectInfo?) -> String {
+    func buildProjectPathErrorMessage(project: Project, projectInfo: ProjectInfo?) -> String {
         let basePath = DataPathService.shared.basePath
         let contextPath = "\(basePath)/\(project.name)/PIPELINE_CONTEXT.md"
         let templatePath = "\(basePath)/_shared/templates/PIPELINE_CONTEXT.md"
@@ -1653,5 +1849,112 @@ enum PipelineTodoStatus {
         case .completed: return .green
         case .skipped: return .gray
         }
+    }
+}
+
+// MARK: - Pipeline Timeout Error
+
+/// 파이프라인 타임아웃 에러
+enum PipelineTimeoutError: Error {
+    case timeout(phase: PipelinePhase)
+    case cancelled
+}
+
+// MARK: - Timeout Helper
+
+extension PipelineCoordinator {
+    /// Phase 실행에 타임아웃을 적용
+    /// - Parameters:
+    ///   - phase: 실행할 Phase
+    ///   - timeout: 타임아웃 (초)
+    ///   - operation: 실행할 작업
+    /// - Returns: Phase 실행 결과
+    func withPhaseTimeout<T>(
+        phase: PipelinePhase,
+        timeout: TimeInterval,
+        operation: @escaping () async throws -> T
+    ) async throws -> T {
+        // Phase 시작 시간 기록
+        currentPhaseStartTime = Date()
+        currentPhaseTimeout = timeout
+        currentPhaseRemainingTime = timeout
+        
+        // 타이머 태스크 시작 (남은 시간 업데이트)
+        let timerTask = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                if let startTime = self.currentPhaseStartTime,
+                   let timeout = self.currentPhaseTimeout {
+                    let elapsed = Date().timeIntervalSince(startTime)
+                    let remaining = max(0, timeout - elapsed)
+                    self.currentPhaseRemainingTime = remaining
+                    
+                    // 타임아웃 임박 경고 (30초 이하)
+                    if remaining <= 30 && remaining > 0 && Int(remaining) % 10 == 0 {
+                        self.currentRun?.addLog("⏱️ \(phase.name) 타임아웃까지 \(Int(remaining))초", level: .warning)
+                    }
+                }
+            }
+        }
+        
+        // 메인 작업 실행
+        let operationTask = Task {
+            try await operation()
+        }
+        
+        // 타임아웃 태스크
+        let timeoutTask = Task {
+            try await Task.sleep(for: .seconds(timeout))
+            operationTask.cancel()
+        }
+        
+        // 경쟁 조건: 작업 완료 vs 타임아웃
+        do {
+            let result = try await operationTask.value
+            timeoutTask.cancel()
+            timerTask.cancel()
+            currentPhaseRemainingTime = nil
+            currentPhaseStartTime = nil
+            currentPhaseTimeout = nil
+            return result
+        } catch is CancellationError {
+            timerTask.cancel()
+            currentPhaseRemainingTime = nil
+            currentPhaseStartTime = nil
+            currentPhaseTimeout = nil
+            
+            // 취소 플래그로 인한 취소인지 타임아웃인지 구분
+            if cancellationFlag {
+                throw PipelineTimeoutError.cancelled
+            } else {
+                throw PipelineTimeoutError.timeout(phase: phase)
+            }
+        }
+    }
+    
+    /// 강제 취소 (타임아웃 또는 사용자 취소)
+    func forceCancel() {
+        cancellationFlag = true
+        currentPhaseRemainingTime = nil
+        currentPhaseStartTime = nil
+        currentPhaseTimeout = nil
+        
+        // 진행 중인 모든 프로세스 중지
+        ClaudeCodeService.processManager.stopAll()
+        
+        // 현재 상태 저장
+        if var run = currentRun {
+            run.state = .cancelled
+            run.completedAt = Date()
+            run.addLog("🛑 파이프라인 강제 취소됨", level: .warning)
+            currentRun = run
+            savePipelineRun(run)
+            
+            // 중단 시점까지의 결과 위키에 저장
+            PipelineWikiService.shared.saveToWiki(run: run, projectName: currentProjectName)
+        }
+        
+        isRunning = false
+        showNotification("파이프라인이 취소되었습니다.", type: .warning)
     }
 }

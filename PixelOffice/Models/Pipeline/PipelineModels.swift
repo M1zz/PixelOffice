@@ -147,6 +147,15 @@ struct PipelineRun: Codable, Identifiable {
     /// 앱 실행 결과
     var appLaunchResult: AppLaunchResult?
 
+    /// 중간 결과 저장 (각 단계별 결과를 JSON 문자열로 저장)
+    var intermediateResults: [String: String] = [:]
+    
+    /// 타임아웃으로 중단되었는지 여부
+    var timedOut: Bool = false
+    
+    /// 타임아웃된 Phase
+    var timedOutPhase: PipelinePhase?
+
     /// 총 소요 시간 (초)
     var duration: TimeInterval? {
         guard let start = startedAt else { return nil }
@@ -327,7 +336,7 @@ struct DecompositionResult: Codable {
 // MARK: - Decision Log
 
 /// AI의 결정 사항
-struct PipelineDecision: Codable, Identifiable {
+struct PipelineDecision: Codable, Identifiable, Hashable {
     var id: UUID = UUID()
     var timestamp: Date = Date()
     var decision: String
