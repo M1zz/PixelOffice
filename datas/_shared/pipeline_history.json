@@ -1,3 +1,60 @@
 [
-
+  {
+    "runId": "run001",
+    "projectName": "뽀모도로-타이머",
+    "startTime": "2026-02-15T22:02:00+09:00",
+    "endTime": "2026-02-15T22:15:23+09:00",
+    "status": "completed",
+    "phases": [
+      {
+        "name": "기획",
+        "status": "completed",
+        "startTime": "2026-02-15T22:02:01+09:00",
+        "endTime": "2026-02-15T22:05:00+09:00",
+        "assignee": "소피아",
+        "outputs": ["기획/documents/2026-02-15-요구사항정의서.md"]
+      },
+      {
+        "name": "디자인",
+        "status": "completed",
+        "startTime": "2026-02-15T22:05:01+09:00",
+        "endTime": "2026-02-15T22:08:00+09:00",
+        "assignee": "유진",
+        "outputs": ["디자인/documents/2026-02-15-UI설계서.md"]
+      },
+      {
+        "name": "개발",
+        "status": "completed",
+        "startTime": "2026-02-15T22:08:01+09:00",
+        "endTime": "2026-02-15T22:15:00+09:00",
+        "assignee": "나타샤",
+        "outputs": [
+          "개발/documents/2026-02-15-기술설계서.md",
+          "개발/output/FocusTimer/"
+        ]
+      },
+      {
+        "name": "QA",
+        "status": "completed",
+        "startTime": "2026-02-15T22:15:01+09:00",
+        "endTime": "2026-02-15T22:15:22+09:00",
+        "assignee": "토니",
+        "outputs": ["QA/documents/2026-02-15-테스트리포트.md"]
+      }
+    ],
+    "decisions": [
+      {"time": "22:02:03", "phase": "기획", "decision": "타겟 사용자: 1인 창업자, 프리랜서"},
+      {"time": "22:02:04", "phase": "기획", "decision": "기술 스택: SwiftUI + AppKit (NSPanel)"},
+      {"time": "22:05:03", "phase": "디자인", "decision": "컬러: 집중=#FF6B6B, 휴식=#4ECDC4"},
+      {"time": "22:08:03", "phase": "개발", "decision": "아키텍처: MVVM"},
+      {"time": "22:08:03", "phase": "개발", "decision": "윈도우: NSPanel"}
+    ],
+    "summary": {
+      "documentsCreated": 4,
+      "codeFilesCreated": 5,
+      "buildStatus": "succeeded",
+      "testsPassed": 20,
+      "testsFailed": 0
+    }
+  }
 ]

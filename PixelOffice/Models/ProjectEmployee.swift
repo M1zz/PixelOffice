@@ -21,6 +21,9 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
     var personality: String  // 성격: 꼼꼼함, 창의적, 분석적 등
     var strengths: [String]  // 강점 리스트
     var workStyle: String    // 업무 스타일
+    
+    // 🆕 스킬
+    var skills: [EmployeeSkill]  // 보유 스킬 목록
 
     // 활동 통계
     var statistics: EmployeeStatistics
@@ -42,6 +45,7 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
         personality: String? = nil,
         strengths: [String]? = nil,
         workStyle: String? = nil,
+        skills: [EmployeeSkill]? = nil,
         statistics: EmployeeStatistics? = nil
     ) {
         self.id = id
@@ -61,7 +65,21 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
         self.personality = personality ?? Employee.generatePersonality(from: id, jobRole: primaryRole)
         self.strengths = strengths ?? Employee.generateStrengths(from: id, jobRole: primaryRole)
         self.workStyle = workStyle ?? Employee.generateWorkStyle(from: id, jobRole: primaryRole)
+        self.skills = skills ?? Self.generateDefaultSkills(for: departmentType)
         self.statistics = statistics ?? EmployeeStatistics()
+    }
+    
+    /// 부서 기반 기본 스킬 생성
+    static func generateDefaultSkills(for department: DepartmentType) -> [EmployeeSkill] {
+        let categories = EmployeeSkillCategory.categories(for: department)
+        return categories.prefix(3).map { category in
+            EmployeeSkill(
+                name: category.rawValue,
+                category: category,
+                level: .intermediate,
+                description: "\(category.rawValue) 업무 수행 가능"
+            )
+        }
     }
 
     /// UUID 기반 사원번호 생성
@@ -75,7 +93,7 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
     enum CodingKeys: String, CodingKey {
         case id, employeeNumber, sourceEmployeeId, name, aiType, jobRole, jobRoles, status, currentTaskId
         case conversationHistory, createdAt, totalTasksCompleted, characterAppearance, departmentType
-        case personality, strengths, workStyle, statistics
+        case personality, strengths, workStyle, skills, statistics
     }
 
     init(from decoder: Decoder) throws {
@@ -108,6 +126,8 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
         personality = try container.decodeIfPresent(String.self, forKey: .personality) ?? Employee.generatePersonality(from: id, jobRole: primaryRole)
         strengths = try container.decodeIfPresent([String].self, forKey: .strengths) ?? Employee.generateStrengths(from: id, jobRole: primaryRole)
         workStyle = try container.decodeIfPresent(String.self, forKey: .workStyle) ?? Employee.generateWorkStyle(from: id, jobRole: primaryRole)
+        // 기존 데이터에 스킬이 없으면 기본 스킬 생성
+        skills = try container.decodeIfPresent([EmployeeSkill].self, forKey: .skills) ?? Self.generateDefaultSkills(for: departmentType)
         // 기존 데이터에 통계 정보가 없으면 초기화
         statistics = try container.decodeIfPresent(EmployeeStatistics.self, forKey: .statistics) ?? EmployeeStatistics()
     }
@@ -130,6 +150,7 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
         try container.encode(personality, forKey: .personality)
         try container.encode(strengths, forKey: .strengths)
         try container.encode(workStyle, forKey: .workStyle)
+        try container.encode(skills, forKey: .skills)
         try container.encode(statistics, forKey: .statistics)
     }
 
