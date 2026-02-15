@@ -12,6 +12,7 @@
 		02515BA00F7D3019D07932D0 /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0989B97043D4D9B65446C072 /* DataManager.swift */; };
 		039FB5771CAB44AF472ABD19 /* ProjectPathSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500B13F05BE44BDA6373B13B /* ProjectPathSetupView.swift */; };
 		049BDE6760D270EA57D33BF5 /* CollaborationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 998D9A599169ABCC53770C8C /* CollaborationStore.swift */; };
+		04F808BE09E9297571094939 /* PipelineWikiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72371C9F793EA3624137D8D /* PipelineWikiService.swift */; };
 		06DED5A4D916F48825D095E6 /* SkillRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B70E40799B6BC36BAB17FA0 /* SkillRegistry.swift */; };
 		076F1B8A36223F023902B253 /* MarkdownToHTMLConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990B7831A8D81B3F719FA740 /* MarkdownToHTMLConverter.swift */; };
 		08B35536085DD48C8CDFF90D /* EmployeeWorkLogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E1FF4577CBC233335B25160 /* EmployeeWorkLogService.swift */; };
@@ -23,7 +24,6 @@
 		16946D39C0F51287F1B51B75 /* GitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD5708FFF8F7A10F55DC0A3 /* GitService.swift */; };
 		17ACE1524FD733889FDCED2B /* Debate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EADF7602C22ED8A3D1C37EE5 /* Debate.swift */; };
 		184A13552113C918363A6F18 /* EmployeeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A04A26D6533370EFE23AF6 /* EmployeeStore.swift */; };
-		195EEFB50B6B0118C43401B9 /* PipelineWikiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 666A9BFF8384E138C6EBF54E /* PipelineWikiService.swift */; };
 		1E5DE610A3056ACC4CEB7184 /* ProjectListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79F563540545CE12A8062E30 /* ProjectListView.swift */; };
 		201578F656EAC9B5F752069C /* TuistBundle+PixelOffice.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7DCC804C1608534FD8081C7 /* TuistBundle+PixelOffice.swift */; };
 		209B283173F75850D220567E /* StoreCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D99F25149E017D17D22291A /* StoreCoordinator.swift */; };
@@ -54,6 +54,7 @@
 		684A500D39084A66DB865F8C /* WikiStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFCA0FF7EF4459DD56A1AAEE /* WikiStore.swift */; };
 		6B17E2019E2AC832BC59F3EB /* PipelineCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2C527BACAEC64E71E03C367 /* PipelineCoordinator.swift */; };
 		6B8B54369C4C73036913A3B8 /* OfficeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12A16590245AE8254851087 /* OfficeLayout.swift */; };
+		6C022AC43D3A54CDACEEF9BF /* PipelineStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64CBE3EC4F0A1BD78D55FAAF /* PipelineStateManager.swift */; };
 		6D08F473F46B68CB5EDD1EBE /* AutoApprovalRulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B947C13BC0FEAEEA9342E746 /* AutoApprovalRulesView.swift */; };
 		6D1F2873998578C8BF9461FD /* DesignPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DDA48C584AFB1C398C34365 /* DesignPreviewView.swift */; };
 		74DD73DEE5DD9198D12DA0C7 /* CodeAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F22F8B206B500B42F2DA019 /* CodeAnalyzer.swift */; };
@@ -86,7 +87,6 @@
 		9A645D88956CEF23F89B058B /* EmployeeBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9083E6C5D2149547A85AD1 /* EmployeeBadgeView.swift */; };
 		9C41C61F1C75C9A2101A5207 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25AE95CF1FA5EB7163AD72D1 /* OnboardingView.swift */; };
 		9FFDAE61027D3D3E3A227499 /* DepartmentSkills.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0BD33957A8CD4FAEB868D26 /* DepartmentSkills.swift */; };
-		A029948C67945FAF13A1006D /* PipelineKanbanService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47A35BD927B2806C0A03603 /* PipelineKanbanService.swift */; };
 		A31866CB34D6AD5AEF5F0C2C /* Sprint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B30F23EF3CDD8A9FFD7DA1 /* Sprint.swift */; };
 		A743E1521AC43CAFC49F65B8 /* EmployeeDirectoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 015FA461CDC31087F17CB505 /* EmployeeDirectoryView.swift */; };
 		A794F1E894F0CCF403AC41F6 /* PermissionRequestHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAFA7A174A015164C2EE6E3E /* PermissionRequestHistoryView.swift */; };
@@ -120,6 +120,7 @@
 		D0E4763E1B75B3D3B40959D7 /* WikiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CC0ACACE5D7F45661BA5823 /* WikiService.swift */; };
 		D1E737B92DA7E23FE439BF3E /* DepartmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 412B9F5BCFE7561BB639409B /* DepartmentView.swift */; };
 		D28FCCA3CD0B57919830DAAA /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55108A5D91AA7D25C1ACDD8E /* SettingsView.swift */; };
+		D3488E4A7E0D75D70C41CA7A /* PipelineKanbanService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA87A0AAAEBC7EDBEDD3E76 /* PipelineKanbanService.swift */; };
 		D513E5D95DD40F3D81E4EE2D /* SubAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56EA655C3B19E6675DA16AC5 /* SubAgent.swift */; };
 		D65596A9A9B849DA41B13DE7 /* WalkingEmployeesLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 543818918AD8C6AACB739670 /* WalkingEmployeesLayer.swift */; };
 		D8FF292ECB9F35EFA4AE315E /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC41F04EE419D424CB4912B4 /* CommunityView.swift */; };
@@ -168,6 +169,7 @@
 		1B41A3B5FE8E45BC717B9765 /* PipelineExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineExecutor.swift; sourceTree = "<group>"; };
 		1B4D2E87A5DA6AF76734152E /* XcodeProjectGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XcodeProjectGenerator.swift; sourceTree = "<group>"; };
 		1B70E40799B6BC36BAB17FA0 /* SkillRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillRegistry.swift; sourceTree = "<group>"; };
+		1BA87A0AAAEBC7EDBEDD3E76 /* PipelineKanbanService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineKanbanService.swift; sourceTree = "<group>"; };
 		1BD5708FFF8F7A10F55DC0A3 /* GitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitService.swift; sourceTree = "<group>"; };
 		1DC521E8BDA27062502FD747 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1E22EBAA40F9B133389F7068 /* OfficeDecoration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeDecoration.swift; sourceTree = "<group>"; };
@@ -202,7 +204,7 @@
 		5B3BFB3F12ECACA062DFA078 /* AgentDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentDashboardView.swift; sourceTree = "<group>"; };
 		5D99F25149E017D17D22291A /* StoreCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreCoordinator.swift; sourceTree = "<group>"; };
 		60AF703FA7A7789328BEC671 /* Project.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project.swift; sourceTree = "<group>"; };
-		666A9BFF8384E138C6EBF54E /* PipelineWikiService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PipelineWikiService.swift; path = PipelineWikiService.swift; sourceTree = "<group>"; };
+		64CBE3EC4F0A1BD78D55FAAF /* PipelineStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineStateManager.swift; sourceTree = "<group>"; };
 		66B1A2B428E01E3EE9B40397 /* PipelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineView.swift; sourceTree = "<group>"; };
 		6ACAE60E9E7C0A0661981EF6 /* AIActionGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIActionGuide.swift; sourceTree = "<group>"; };
 		6E1AB37A14A087DDBCB7F477 /* EmployeeIDCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeIDCardView.swift; sourceTree = "<group>"; };
@@ -231,8 +233,8 @@
 		9DD4F5F95D922420AEAF29B2 /* AIActionParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIActionParser.swift; sourceTree = "<group>"; };
 		A19E25728C8EE94FD98C3977 /* PipelineModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineModels.swift; sourceTree = "<group>"; };
 		A3F838A6D789B8AB73EF47C5 /* ToastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastManager.swift; sourceTree = "<group>"; };
-		A47A35BD927B2806C0A03603 /* PipelineKanbanService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PipelineKanbanService.swift; path = PipelineKanbanService.swift; sourceTree = "<group>"; };
 		A6777D6D9A271E2A52533A66 /* ProjectEmployee.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectEmployee.swift; sourceTree = "<group>"; };
+		A72371C9F793EA3624137D8D /* PipelineWikiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineWikiService.swift; sourceTree = "<group>"; };
 		A789EC57E9C73179C35A4A2C /* Onboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding.swift; sourceTree = "<group>"; };
 		A8BD28884ED96234431FA522 /* TuistAssets+PixelOffice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TuistAssets+PixelOffice.swift"; sourceTree = "<group>"; };
 		A9E5784AB4E3CDA45A7CA6C8 /* Skill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Skill.swift; sourceTree = "<group>"; };
@@ -587,10 +589,11 @@
 				F2C527BACAEC64E71E03C367 /* PipelineCoordinator.swift */,
 				32EDE1FA6FCDD8AECA89B0CA /* PipelineCoordinator+SubAgent.swift */,
 				1B41A3B5FE8E45BC717B9765 /* PipelineExecutor.swift */,
+				1BA87A0AAAEBC7EDBEDD3E76 /* PipelineKanbanService.swift */,
 				03AF50B020DD3805C08B0FFA /* PipelineReportService.swift */,
+				64CBE3EC4F0A1BD78D55FAAF /* PipelineStateManager.swift */,
+				A72371C9F793EA3624137D8D /* PipelineWikiService.swift */,
 				09E463FCCA9AC3702DCDC891 /* RequirementDecomposer.swift */,
-				666A9BFF8384E138C6EBF54E /* PipelineWikiService.swift */,
-				A47A35BD927B2806C0A03603 /* PipelineKanbanService.swift */,
 			);
 			path = Pipeline;
 			sourceTree = "<group>";
@@ -719,6 +722,8 @@
 			dependencies = (
 			);
 			name = PixelOffice;
+			packageProductDependencies = (
+			);
 			productName = PixelOffice;
 			productReference = F1F6C163C8361A9A8935D6C6 /* PixelOffice.app */;
 			productType = "com.apple.product-type.application";
@@ -814,7 +819,10 @@
 				754857BCD156919996886B27 /* PipelineCoordinator+SubAgent.swift in Sources */,
 				6B17E2019E2AC832BC59F3EB /* PipelineCoordinator.swift in Sources */,
 				FC4EE6B1B8A92BFF3D4C707E /* PipelineExecutor.swift in Sources */,
+				D3488E4A7E0D75D70C41CA7A /* PipelineKanbanService.swift in Sources */,
 				CE48E81D5E1FB051AAAE97B9 /* PipelineReportService.swift in Sources */,
+				6C022AC43D3A54CDACEEF9BF /* PipelineStateManager.swift in Sources */,
+				04F808BE09E9297571094939 /* PipelineWikiService.swift in Sources */,
 				2496EC974AECDF8B81AE27F1 /* RequirementDecomposer.swift in Sources */,
 				7E68B31FDD69E5DE81BADA36 /* PipelineContextService.swift in Sources */,
 				49F70D04B201AFD7CF0A1FC5 /* ProjectRecoveryService.swift in Sources */,
@@ -892,8 +900,6 @@
 				3A126060347A419FA3DC6BF0 /* SidebarView.swift in Sources */,
 				40E410AB479A8686218FC73F /* ProjectWikiView.swift in Sources */,
 				5F70F42883EA1E0F64B088B2 /* WikiView.swift in Sources */,
-				195EEFB50B6B0118C43401B9 /* PipelineWikiService.swift in Sources */,
-				A029948C67945FAF13A1006D /* PipelineKanbanService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1057,7 +1063,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.leeo.PixelOffice;
 				PRODUCT_NAME = PixelOffice;
 				SDKROOT = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
+					"$(inherited)",
+					DEBUG,
+				);
 				SWIFT_COMPILATION_MODE = singlefile;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};

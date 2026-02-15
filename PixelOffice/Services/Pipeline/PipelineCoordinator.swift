@@ -95,6 +95,9 @@ class PipelineCoordinator: ObservableObject {
     let gitService = GitService()
     var cancellationFlag = false
     var currentProjectName: String = ""
+    
+    /// 상태 영속화 매니저 (크래시 복구, 파일 로깅)
+    let stateManager = PipelineStateManager.shared
 
     /// 최대 동시 실행 태스크 수 (기본 3개)
     nonisolated static let defaultMaxConcurrentTasks = 3
@@ -201,8 +204,9 @@ class PipelineCoordinator: ObservableObject {
         currentRun = run
         updateAction("파이프라인 초기화 중...")
 
-        // 초기 상태 저장
+        // 초기 상태 저장 (히스토리 + 크래시 복구용)
         saveRunProgress(run)
+        stateManager.markRunStarted(run)
 
         // Git 스냅샷 캡처 (파이프라인 시작 전)
         if let projectPath = projectInfo?.absolutePath {
@@ -445,6 +449,7 @@ class PipelineCoordinator: ObservableObject {
                 if cancellationFlag { return cancelWithSave(&currentRun) }
                 currentRun.markPhaseCompleted(.decomposition)
                 saveRunProgress(currentRun)
+                stateManager.markPhaseCompleted(currentRun, phase: .decomposition)
                 
                 // 분해 완료 후 위키 저장 및 칸반 동기화
                 PipelineWikiService.shared.savePhaseResult(run: currentRun, projectName: project.name, phase: .decomposition)
@@ -478,6 +483,7 @@ class PipelineCoordinator: ObservableObject {
                 if cancellationFlag { return cancelWithSave(&currentRun) }
                 currentRun.markPhaseCompleted(.development)
                 saveRunProgress(currentRun)
+                stateManager.markPhaseCompleted(currentRun, phase: .development)
                 
                 // 개발 완료 후 위키 저장 및 칸반 동기화
                 PipelineWikiService.shared.savePhaseResult(run: currentRun, projectName: project.name, phase: .development)
@@ -505,6 +511,7 @@ class PipelineCoordinator: ObservableObject {
                 if cancellationFlag { return cancelWithSave(&currentRun) }
                 currentRun.markPhaseCompleted(.build)
                 saveRunProgress(currentRun)
+                stateManager.markPhaseCompleted(currentRun, phase: .build)
                 
                 // 빌드 완료 후 위키 저장
                 PipelineWikiService.shared.savePhaseResult(run: currentRun, projectName: project.name, phase: .build)
@@ -528,6 +535,7 @@ class PipelineCoordinator: ObservableObject {
                 }
                 currentRun.markPhaseCompleted(.healing)
                 saveRunProgress(currentRun)
+                stateManager.markPhaseCompleted(currentRun, phase: .healing)
                 
                 // 힐링 완료 후 위키 저장
                 PipelineWikiService.shared.savePhaseResult(run: currentRun, projectName: project.name, phase: .healing)
@@ -574,6 +582,13 @@ class PipelineCoordinator: ObservableObject {
 
             // 파이프라인 저장
             savePipelineRun(currentRun)
+            
+            // 상태 매니저에 완료 알림 (크래시 복구 파일 정리)
+            if currentRun.isBuildSuccessful {
+                stateManager.markRunCompleted(currentRun)
+            } else {
+                stateManager.markRunFailed(currentRun, reason: "빌드 실패")
+            }
 
             // 완료/실패 알림
             if currentRun.isBuildSuccessful {
@@ -602,12 +617,16 @@ class PipelineCoordinator: ObservableObject {
             run.addLog("오류: \(error.localizedDescription)", level: .error)
             currentRun = run
             updateAction("❌ 오류 발생")
+            
+            // 에러 로깅 (파일에 기록)
+            stateManager.logError(run, error: error, context: "executePipelinePhases")
 
             // 실패해도 리포트 생성
             generateReport(for: run, projectName: project.name)
 
             // 파이프라인 저장
             savePipelineRun(run)
+            stateManager.markRunFailed(run, reason: error.localizedDescription)
 
             // 오류 알림
             showNotification("파이프라인 오류: \(error.localizedDescription)", type: .error)
@@ -631,6 +650,7 @@ class PipelineCoordinator: ObservableObject {
         run.addLog("파이프라인 일시정지됨 (재개 가능)", level: .warning)
         currentRun = run
         savePipelineRun(run)
+        stateManager.updateRunState(run, checkpoint: "일시정지됨 - 재개 가능")
         isRunning = false
         updateAction("⏸️ 일시정지됨")
         showNotification("파이프라인이 일시정지되었습니다. 히스토리에서 재개할 수 있습니다.", type: .warning)
@@ -925,6 +945,12 @@ class PipelineCoordinator: ObservableObject {
                     // 디자인 HTML 저장
                     if let html = result.designHTML, !html.isEmpty {
                         await self.saveDesignHTML(html: html, taskTitle: task.title, projectName: self.currentProjectName)
+                    }
+                    
+                    // 태스크 완료 시 상태 저장 (크래시 복구용)
+                    if let currentRun = self.currentRun {
+                        self.stateManager.markTaskCompleted(currentRun, task: task)
+                        self.saveRunProgress(currentRun)  // 히스토리에도 저장
                     }
                 }
             },

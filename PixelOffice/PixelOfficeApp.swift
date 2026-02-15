@@ -14,6 +14,12 @@ struct PixelOfficeApp: App {
                 .onAppear {
                     // 구조화된 토론 서비스 초기화
                     StructuredDebateService.shared.setCompanyStore(companyStore)
+                    
+                    // 중단된 파이프라인 확인 (크래시 복구)
+                    Task { @MainActor in
+                        PipelineStateManager.shared.checkForInterruptedRuns()
+                    }
+                    
                     print("✅ [App] 초기화 완료")
                 }
                 .onChange(of: scenePhase) { _, newPhase in

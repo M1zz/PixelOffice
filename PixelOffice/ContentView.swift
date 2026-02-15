@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var showingAddProject = false
 
     @StateObject private var toastManager = ToastManager.shared
+    @ObservedObject private var stateManager = PipelineStateManager.shared
 
     var body: some View {
         NavigationSplitView {
@@ -34,6 +35,25 @@ struct ContentView: View {
             }
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: toastManager.currentToast)
+        // 중단된 파이프라인 복구 알림
+        .alert("중단된 파이프라인 발견", isPresented: $stateManager.showRecoveryAlert) {
+            Button("나중에") {
+                stateManager.dismissRecoveryAlert()
+            }
+            if let firstRun = stateManager.interruptedRuns.first {
+                Button("히스토리 보기") {
+                    // 해당 프로젝트의 파이프라인 윈도우 열기
+                    openWindow(id: "pipeline", value: firstRun.projectId)
+                    stateManager.acknowledgeInterruptedRun(firstRun.id)
+                }
+            }
+        } message: {
+            if let firstRun = stateManager.interruptedRuns.first {
+                Text("'\(firstRun.projectName)' 프로젝트의 파이프라인이 비정상 종료되었습니다.\n마지막 단계: \(firstRun.currentPhase.name)\n히스토리에서 재개할 수 있습니다.")
+            } else {
+                Text("중단된 파이프라인을 히스토리에서 확인하세요.")
+            }
+        }
     }
     
     @ViewBuilder
