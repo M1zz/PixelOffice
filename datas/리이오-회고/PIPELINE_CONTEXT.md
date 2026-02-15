@@ -12,31 +12,16 @@
 /Users/leeo/Documents/code/LeeeoRetrospect
 ```
 
-### 빌드 명령
-
-```bash
-# Xcode 프로젝트 빌드
-xcodebuild -project LeeeoRetrospect.xcodeproj -scheme LeeeoRetrospect -configuration Debug build
-
-# 또는 Swift Package Manager
-swift build
-```
-
 ---
 
 ## 📋 기술 스택
-
-### 언어 및 프레임워크
 
 - **언어**: Swift 5.9+
 - **UI 프레임워크**: SwiftUI
 - **데이터 저장**: SwiftData
 - **최소 지원 버전**: macOS 14.0
-
-### 빌드 도구
-
-- **빌드 시스템**: Xcode 15+
-- **패키지 매니저**: Swift Package Manager
+- **빌드 도구**: Xcode 15+
+- **아키텍처**: MVVM
 
 ---
 
@@ -45,41 +30,34 @@ swift build
 ```
 LeeeoRetrospect/
 ├── LeeeoRetrospect/
-│   ├── App/
-│   │   └── LeeeoRetrospectApp.swift
+│   ├── LeeeoRetrospectApp.swift
 │   ├── Models/
+│   │   ├── Retrospect.swift
+│   │   └── Tag.swift
 │   ├── Views/
+│   │   ├── ContentView.swift
+│   │   ├── RetrospectListView.swift
+│   │   ├── RetrospectDetailView.swift
+│   │   ├── RetrospectEditorView.swift
+│   │   └── StatsView.swift
 │   ├── ViewModels/
+│   │   └── RetrospectViewModel.swift
 │   └── Services/
+│       └── SearchService.swift
 ├── LeeeoRetrospect.xcodeproj
 └── README.md
 ```
 
 ---
 
-## 🎯 코딩 컨벤션
+## 🎯 MVP 요구사항
 
-- **타입**: PascalCase (예: `RetrospectViewModel`)
-- **변수/함수**: camelCase (예: `saveRetrospect()`)
-- **아키텍처**: MVVM
-- **SwiftUI 스타일**: ViewBuilder 적극 활용
-- **에러 처리**: Swift Error + do-catch
-
----
-
-## ⚠️ 주의사항
-
-- 프로젝트 루트 외부에 파일 생성 금지
-- 모든 데이터는 SwiftData로 로컬 저장
-- 네트워크 기능 없음 (오프라인 우선)
-
----
-
-## 📚 참고 문서
-
-- **PROJECT.md**: `./datas/리이오-회고/PROJECT.md`
-- **기획서**: `./datas/리이오-회고/기획/documents/`
-- **디자인 가이드**: `./datas/리이오-회고/디자인/documents/`
+1. 회고 CRUD (생성/조회/수정/삭제)
+2. 기분/에너지 레벨 (1-5점)
+3. 구조화된 입력 (하이라이트/감사/배움/개선)
+4. 태그 시스템
+5. 검색 기능
+6. 3-column NavigationSplitView 레이아웃
 
 ---
 

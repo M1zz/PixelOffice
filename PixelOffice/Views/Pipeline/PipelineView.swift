@@ -22,6 +22,7 @@ struct PipelineView: View {
     @State private var showingDecisionLog = false  // 결정 로그
     @State private var isThinkingExpanded = true  // Thinking 패널 확장 상태
     @State private var showingCancelConfirmation = false  // 취소 확인 다이얼로그
+    @State private var showingFeedbackLoop = false  // 피드백 → 다음 스프린트
 
     enum PipelineTab: String, CaseIterable {
         case current = "현재 실행"
@@ -232,6 +233,16 @@ struct PipelineView: View {
         .sheet(isPresented: $showingDecisionLog) {
             if let run = coordinator.currentRun {
                 DecisionLogView(decisions: run.decisions)
+            }
+        }
+        .sheet(isPresented: $showingFeedbackLoop) {
+            if let project = project {
+                FeedbackLoopView(
+                    projectId: projectId,
+                    projectName: project.name,
+                    lastRun: coordinator.currentRun
+                )
+                .environmentObject(companyStore)
             }
         }
         .sheet(item: $coordinator.interruptRequest) { request in
@@ -462,6 +473,17 @@ struct PipelineView: View {
                     }
                     .buttonStyle(.bordered)
                     .tint(.orange)
+                }
+                
+                // 피드백 버튼 (완료 상태일 때)
+                if run.state == .completed || run.state == .failed {
+                    Button {
+                        showingFeedbackLoop = true
+                    } label: {
+                        Label("피드백 → 다음 스프린트", systemImage: "arrow.trianglehead.2.clockwise.rotate.90")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.purple)
                 }
             }
 
