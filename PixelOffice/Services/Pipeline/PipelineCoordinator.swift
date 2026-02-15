@@ -490,6 +490,15 @@ class PipelineCoordinator: ObservableObject {
                 if let store = companyStore {
                     kanbanSyncResult = PipelineKanbanService.shared.syncTasksToKanban(run: currentRun, project: project, companyStore: store)
                 }
+                
+                // 🎨 디자인 HTML 자동 생성
+                currentRun.addLog("🎨 디자인 HTML 목업 생성 중...", level: .info)
+                updateAction("디자인 HTML 목업 생성 중...")
+                let generatedPreviews = await generateDesignPreviews(for: project, run: &currentRun)
+                if !generatedPreviews.isEmpty {
+                    currentRun.designPreviewPaths.append(contentsOf: generatedPreviews)
+                    currentRun.addLog("✅ 디자인 프리뷰 \(generatedPreviews.count)개 생성됨", level: .success)
+                }
             }
 
             // Phase 3: 빌드
@@ -1144,6 +1153,101 @@ class PipelineCoordinator: ObservableObject {
         progress = 0.9
         currentRun = run
         return run
+    }
+
+    // MARK: - Design Preview Generation
+    
+    /// 프로젝트의 View 파일들에서 디자인 HTML 목업 자동 생성
+    private func generateDesignPreviews(for project: Project, run: inout PipelineRun) async -> [String] {
+        var generatedPaths: [String] = []
+        
+        // 프로젝트 소스 경로 확인
+        guard let projectInfo = loadProjectInfo(for: project),
+              !projectInfo.absolutePath.isEmpty else {
+            run.addLog("⚠️ 프로젝트 경로 없음 - 디자인 프리뷰 생성 스킵", level: .warning)
+            return []
+        }
+        
+        let projectPath = projectInfo.absolutePath
+        
+        // Views 폴더에서 SwiftUI 파일 찾기
+        let viewFiles = findViewFiles(in: projectPath)
+        
+        if viewFiles.isEmpty {
+            run.addLog("   View 파일을 찾을 수 없음", level: .debug)
+            return []
+        }
+        
+        run.addLog("   \(viewFiles.count)개 View 파일 발견", level: .debug)
+        
+        // 주요 View만 선택 (ContentView, 메인 뷰들)
+        let mainViews = viewFiles.filter { path in
+            let filename = (path as NSString).lastPathComponent.lowercased()
+            return filename.contains("content") ||
+                   filename.contains("main") ||
+                   filename.contains("home") ||
+                   filename.contains("detail") ||
+                   filename.contains("list")
+        }.prefix(3)  // 최대 3개만
+        
+        for viewPath in mainViews {
+            let viewName = (viewPath as NSString).lastPathComponent.replacingOccurrences(of: ".swift", with: "")
+            
+            do {
+                let swiftCode = try String(contentsOfFile: viewPath, encoding: .utf8)
+                
+                // 너무 짧은 파일은 스킵
+                guard swiftCode.count > 200 else { continue }
+                
+                run.addLog("   🎨 \(viewName) HTML 생성 중...", level: .debug)
+                
+                let html = try await DesignPreviewService.shared.generateHTMLPreview(
+                    from: swiftCode,
+                    viewName: viewName,
+                    projectName: project.name
+                )
+                
+                if !html.isEmpty {
+                    let basePath = DataPathService.shared.basePath
+                    let previewPath = "\(basePath)/\(project.name)/디자인/previews/\(viewName).html"
+                    generatedPaths.append(previewPath)
+                    run.addLog("   ✓ \(viewName).html 생성됨", level: .debug)
+                }
+            } catch {
+                run.addLog("   ⚠️ \(viewName) 프리뷰 생성 실패: \(error.localizedDescription)", level: .warning)
+            }
+        }
+        
+        return generatedPaths
+    }
+    
+    /// 프로젝트에서 View 파일 찾기
+    private func findViewFiles(in projectPath: String) -> [String] {
+        var viewFiles: [String] = []
+        
+        let fileManager = FileManager.default
+        guard let enumerator = fileManager.enumerator(atPath: projectPath) else {
+            return []
+        }
+        
+        while let element = enumerator.nextObject() as? String {
+            // .build, DerivedData 등 제외
+            if element.contains(".build") || element.contains("DerivedData") || element.contains(".git") {
+                continue
+            }
+            
+            // Swift 파일이고 View가 포함된 경로
+            if element.hasSuffix(".swift") {
+                let fullPath = "\(projectPath)/\(element)"
+                
+                // Views 폴더에 있거나, 파일명에 View가 포함
+                if element.lowercased().contains("view") || element.contains("Views/") {
+                    viewFiles.append(fullPath)
+                }
+            }
+        }
+        
+        return viewFiles
     }
 
     // MARK: - Helpers
