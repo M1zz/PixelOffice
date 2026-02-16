@@ -220,6 +220,10 @@ class CompanyStore: ObservableObject, StoreCoordinator {
     func removeProject(_ projectId: UUID) {
         projectStore.removeProject(projectId)
     }
+    
+    func renameProject(_ projectId: UUID, to newName: String) {
+        projectStore.renameProject(projectId, to: newName)
+    }
 
     func getProject(byId id: UUID) -> Project? {
         projectStore.getProject(byId: id)

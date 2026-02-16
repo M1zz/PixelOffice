@@ -32,6 +32,23 @@ final class ProjectStore {
         }
         coordinator.company.removeProject(projectId)
     }
+    
+    /// 프로젝트 이름 변경
+    func renameProject(_ projectId: UUID, to newName: String) {
+        if let index = coordinator.company.projects.firstIndex(where: { $0.id == projectId }) {
+            let oldName = coordinator.company.projects[index].name
+            coordinator.company.projects[index].name = newName
+            
+            // 데이터 폴더 이름도 변경
+            let basePath = DataPathService.shared.basePath
+            let oldPath = "\(basePath)/\(oldName)"
+            let newPath = "\(basePath)/\(newName)"
+            
+            if FileManager.default.fileExists(atPath: oldPath) {
+                try? FileManager.default.moveItem(atPath: oldPath, toPath: newPath)
+            }
+        }
+    }
 
     /// 프로젝트 조회
     func getProject(byId id: UUID) -> Project? {

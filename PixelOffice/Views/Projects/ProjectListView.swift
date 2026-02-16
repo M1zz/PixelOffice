@@ -104,6 +104,8 @@ struct ProjectCard: View {
     @Environment(\.openWindow) private var openWindow
     @State private var isHovering = false
     @State private var showingDeleteConfirmation = false
+    @State private var showingRenameSheet = false
+    @State private var newName = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -229,11 +231,28 @@ struct ProjectCard: View {
             
             Divider()
             
+            Button {
+                newName = project.name
+                showingRenameSheet = true
+            } label: {
+                Label("이름 변경", systemImage: "pencil")
+            }
+            
+            Divider()
+            
             Button(role: .destructive) {
                 showingDeleteConfirmation = true
             } label: {
                 Label("입주사 삭제", systemImage: "trash")
             }
+        }
+        .sheet(isPresented: $showingRenameSheet) {
+            RenameProjectSheet(
+                projectId: project.id,
+                currentName: project.name,
+                newName: $newName,
+                isPresented: $showingRenameSheet
+            )
         }
         .alert("입주사 삭제", isPresented: $showingDeleteConfirmation) {
             Button("취소", role: .cancel) { }
@@ -297,6 +316,86 @@ struct EmptyProjectsView: View {
             .padding(.top)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Rename Project Sheet
+
+struct RenameProjectSheet: View {
+    let projectId: UUID
+    let currentName: String
+    @Binding var newName: String
+    @Binding var isPresented: Bool
+    
+    @EnvironmentObject var companyStore: CompanyStore
+    
+    var isValid: Bool {
+        !newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        newName != currentName
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("입주사 이름 변경")
+                    .font(.title3.bold())
+                Spacer()
+                Button("취소") {
+                    isPresented = false
+                }
+            }
+            .padding()
+            
+            Divider()
+            
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("현재 이름")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Text(currentName)
+                        .font(.body)
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.secondary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("새 이름")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    TextField("입주사 이름", text: $newName)
+                        .textFieldStyle(.roundedBorder)
+                }
+            }
+            .padding()
+            
+            Spacer()
+            
+            Divider()
+            
+            HStack {
+                Spacer()
+                Button("취소") {
+                    isPresented = false
+                }
+                Button("변경") {
+                    renameProject()
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!isValid)
+            }
+            .padding()
+        }
+        .frame(width: 400, height: 280)
+    }
+    
+    private func renameProject() {
+        let trimmedName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        companyStore.renameProject(projectId, to: trimmedName)
+        isPresented = false
     }
 }
 
