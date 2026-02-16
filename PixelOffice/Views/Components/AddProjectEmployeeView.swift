@@ -7,6 +7,7 @@ struct AddProjectEmployeeView: View {
 
     @EnvironmentObject var companyStore: CompanyStore
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var skillStore = SkillStore.shared
 
     @State private var name = ""
     @State private var aiType: AIType = .claude
@@ -43,12 +44,22 @@ struct AddProjectEmployeeView: View {
         guard let type = selectedDepartmentType else { return [.general] }
         return JobRole.roles(for: type)
     }
+    
+    /// 선택된 직군들에 대한 추천 스킬 ID 목록
+    func getRecommendedSkillIds() -> Set<String> {
+        var allSkillIds = Set<String>()
+        for role in selectedJobRoles {
+            let skillIds = BuiltInSkills.recommendedSkillIds(for: role)
+            allSkillIds.formUnion(skillIds)
+        }
+        return allSkillIds
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("프로젝트 직원 추가")
+                Text("직원을 고용합니다")
                     .font(.title2.bold())
                 Spacer()
                 Button("취소") {
@@ -215,6 +226,63 @@ struct AddProjectEmployeeView: View {
                                 Text("선택한 직군: \(selectedJobRoles.map { $0.rawValue }.joined(separator: ", "))")
                                     .font(.callout)
                                     .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    
+                    // 적용되는 스킬 표시
+                    if !selectedJobRoles.isEmpty {
+                        Section("적용되는 스킬") {
+                            let recommendedSkillIds = getRecommendedSkillIds()
+                            let matchedSkills = skillStore.skills.filter { recommendedSkillIds.contains($0.id) }
+                            
+                            if matchedSkills.isEmpty {
+                                Text("매칭되는 스킬이 없습니다")
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    ForEach(matchedSkills) { skill in
+                                        HStack(spacing: 10) {
+                                            Image(systemName: skill.category.icon)
+                                                .foregroundStyle(skill.category.color)
+                                                .frame(width: 20)
+                                            
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                HStack {
+                                                    Text(skill.name)
+                                                        .font(.callout.bold())
+                                                    
+                                                    if skill.isCustom {
+                                                        Text("커스텀")
+                                                            .font(.caption2)
+                                                            .padding(.horizontal, 4)
+                                                            .padding(.vertical, 1)
+                                                            .background(Color.orange.opacity(0.2))
+                                                            .foregroundStyle(.orange)
+                                                            .clipShape(Capsule())
+                                                    }
+                                                }
+                                                
+                                                Text(skill.description)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.secondary)
+                                                    .lineLimit(1)
+                                            }
+                                            
+                                            Spacer()
+                                            
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundStyle(.green)
+                                        }
+                                        .padding(.vertical, 2)
+                                    }
+                                }
+                                
+                                Divider()
+                                
+                                Text("총 \(matchedSkills.count)개 스킬 적용")
+                                    .font(.callout)
+                                    .foregroundStyle(.blue)
                             }
                         }
                     }

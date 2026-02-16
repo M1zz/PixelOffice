@@ -670,4 +670,82 @@ enum BuiltInSkills {
         [claudeCodeAnalyze, claudeCodeGenerate, claudeCodeRefactor,
          claudeCodeTest, claudeCodeFix, claudeCodeReview]
     }
+    
+    /// 부서별 추천 스킬 ID
+    static func recommendedSkillIds(for departmentType: DepartmentType) -> [String] {
+        switch departmentType {
+        case .planning:
+            return ["code-analysis", "doc-gen", "claude-code-analyze"]
+        case .design:
+            return ["design-to-html", "doc-gen"]
+        case .development:
+            return ["code-analysis", "claude-code-generate", "claude-code-refactor", 
+                    "claude-code-fix", "test-gen", "refactor"]
+        case .qa:
+            return ["test-gen", "claude-code-test", "claude-code-review", "code-analysis"]
+        case .marketing:
+            return ["doc-gen", "claude-code-analyze"]
+        case .general:
+            return ["doc-gen", "code-analysis"]
+        }
+    }
+    
+    /// 직군별 추천 스킬 ID (더 세분화)
+    static func recommendedSkillIds(for jobRole: JobRole) -> [String] {
+        // 기본은 부서 스킬
+        var skillIds = recommendedSkillIds(for: jobRole.department)
+        
+        // 직군별 추가 스킬
+        switch jobRole {
+        // 기획팀
+        case .productManager, .productOwner, .servicePlanner:
+            skillIds.append(contentsOf: ["claude-code-review"])
+        case .dataAnalyst:
+            skillIds.append(contentsOf: ["code-analysis", "claude-code-analyze"])
+        case .uxResearcher:
+            skillIds.append(contentsOf: ["doc-gen"])
+            
+        // 디자인팀
+        case .uxDesigner, .uiDesigner:
+            skillIds.append(contentsOf: ["design-to-html"])
+        case .motionDesigner:
+            skillIds.append(contentsOf: ["code-analysis"])
+            
+        // 개발팀
+        case .frontendDeveloper:
+            skillIds.append(contentsOf: ["design-to-html", "claude-code-generate"])
+        case .backendDeveloper:
+            skillIds.append(contentsOf: ["claude-code-generate", "claude-code-refactor"])
+        case .iosDeveloper, .androidDeveloper:
+            skillIds.append(contentsOf: ["claude-code-generate", "claude-code-test"])
+        case .fullStackDeveloper:
+            skillIds.append(contentsOf: ["design-to-html", "claude-code-generate", "claude-code-refactor"])
+        case .devOpsEngineer:
+            skillIds.append(contentsOf: ["claude-code-fix"])
+        case .mlEngineer, .dataEngineer:
+            skillIds.append(contentsOf: ["claude-code-analyze", "code-analysis"])
+        case .securityEngineer:
+            skillIds.append(contentsOf: ["claude-code-review", "code-analysis"])
+            
+        // QA팀
+        case .qaEngineer, .sdet:
+            skillIds.append(contentsOf: ["claude-code-test", "test-gen"])
+        case .qaLead:
+            skillIds.append(contentsOf: ["claude-code-review"])
+        case .performanceTester:
+            skillIds.append(contentsOf: ["code-analysis"])
+            
+        // 마케팅팀
+        case .contentMarketer:
+            skillIds.append(contentsOf: ["doc-gen"])
+        case .growthManager, .performanceMarketer:
+            skillIds.append(contentsOf: ["claude-code-analyze"])
+            
+        default:
+            break
+        }
+        
+        // 중복 제거
+        return Array(Set(skillIds))
+    }
 }
