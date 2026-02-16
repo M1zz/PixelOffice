@@ -43,6 +43,14 @@ struct SidebarView: View {
                 ) {
                     selectedTab = .wiki
                 }
+                
+                SidebarButton(
+                    label: "에이전트 허브",
+                    icon: "cube.box.fill",
+                    isSelected: selectedTab == .agentHub
+                ) {
+                    selectedTab = .agentHub
+                }
             }
 
 //            Section {

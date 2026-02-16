@@ -58,6 +58,8 @@
 		5E9B11B72F0703A54AC1046E /* CompanyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA87F1D95AEE3005E7BFE7B3 /* CompanyStore.swift */; };
 		5F70F42883EA1E0F64B088B2 /* WikiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1C2BC152AD1932F80BE12B /* WikiView.swift */; };
 		684A500D39084A66DB865F8C /* WikiStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFCA0FF7EF4459DD56A1AAEE /* WikiStore.swift */; };
+		C2AF096D1863447B8F1373BF /* SkillStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07BAD15A174041DC9B6ADBC6 /* SkillStore.swift */; };
+		12ACEBFF97904C19BFF5924C /* AgentHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B7BAB9A037F4C0389EC4027 /* AgentHubView.swift */; };
 		6B17E2019E2AC832BC59F3EB /* PipelineCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2C527BACAEC64E71E03C367 /* PipelineCoordinator.swift */; };
 		6B8B54369C4C73036913A3B8 /* OfficeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12A16590245AE8254851087 /* OfficeLayout.swift */; };
 		6C022AC43D3A54CDACEEF9BF /* PipelineStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64CBE3EC4F0A1BD78D55FAAF /* PipelineStateManager.swift */; };
@@ -293,6 +295,8 @@
 		DC6B079A3FDF151282A2BD0C /* Repositories.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repositories.swift; sourceTree = "<group>"; };
 		DD59245CF61CEBA8ABA83C2E /* ConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationView.swift; sourceTree = "<group>"; };
 		DFCA0FF7EF4459DD56A1AAEE /* WikiStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiStore.swift; sourceTree = "<group>"; };
+		07BAD15A174041DC9B6ADBC6 /* SkillStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillStore.swift; sourceTree = "<group>"; };
+		6B7BAB9A037F4C0389EC4027 /* AgentHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentHubView.swift; sourceTree = "<group>"; };
 		E53E5CAF7CDBA09EF8807235 /* EmployeeChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeChatView.swift; sourceTree = "<group>"; };
 		E553CCE6D56253D03477F564 /* PermissionRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRequest.swift; sourceTree = "<group>"; };
 		E5DC5FCC05AC6B73BD575A75 /* FlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
@@ -562,6 +566,7 @@
 		BBEC653EF5F344FFA7E074E2 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F6071829304152 /* AgentHub */,
 				FF74297D1BD2E706ED43A5E4 /* Chat */,
 				60F141A7CB1279297F091AD4 /* Clarification */,
 				CFB9F6C3CC936C6EF22734F3 /* Collaboration */,
@@ -582,6 +587,14 @@
 				CF46BF6A7622BC53436F1A66 /* SidebarView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6071829304152 /* AgentHub */ = {
+			isa = PBXGroup;
+			children = (
+				6B7BAB9A037F4C0389EC4027 /* AgentHubView.swift */,
+			);
+			path = AgentHub;
 			sourceTree = "<group>";
 		};
 		BE0328F3BEF97FD2D4F09BE7 /* Permissions */ = {
@@ -688,6 +701,7 @@
 				C06D7612B318BA375B90A981 /* SettingsStore.swift */,
 				5D99F25149E017D17D22291A /* StoreCoordinator.swift */,
 				DFCA0FF7EF4459DD56A1AAEE /* WikiStore.swift */,
+				07BAD15A174041DC9B6ADBC6 /* SkillStore.swift */,
 			);
 			path = Stores;
 			sourceTree = "<group>";
@@ -902,6 +916,8 @@
 				565EB8C3999BAD1617793FA1 /* SettingsStore.swift in Sources */,
 				209B283173F75850D220567E /* StoreCoordinator.swift in Sources */,
 				684A500D39084A66DB865F8C /* WikiStore.swift in Sources */,
+				C2AF096D1863447B8F1373BF /* SkillStore.swift in Sources */,
+				12ACEBFF97904C19BFF5924C /* AgentHubView.swift in Sources */,
 				81A3E80460A1E6D1C0679742 /* StructuredDebateService.swift in Sources */,
 				8E0476100872B52ACA61F4F3 /* SubAgentCoordinator.swift in Sources */,
 				823AC979ACF3F10DAE38FE2B /* TaskFileSyncService.swift in Sources */,
