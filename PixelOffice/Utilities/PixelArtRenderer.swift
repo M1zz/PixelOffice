@@ -14,23 +14,30 @@ class PixelArtRenderer {
     ]
     
     static let hairColors: [NSColor] = [
-        NSColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0),      // Black
-        NSColor(red: 0.4, green: 0.26, blue: 0.13, alpha: 1.0),    // Brown
-        NSColor(red: 0.65, green: 0.5, blue: 0.35, alpha: 1.0),    // Light brown
-        NSColor(red: 0.85, green: 0.65, blue: 0.13, alpha: 1.0),   // Blonde
-        NSColor(red: 0.6, green: 0.2, blue: 0.2, alpha: 1.0),      // Red
-        NSColor(red: 0.5, green: 0.5, blue: 0.6, alpha: 1.0)       // Gray
+        NSColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0),      // 0: Black
+        NSColor(red: 0.4, green: 0.26, blue: 0.13, alpha: 1.0),    // 1: Brown
+        NSColor(red: 0.65, green: 0.5, blue: 0.35, alpha: 1.0),    // 2: Light brown
+        NSColor(red: 0.85, green: 0.65, blue: 0.13, alpha: 1.0),   // 3: Blonde
+        NSColor(red: 0.6, green: 0.2, blue: 0.2, alpha: 1.0),      // 4: Red
+        NSColor(red: 0.5, green: 0.5, blue: 0.6, alpha: 1.0),      // 5: Gray
+        NSColor(red: 0.8, green: 0.8, blue: 0.85, alpha: 1.0),     // 6: Silver
+        NSColor(red: 0.2, green: 0.7, blue: 0.7, alpha: 1.0),      // 7: Cyan
+        NSColor(red: 0.6, green: 0.3, blue: 0.7, alpha: 1.0)       // 8: Purple
     ]
     
     static let shirtColors: [NSColor] = [
-        .white,
-        NSColor(red: 0.2, green: 0.4, blue: 0.8, alpha: 1.0),      // Blue
-        NSColor(red: 0.8, green: 0.2, blue: 0.2, alpha: 1.0),      // Red
-        NSColor(red: 0.2, green: 0.7, blue: 0.3, alpha: 1.0),      // Green
-        NSColor(red: 0.6, green: 0.3, blue: 0.7, alpha: 1.0),      // Purple
-        NSColor(red: 0.9, green: 0.5, blue: 0.1, alpha: 1.0),      // Orange
-        NSColor(red: 0.9, green: 0.5, blue: 0.6, alpha: 1.0),      // Pink
-        NSColor(red: 0.3, green: 0.3, blue: 0.3, alpha: 1.0)       // Dark gray
+        .white,                                                     // 0: White
+        NSColor(red: 0.2, green: 0.4, blue: 0.8, alpha: 1.0),      // 1: Blue
+        NSColor(red: 0.8, green: 0.2, blue: 0.2, alpha: 1.0),      // 2: Red
+        NSColor(red: 0.2, green: 0.7, blue: 0.3, alpha: 1.0),      // 3: Green
+        NSColor(red: 0.6, green: 0.3, blue: 0.7, alpha: 1.0),      // 4: Purple
+        NSColor(red: 0.9, green: 0.5, blue: 0.1, alpha: 1.0),      // 5: Orange
+        NSColor(red: 0.9, green: 0.5, blue: 0.6, alpha: 1.0),      // 6: Pink
+        NSColor(red: 0.3, green: 0.3, blue: 0.3, alpha: 1.0),      // 7: Dark gray
+        NSColor(red: 0.53, green: 0.81, blue: 0.92, alpha: 1.0),   // 8: Sky blue
+        NSColor(red: 0.95, green: 0.90, blue: 0.25, alpha: 1.0),   // 9: Yellow
+        NSColor(red: 0.0, green: 0.2, blue: 0.4, alpha: 1.0),      // 10: Navy
+        NSColor(red: 0.6, green: 0.95, blue: 0.85, alpha: 1.0)     // 11: Mint
     ]
     
     // MARK: - Rendering Methods
@@ -154,24 +161,64 @@ class PixelArtRenderer {
         pixelSize: CGFloat
     ) {
         switch style {
-        case 0: // Short
-            drawPixelRect(context: context, x: centerX - pixelSize * 2, y: startY, width: 4, height: 2, pixelSize: pixelSize, color: color)
-        case 1: // Medium
+        case 0: // 숏컷 (볼륨 추가)
+            drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX - pixelSize * 2, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX + pixelSize * 2, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color)
+        case 1: // 미디엄
             drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: color)
             drawPixel(context: context, x: centerX - pixelSize * 2.5, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color)
             drawPixel(context: context, x: centerX + pixelSize * 2.5, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color)
-        case 2: // Long
+        case 2: // 롱헤어
             drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: color)
             drawPixel(context: context, x: centerX - pixelSize * 2.5, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color)
             drawPixel(context: context, x: centerX + pixelSize * 2.5, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color)
             drawPixel(context: context, x: centerX - pixelSize * 2.5, y: startY + pixelSize * 3, pixelSize: pixelSize, color: color)
             drawPixel(context: context, x: centerX + pixelSize * 2.5, y: startY + pixelSize * 3, pixelSize: pixelSize, color: color)
-        case 3: // Spiky
+        case 3: // 스파이키
             drawPixelRect(context: context, x: centerX - pixelSize * 2, y: startY + pixelSize, width: 4, height: 1, pixelSize: pixelSize, color: color)
             drawPixel(context: context, x: centerX - pixelSize, y: startY, pixelSize: pixelSize, color: color)
             drawPixel(context: context, x: centerX + pixelSize, y: startY, pixelSize: pixelSize, color: color)
-        default: // Bald
+            drawPixel(context: context, x: centerX, y: startY - pixelSize, pixelSize: pixelSize, color: color)
+        case 4: // 민머리
             break
+        case 5: // 포니테일
+            drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX - pixelSize * 2, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX + pixelSize * 3, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX + pixelSize * 3.5, y: startY + pixelSize * 3, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX + pixelSize * 4, y: startY + pixelSize * 4, pixelSize: pixelSize, color: color)
+        case 6: // 보브컷
+            drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 3, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX - pixelSize * 2, y: startY + pixelSize * 3, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX + pixelSize * 2, y: startY + pixelSize * 3, pixelSize: pixelSize, color: color)
+        case 7: // 모히칸
+            drawPixel(context: context, x: centerX, y: startY - pixelSize * 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX, y: startY - pixelSize, pixelSize: pixelSize, color: color)
+            drawPixelRect(context: context, x: centerX - pixelSize, y: startY, width: 2, height: 2, pixelSize: pixelSize, color: color)
+        case 8: // 곱슬
+            drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX - pixelSize * 3, y: startY + pixelSize, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX + pixelSize * 3, y: startY + pixelSize, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX - pixelSize * 2.5, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX + pixelSize * 2.5, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color)
+        case 9: // 투블럭
+            drawPixelRect(context: context, x: centerX - pixelSize * 2, y: startY, width: 4, height: 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX - pixelSize * 2, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color.withAlphaComponent(0.5))
+            drawPixel(context: context, x: centerX + pixelSize * 2, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color.withAlphaComponent(0.5))
+        case 10: // 울프컷
+            drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX - pixelSize * 3, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX + pixelSize * 3, y: startY + pixelSize * 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX - pixelSize * 2.5, y: startY + pixelSize * 3, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX + pixelSize * 2.5, y: startY + pixelSize * 3, pixelSize: pixelSize, color: color)
+        case 11: // 언더컷
+            drawPixelRect(context: context, x: centerX - pixelSize * 1.5, y: startY, width: 3, height: 2, pixelSize: pixelSize, color: color)
+            drawPixel(context: context, x: centerX - pixelSize * 2, y: startY + pixelSize, pixelSize: pixelSize, color: color.withAlphaComponent(0.5))
+            drawPixel(context: context, x: centerX + pixelSize * 2, y: startY + pixelSize, pixelSize: pixelSize, color: color.withAlphaComponent(0.5))
+        default:
+            // 알 수 없는 스타일은 숏컷으로 fallback
+            drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: color)
         }
     }
     
