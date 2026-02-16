@@ -316,17 +316,33 @@ struct PixelCharacterLarge: View {
 
     var hairColors: [Color] {
         [
-            Color(red: 0.1, green: 0.1, blue: 0.1),
-            Color(red: 0.4, green: 0.26, blue: 0.13),
-            Color(red: 0.65, green: 0.5, blue: 0.35),
-            Color(red: 0.85, green: 0.65, blue: 0.13),
-            Color(red: 0.6, green: 0.2, blue: 0.2),
-            Color(red: 0.5, green: 0.5, blue: 0.6)
+            Color(red: 0.1, green: 0.1, blue: 0.1),    // 0: Black
+            Color(red: 0.4, green: 0.26, blue: 0.13),  // 1: Brown
+            Color(red: 0.65, green: 0.5, blue: 0.35),  // 2: Light brown
+            Color(red: 0.85, green: 0.65, blue: 0.13), // 3: Blonde
+            Color(red: 0.6, green: 0.2, blue: 0.2),    // 4: Red
+            Color(red: 0.5, green: 0.5, blue: 0.6),    // 5: Gray
+            Color(red: 0.8, green: 0.8, blue: 0.85),   // 6: Silver
+            Color(red: 0.2, green: 0.7, blue: 0.7),    // 7: Cyan
+            Color(red: 0.6, green: 0.3, blue: 0.7)     // 8: Purple
         ]
     }
 
     var shirtColors: [Color] {
-        [.white, .blue, .red, .green, .purple, .orange, .pink, Color(white: 0.3)]
+        [
+            .white,                                    // 0: White
+            .blue,                                     // 1: Blue
+            .red,                                      // 2: Red
+            .green,                                    // 3: Green
+            .purple,                                   // 4: Purple
+            .orange,                                   // 5: Orange
+            .pink,                                     // 6: Pink
+            Color(white: 0.3),                         // 7: Dark gray
+            Color(red: 0.53, green: 0.81, blue: 0.92), // 8: Sky blue
+            Color(red: 0.95, green: 0.90, blue: 0.25), // 9: Yellow
+            Color(red: 0.0, green: 0.2, blue: 0.4),    // 10: Navy
+            Color(red: 0.6, green: 0.95, blue: 0.85)   // 11: Mint
+        ]
     }
 
     var skinColor: Color {
@@ -375,24 +391,64 @@ struct PixelCharacterLarge: View {
 
     private func drawHair(context: GraphicsContext, centerX: CGFloat, startY: CGFloat, pixelSize: CGFloat) {
         switch appearance.hairStyle {
-        case 0:
-            drawPixelRect(context: context, x: centerX - pixelSize * 2, y: startY, width: 4, height: 2, pixelSize: pixelSize, color: hairColor)
-        case 1:
+        case 0: // 숏컷 (볼륨 추가)
+            drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX - pixelSize * 2, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX + pixelSize * 2, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor)
+        case 1: // 미디엄
             drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: hairColor)
             drawPixel(context: context, x: centerX - pixelSize * 2.5, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor)
             drawPixel(context: context, x: centerX + pixelSize * 2.5, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor)
-        case 2:
+        case 2: // 롱헤어
             drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: hairColor)
             drawPixel(context: context, x: centerX - pixelSize * 2.5, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor)
             drawPixel(context: context, x: centerX + pixelSize * 2.5, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor)
             drawPixel(context: context, x: centerX - pixelSize * 2.5, y: startY + pixelSize * 3, pixelSize: pixelSize, color: hairColor)
             drawPixel(context: context, x: centerX + pixelSize * 2.5, y: startY + pixelSize * 3, pixelSize: pixelSize, color: hairColor)
-        case 3:
+        case 3: // 스파이키
             drawPixelRect(context: context, x: centerX - pixelSize * 2, y: startY + pixelSize, width: 4, height: 1, pixelSize: pixelSize, color: hairColor)
             drawPixel(context: context, x: centerX - pixelSize, y: startY, pixelSize: pixelSize, color: hairColor)
             drawPixel(context: context, x: centerX + pixelSize, y: startY, pixelSize: pixelSize, color: hairColor)
-        default:
+            drawPixel(context: context, x: centerX, y: startY - pixelSize, pixelSize: pixelSize, color: hairColor)
+        case 4: // 민머리
             break
+        case 5: // 포니테일
+            drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX - pixelSize * 2, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX + pixelSize * 3, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX + pixelSize * 3.5, y: startY + pixelSize * 3, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX + pixelSize * 4, y: startY + pixelSize * 4, pixelSize: pixelSize, color: hairColor)
+        case 6: // 보브컷
+            drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 3, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX - pixelSize * 2, y: startY + pixelSize * 3, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX + pixelSize * 2, y: startY + pixelSize * 3, pixelSize: pixelSize, color: hairColor)
+        case 7: // 모히칸
+            drawPixel(context: context, x: centerX, y: startY - pixelSize * 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX, y: startY - pixelSize, pixelSize: pixelSize, color: hairColor)
+            drawPixelRect(context: context, x: centerX - pixelSize, y: startY, width: 2, height: 2, pixelSize: pixelSize, color: hairColor)
+        case 8: // 곱슬
+            drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX - pixelSize * 3, y: startY + pixelSize, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX + pixelSize * 3, y: startY + pixelSize, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX - pixelSize * 2.5, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX + pixelSize * 2.5, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor)
+        case 9: // 투블럭
+            drawPixelRect(context: context, x: centerX - pixelSize * 2, y: startY, width: 4, height: 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX - pixelSize * 2, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor.opacity(0.5))
+            drawPixel(context: context, x: centerX + pixelSize * 2, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor.opacity(0.5))
+        case 10: // 울프컷
+            drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX - pixelSize * 3, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX + pixelSize * 3, y: startY + pixelSize * 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX - pixelSize * 2.5, y: startY + pixelSize * 3, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX + pixelSize * 2.5, y: startY + pixelSize * 3, pixelSize: pixelSize, color: hairColor)
+        case 11: // 언더컷
+            drawPixelRect(context: context, x: centerX - pixelSize * 1.5, y: startY, width: 3, height: 2, pixelSize: pixelSize, color: hairColor)
+            drawPixel(context: context, x: centerX - pixelSize * 2, y: startY + pixelSize, pixelSize: pixelSize, color: hairColor.opacity(0.5))
+            drawPixel(context: context, x: centerX + pixelSize * 2, y: startY + pixelSize, pixelSize: pixelSize, color: hairColor.opacity(0.5))
+        default:
+            // 알 수 없는 스타일은 숏컷으로 fallback
+            drawPixelRect(context: context, x: centerX - pixelSize * 2.5, y: startY, width: 5, height: 2, pixelSize: pixelSize, color: hairColor)
         }
     }
 
