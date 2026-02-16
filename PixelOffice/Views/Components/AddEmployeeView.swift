@@ -6,11 +6,13 @@ struct AddEmployeeView: View {
 
     @EnvironmentObject var companyStore: CompanyStore
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var skillStore = SkillStore.shared
 
     @State private var name = ""
     @State private var aiType: AIType = .claude
     @State private var selectedDepartmentId: UUID?
     @State private var selectedJobRoles: Set<JobRole> = []
+    @State private var selectedSkillIds: Set<String> = []
     @State private var appearance = CharacterAppearance.random()
 
     var isValid: Bool {
@@ -159,6 +161,71 @@ struct AddEmployeeView: View {
                             if !selectedJobRoles.isEmpty {
                                 Divider()
                                 Text("선택한 직군: \(selectedJobRoles.map { $0.rawValue }.joined(separator: ", "))")
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    
+                    // 스킬 선택 섹션
+                    Section("스킬 선택 (선택사항)") {
+                        if skillStore.skills.isEmpty {
+                            Text("등록된 스킬이 없습니다")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            VStack(alignment: .leading, spacing: 8) {
+                                ForEach(skillStore.skills) { skill in
+                                    Button {
+                                        if selectedSkillIds.contains(skill.id) {
+                                            selectedSkillIds.remove(skill.id)
+                                        } else {
+                                            selectedSkillIds.insert(skill.id)
+                                        }
+                                    } label: {
+                                        HStack(spacing: 10) {
+                                            Image(systemName: selectedSkillIds.contains(skill.id) ? "checkmark.square.fill" : "square")
+                                                .foregroundStyle(selectedSkillIds.contains(skill.id) ? skill.category.color : .secondary)
+                                                .font(.title3)
+                                            
+                                            Image(systemName: skill.category.icon)
+                                                .foregroundStyle(skill.category.color)
+                                                .frame(width: 20)
+                                            
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                HStack {
+                                                    Text(skill.name)
+                                                        .font(.body)
+                                                        .foregroundStyle(.primary)
+                                                    
+                                                    if skill.isCustom {
+                                                        Text("커스텀")
+                                                            .font(.caption2)
+                                                            .padding(.horizontal, 4)
+                                                            .padding(.vertical, 1)
+                                                            .background(Color.orange.opacity(0.2))
+                                                            .foregroundStyle(.orange)
+                                                            .clipShape(Capsule())
+                                                    }
+                                                }
+                                                
+                                                Text(skill.description)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.secondary)
+                                                    .lineLimit(1)
+                                            }
+                                            
+                                            Spacer()
+                                        }
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(.vertical, 2)
+                                }
+                            }
+                            
+                            if !selectedSkillIds.isEmpty {
+                                Divider()
+                                Text("선택한 스킬: \(selectedSkillIds.count)개")
                                     .font(.callout)
                                     .foregroundStyle(.secondary)
                             }
@@ -314,6 +381,7 @@ struct AddEmployeeView: View {
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             aiType: aiType,
             jobRoles: Array(selectedJobRoles),
+            skillIds: Array(selectedSkillIds),
             status: .idle,
             characterAppearance: appearance
         )

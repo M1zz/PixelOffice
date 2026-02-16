@@ -7,6 +7,7 @@ struct Employee: Codable, Identifiable, Hashable {
     var name: String
     var aiType: AIType
     var jobRoles: [JobRole]  // 직군 (멀티 선택 가능)
+    var skillIds: [String]   // 선택된 스킬 ID들
     var status: EmployeeStatus
     var currentTaskId: UUID?
     var conversationHistory: [Message]
@@ -28,6 +29,7 @@ struct Employee: Codable, Identifiable, Hashable {
         name: String,
         aiType: AIType = .claude,
         jobRoles: [JobRole] = [.general],
+        skillIds: [String] = [],
         status: EmployeeStatus = .idle,
         currentTaskId: UUID? = nil,
         conversationHistory: [Message] = [],
@@ -44,6 +46,7 @@ struct Employee: Codable, Identifiable, Hashable {
         self.name = name
         self.aiType = aiType
         self.jobRoles = jobRoles.isEmpty ? [.general] : jobRoles
+        self.skillIds = skillIds
         self.status = status
         self.currentTaskId = currentTaskId
         self.conversationHistory = conversationHistory
@@ -210,7 +213,7 @@ struct Employee: Codable, Identifiable, Hashable {
 
     // MARK: - Codable (기존 데이터 호환)
     enum CodingKeys: String, CodingKey {
-        case id, employeeNumber, name, aiType, jobRole, jobRoles, status, currentTaskId
+        case id, employeeNumber, name, aiType, jobRole, jobRoles, skillIds, status, currentTaskId
         case conversationHistory, createdAt, totalTasksCompleted, characterAppearance
         case personality, strengths, workStyle, statistics
     }
@@ -229,6 +232,9 @@ struct Employee: Codable, Identifiable, Hashable {
         } else {
             jobRoles = [.general]
         }
+        
+        // 스킬 ID (기존 데이터 호환)
+        skillIds = try container.decodeIfPresent([String].self, forKey: .skillIds) ?? []
 
         status = try container.decode(EmployeeStatus.self, forKey: .status)
         currentTaskId = try container.decodeIfPresent(UUID.self, forKey: .currentTaskId)
@@ -254,6 +260,7 @@ struct Employee: Codable, Identifiable, Hashable {
         try container.encode(name, forKey: .name)
         try container.encode(aiType, forKey: .aiType)
         try container.encode(jobRoles, forKey: .jobRoles)
+        try container.encode(skillIds, forKey: .skillIds)
         try container.encode(status, forKey: .status)
         try container.encodeIfPresent(currentTaskId, forKey: .currentTaskId)
         try container.encode(conversationHistory, forKey: .conversationHistory)

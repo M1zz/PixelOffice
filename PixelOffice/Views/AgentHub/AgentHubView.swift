@@ -337,14 +337,17 @@ private struct SkillDetailView: View {
                         }
                         .buttonStyle(.bordered)
                         
+                        // 편집 버튼 (모든 스킬)
+                        Button {
+                            showingEdit = true
+                        } label: {
+                            Image(systemName: "pencil")
+                        }
+                        .buttonStyle(.bordered)
+                        .help(skill.isCustom ? "스킬 편집" : "스킬 편집 (사본 생성)")
+                        
+                        // 삭제 버튼 (커스텀만)
                         if skill.isCustom {
-                            Button {
-                                showingEdit = true
-                            } label: {
-                                Image(systemName: "pencil")
-                            }
-                            .buttonStyle(.bordered)
-                            
                             Button {
                                 showingDeleteAlert = true
                             } label: {
@@ -884,10 +887,16 @@ private struct EditSkillSheet: View {
     @State private var systemPrompt: String
     @State private var promptTemplate: String
     @State private var tags: String
+    @State private var skillId: String
+    
+    var isBuiltIn: Bool { !skill.isCustom }
     
     init(skill: Skill) {
         self.skill = skill
-        self._name = State(initialValue: skill.name)
+        // 빌트인 스킬이면 이름에 (수정됨) 붙이고 ID도 변경
+        let isBuiltIn = !skill.isCustom
+        self._name = State(initialValue: isBuiltIn ? "\(skill.name) (수정됨)" : skill.name)
+        self._skillId = State(initialValue: isBuiltIn ? "\(skill.id)-custom" : skill.id)
         self._description = State(initialValue: skill.description)
         self._category = State(initialValue: skill.category)
         self._systemPrompt = State(initialValue: skill.systemPrompt ?? "")
@@ -897,14 +906,15 @@ private struct EditSkillSheet: View {
     
     var isValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !promptTemplate.trimmingCharacters(in: .whitespaces).isEmpty
+        !promptTemplate.trimmingCharacters(in: .whitespaces).isEmpty &&
+        !skillId.trimmingCharacters(in: .whitespaces).isEmpty
     }
     
     var body: some View {
         VStack(spacing: 0) {
             // 헤더
             HStack {
-                Text("스킬 편집")
+                Text(isBuiltIn ? "스킬 사본 만들기" : "스킬 편집")
                     .font(.title3.bold())
                 Spacer()
                 Button("취소") {
@@ -913,11 +923,30 @@ private struct EditSkillSheet: View {
             }
             .padding()
             
+            // 빌트인 스킬 안내
+            if isBuiltIn {
+                HStack {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundStyle(.blue)
+                    Text("빌트인 스킬은 직접 수정할 수 없습니다. 수정된 내용이 새 커스텀 스킬로 저장됩니다.")
+                        .font(.callout)
+                }
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .padding(.horizontal)
+            }
+            
             Divider()
             
             Form {
                 Section("기본 정보") {
-                    LabeledContent("ID", value: skill.id)
+                    if isBuiltIn {
+                        TextField("ID (영문)", text: $skillId)
+                            .textFieldStyle(.roundedBorder)
+                    } else {
+                        LabeledContent("ID", value: skill.id)
+                    }
                     TextField("이름", text: $name)
                     TextField("설명", text: $description)
                     
@@ -974,15 +1003,36 @@ private struct EditSkillSheet: View {
     private func saveSkill() {
         let tagList = tags.split(separator: ",").map { String($0.trimmingCharacters(in: .whitespaces)) }
         
-        var updated = skill
-        updated.name = name.trimmingCharacters(in: .whitespaces)
-        updated.description = description.trimmingCharacters(in: .whitespaces)
-        updated.category = category
-        updated.systemPrompt = systemPrompt.isEmpty ? nil : systemPrompt
-        updated.promptTemplate = promptTemplate
-        updated.tags = tagList
-        
-        skillStore.updateSkill(updated)
+        if isBuiltIn {
+            // 빌트인 스킬은 새 커스텀 스킬로 저장
+            let newSkill = Skill(
+                id: skillId.trimmingCharacters(in: .whitespaces),
+                name: name.trimmingCharacters(in: .whitespaces),
+                description: description.trimmingCharacters(in: .whitespaces),
+                category: category,
+                promptTemplate: promptTemplate,
+                systemPrompt: systemPrompt.isEmpty ? nil : systemPrompt,
+                inputSchema: skill.inputSchema,
+                outputSchema: skill.outputSchema,
+                requiredTools: skill.requiredTools,
+                estimatedTokens: skill.estimatedTokens,
+                estimatedDuration: skill.estimatedDuration,
+                tags: tagList,
+                isCustom: true
+            )
+            skillStore.addSkill(newSkill)
+        } else {
+            // 커스텀 스킬은 그대로 업데이트
+            var updated = skill
+            updated.name = name.trimmingCharacters(in: .whitespaces)
+            updated.description = description.trimmingCharacters(in: .whitespaces)
+            updated.category = category
+            updated.systemPrompt = systemPrompt.isEmpty ? nil : systemPrompt
+            updated.promptTemplate = promptTemplate
+            updated.tags = tagList
+            
+            skillStore.updateSkill(updated)
+        }
         dismiss()
     }
 }
