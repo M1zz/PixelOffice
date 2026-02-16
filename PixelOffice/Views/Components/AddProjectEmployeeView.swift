@@ -487,6 +487,15 @@ struct AddProjectEmployeeView: View {
         if sourceMode == .copy, let source = selectedSourceEmployee {
             employee = ProjectEmployee.from(employee: source, departmentType: deptType)
         } else {
+            // 🐛 디버그: 미리보기 외모 정보 출력
+            print("🎭 [프로젝트 직원 추가] 미리보기 외모:")
+            print("   피부색: \(appearance.skinTone)")
+            print("   헤어스타일: \(appearance.hairStyle)")
+            print("   헤어색: \(appearance.hairColor)")
+            print("   셔츠색: \(appearance.shirtColor)")
+            print("   악세서리: \(appearance.accessory)")
+            print("   표정: \(appearance.expression)")
+            
             employee = ProjectEmployee(
                 name: name.trimmingCharacters(in: .whitespacesAndNewlines),
                 aiType: aiType,
@@ -496,6 +505,15 @@ struct AddProjectEmployeeView: View {
                 departmentType: deptType,
                 skillIds: Array(selectedSkillIds)
             )
+            
+            // 🐛 디버그: 생성된 직원의 외모 정보 출력
+            print("👤 [프로젝트 직원 추가] 생성된 직원 '\(employee.name)'의 외모:")
+            print("   피부색: \(employee.characterAppearance.skinTone)")
+            print("   헤어스타일: \(employee.characterAppearance.hairStyle)")
+            print("   헤어색: \(employee.characterAppearance.hairColor)")
+            print("   셔츠색: \(employee.characterAppearance.shirtColor)")
+            print("   악세서리: \(employee.characterAppearance.accessory)")
+            print("   표정: \(employee.characterAppearance.expression)")
         }
 
         companyStore.addProjectEmployee(employee, toProject: projectId, department: deptType)
