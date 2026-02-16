@@ -288,7 +288,7 @@ struct AddProjectEmployeeView: View {
                     }
                 }
                 .formStyle(.grouped)
-                .frame(width: 300)
+                .frame(width: 420)
 
                 Divider()
 
@@ -301,14 +301,14 @@ struct AddProjectEmployeeView: View {
                         ZStack {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(Color.secondary.opacity(0.1))
-                                .frame(width: 150, height: 150)
+                                .frame(width: 180, height: 180)
 
                             PixelCharacter(
                                 appearance: sourceMode == .copy ? (selectedSourceEmployee?.characterAppearance ?? appearance) : appearance,
                                 status: .idle,
                                 aiType: sourceMode == .copy ? (selectedSourceEmployee?.aiType ?? aiType) : aiType
                             )
-                            .scaleEffect(2)
+                            .scaleEffect(2.5)
                         }
 
                         if sourceMode == .new {
@@ -386,7 +386,7 @@ struct AddProjectEmployeeView: View {
                     }
                     .padding()
                 }
-                .frame(width: 250)
+                .frame(width: 320)
             }
 
             Divider()
@@ -400,7 +400,7 @@ struct AddProjectEmployeeView: View {
                 }
                 .keyboardShortcut(.escape)
 
-                Button("추가") {
+                Button("고용하기") {
                     createEmployee()
                 }
                 .keyboardShortcut(.return)
@@ -409,7 +409,7 @@ struct AddProjectEmployeeView: View {
             }
             .padding()
         }
-        .frame(width: 600, height: 600)
+        .frame(width: 800, height: 700)
         .onAppear {
             if let deptType = preselectedDepartmentType {
                 selectedDepartmentType = deptType
