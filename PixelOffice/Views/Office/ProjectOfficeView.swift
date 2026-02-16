@@ -249,6 +249,15 @@ struct ProjectOfficeHeader: View {
                 }
                 Spacer()
 
+            // 칸반 버튼
+            Button {
+                onOpenKanban()
+            } label: {
+                Label("칸반", systemImage: "squares.leading.rectangle")
+            }
+            .buttonStyle(.bordered)
+            .tint(.blue)
+
             // 프로젝트 정보 버튼
             Button {
                 onOpenProjectContext()
@@ -299,7 +308,7 @@ struct ProjectOfficeHeader: View {
                 }
             }
             
-            // 스프린트 진행률 표시
+            // 스프린트/태스크 진행률 표시
             if let sprint = project.activeSprint {
                 SprintProgressRow(
                     sprint: sprint,
@@ -316,6 +325,9 @@ struct ProjectOfficeHeader: View {
                     progress: overallProgress,
                     onOpenKanban: onOpenKanban
                 )
+            } else {
+                // 태스크가 없을 때도 칸반 접근 가능하게
+                EmptyKanbanRow(onOpenKanban: onOpenKanban)
             }
             
             // Source Path Row
@@ -877,6 +889,50 @@ struct OverallProgressRow: View {
         } else {
             return .red
         }
+    }
+}
+
+// MARK: - Empty Kanban Row (태스크 없을 때)
+
+struct EmptyKanbanRow: View {
+    let onOpenKanban: () -> Void
+
+    var body: some View {
+        HStack(spacing: 16) {
+            // 아이콘 + 라벨
+            HStack(spacing: 8) {
+                Image(systemName: "rectangle.split.3x1")
+                    .foregroundStyle(.secondary)
+                Text("태스크 없음")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
+                .frame(height: 20)
+
+            Text("칸반에서 태스크를 추가하거나 파이프라인을 실행하세요")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
+            Spacer()
+
+            // 칸반 바로가기
+            Button {
+                onOpenKanban()
+            } label: {
+                Label("칸반 열기", systemImage: "rectangle.split.3x1")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.secondary.opacity(0.08))
+                .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
+        )
     }
 }
 

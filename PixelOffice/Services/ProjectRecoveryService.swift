@@ -5,8 +5,58 @@ class ProjectRecoveryService {
     static let shared = ProjectRecoveryService()
 
     private let fileManager = FileManager.default
+    
+    /// 삭제된 프로젝트 이름 목록 (복구 제외)
+    private var deletedProjectNames: Set<String> = []
+    
+    /// 삭제 목록 파일 경로
+    private var deletedListPath: String {
+        "\(DataPathService.shared.basePath)/_deleted_projects.json"
+    }
 
-    private init() {}
+    private init() {
+        loadDeletedList()
+    }
+    
+    // MARK: - 삭제 목록 관리
+    
+    /// 삭제 목록 로드
+    private func loadDeletedList() {
+        guard let data = fileManager.contents(atPath: deletedListPath),
+              let names = try? JSONDecoder().decode([String].self, from: data) else {
+            return
+        }
+        deletedProjectNames = Set(names)
+        print("📋 삭제된 프로젝트 목록 로드: \(deletedProjectNames)")
+    }
+    
+    /// 삭제 목록 저장
+    private func saveDeletedList() {
+        let names = Array(deletedProjectNames)
+        guard let data = try? JSONEncoder().encode(names) else { return }
+        fileManager.createFile(atPath: deletedListPath, contents: data)
+    }
+    
+    /// 프로젝트를 삭제 목록에 추가 (복구 제외)
+    func markAsDeleted(projectName: String) {
+        let normalizedName = projectName.replacingOccurrences(of: "-", with: " ")
+        deletedProjectNames.insert(normalizedName)
+        saveDeletedList()
+        print("🗑️ 프로젝트 복구 제외 등록: \(normalizedName)")
+    }
+    
+    /// 프로젝트를 삭제 목록에서 제거 (복구 허용)
+    func unmarkAsDeleted(projectName: String) {
+        let normalizedName = projectName.replacingOccurrences(of: "-", with: " ")
+        deletedProjectNames.remove(normalizedName)
+        saveDeletedList()
+    }
+    
+    /// 프로젝트가 삭제 목록에 있는지 확인
+    func isDeleted(projectName: String) -> Bool {
+        let normalizedName = projectName.replacingOccurrences(of: "-", with: " ")
+        return deletedProjectNames.contains(normalizedName)
+    }
 
     /// _projects 폴더에서 프로젝트 복구
     func recoverProjectsIfNeeded(company: inout Company) {
@@ -30,6 +80,12 @@ class ProjectRecoveryService {
 
                 let projectPath = "\(projectsPath)/\(projectDirName)"
                 let displayName = projectDirName.replacingOccurrences(of: "-", with: " ")
+                
+                // 삭제된 프로젝트인지 확인 (복구 제외)
+                if isDeleted(projectName: displayName) {
+                    print("  ⏭️ 복구 제외 (삭제됨): \(displayName)")
+                    continue
+                }
 
                 // 이미 존재하는 프로젝트인지 확인
                 if company.projects.contains(where: { $0.name == displayName }) {

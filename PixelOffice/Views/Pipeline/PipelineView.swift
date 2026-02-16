@@ -1086,145 +1086,276 @@ struct RequirementInputView: View {
     @Binding var requirement: String
     @Binding var selectedSprintId: UUID?
     let sprints: [Sprint]
-    let departmentEmployeeCounts: [DepartmentType: Int]  // 부서별 직원 수
-    let sprintTaskCount: Int  // 선택된 스프린트의 태스크 수
+    let departmentEmployeeCounts: [DepartmentType: Int]
+    let sprintTaskCount: Int
     let isDisabled: Bool
+    
+    enum StartMode: String, CaseIterable {
+        case existingTasks = "기존 태스크"
+        case newRequirement = "새 요구사항"
+    }
+    
+    @State private var startMode: StartMode = .existingTasks
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // 모드 선택 탭
+            HStack(spacing: 0) {
+                ForEach(StartMode.allCases, id: \.self) { mode in
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            startMode = mode
+                            if mode == .existingTasks {
+                                requirement = ""  // 기존 태스크 모드에서는 요구사항 비움
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: mode == .newRequirement ? "plus.circle.fill" : "tray.full.fill")
+                            Text(mode.rawValue)
+                        }
+                        .font(.headline)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(startMode == mode ? Color.accentColor : Color.clear)
+                        .foregroundStyle(startMode == mode ? .white : .primary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .background(Color(NSColor.controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            
+            // 모드별 콘텐츠
+            switch startMode {
+            case .newRequirement:
+                newRequirementContent
+            case .existingTasks:
+                existingTasksContent
+            }
+            
+            // 부서별 직원 현황 (공통)
+            Divider()
+            departmentStatusView
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+    
+    // MARK: - 새 요구사항 모드
+    
+    private var newRequirementContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // 요구사항 입력
             VStack(alignment: .leading, spacing: 8) {
-                Label("요구사항", systemImage: "text.alignleft")
-                    .font(.headline)
-
+                Text("무엇을 만들거나 수정하고 싶으세요?")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                
                 TextEditor(text: $requirement)
                     .font(.body)
-                    .frame(minHeight: 100)
+                    .frame(minHeight: 80)
                     .padding(8)
                     .background(Color(NSColor.textBackgroundColor))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.3))
+                            .stroke(Color.accentColor.opacity(0.5), lineWidth: 1)
                     )
                     .disabled(isDisabled)
-
-                Text("예: 로그인 화면에 소셜 로그인(Google, Apple) 기능을 추가해주세요")
+                
+                Text("예: 로그인 화면에 소셜 로그인 기능 추가해줘")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-
-            Divider()
-
+            
+            // 스프린트 선택 (선택사항)
+            HStack {
+                Text("스프린트에 할당:")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                
+                sprintPicker
+            }
+        }
+    }
+    
+    // MARK: - 기존 태스크 모드
+    
+    private var existingTasksContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
             // 스프린트 선택
-            HStack(alignment: .top, spacing: 20) {
+            HStack {
+                Label("스프린트 선택", systemImage: "flag.fill")
+                    .font(.headline)
+                
+                Spacer()
+                
+                sprintPicker
+            }
+            
+            // 선택된 스프린트 정보
+            if let sprintId = selectedSprintId,
+               let sprint = sprints.first(where: { $0.id == sprintId }) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("스프린트", systemImage: "flag")
-                        .font(.headline)
-
-                    // 심플한 메뉴 스타일
-                    Menu {
-                        Button("지정하지 않음") {
-                            selectedSprintId = nil
-                        }
-                        Divider()
-                        ForEach(sprints) { sprint in
-                            Button {
-                                selectedSprintId = sprint.id
-                            } label: {
-                                HStack {
-                                    Text(sprint.name)
-                                    if sprint.isActive {
-                                        Image(systemName: "bolt.fill")
-                                    }
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack {
-                            if let sprintId = selectedSprintId,
-                               let sprint = sprints.first(where: { $0.id == sprintId }) {
-                                Text(sprint.name)
-                                if sprint.isActive {
-                                    Image(systemName: "bolt.fill")
-                                        .foregroundStyle(.orange)
-                                }
-                            } else {
-                                Text("지정하지 않음")
-                                    .foregroundStyle(.secondary)
-                            }
-                            Image(systemName: "chevron.down")
+                    HStack {
+                        Text(sprint.name)
+                            .font(.title3.bold())
+                        if sprint.isActive {
+                            Text("활성")
                                 .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color.green.opacity(0.2))
+                                .foregroundStyle(.green)
+                                .clipShape(Capsule())
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color(NSColor.controlBackgroundColor))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        Spacer()
+                        if !sprint.version.isEmpty {
+                            Text(sprint.version)
+                                .font(.caption.monospaced())
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.15))
+                                .foregroundStyle(.blue)
+                                .clipShape(Capsule())
+                        }
                     }
-                    .disabled(isDisabled)
-
-                    // 스프린트 선택 시 태스크 정보 표시
-                    if selectedSprintId != nil {
-                        if sprintTaskCount > 0 {
-                            HStack(spacing: 4) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(.green)
-                                Text("스프린트에 \(sprintTaskCount)개 태스크 있음")
-                            }
-                            .font(.caption)
-                            .foregroundStyle(.green)
-
-                            Text("요구사항 없이 시작하면 스프린트 태스크를 처리합니다")
+                    
+                    if sprintTaskCount > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                            Text("\(sprintTaskCount)개 태스크 준비됨")
+                                .font(.callout)
+                            Spacer()
+                            Text("→ \"스프린트 태스크 실행\" 클릭")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                        } else {
-                            HStack(spacing: 4) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundStyle(.orange)
-                                Text("스프린트에 태스크가 없습니다")
-                            }
-                            .font(.caption)
-                            .foregroundStyle(.orange)
                         }
+                        .padding(10)
+                        .background(Color.green.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     } else {
-                        Text("생성된 태스크가 이 스프린트에 할당됩니다")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        HStack(spacing: 4) {
+                            Image(systemName: "tray")
+                                .foregroundStyle(.orange)
+                            Text("태스크가 없습니다")
+                                .font(.callout)
+                            Spacer()
+                            Text("칸반에서 태스크를 추가하세요")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(10)
+                        .background(Color.orange.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
-
-                Spacer()
-
-                // 부서별 직원 현황
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("부서별 직원", systemImage: "person.3")
-                        .font(.headline)
-
-                    HStack(spacing: 12) {
-                        ForEach([DepartmentType.planning, .design, .development, .qa, .marketing], id: \.self) { (dept: DepartmentType) in
-                            let count = departmentEmployeeCounts[dept] ?? 0
-                            VStack(spacing: 2) {
-                                Image(systemName: dept.icon)
-                                    .font(.caption)
-                                    .foregroundStyle(count > 0 ? dept.color : .secondary)
-                                Text("\(count)")
-                                    .font(.caption2)
-                                    .foregroundColor(count > 0 ? .primary : .red)
-                            }
-                            .frame(width: 30)
-                            .help("\(dept.rawValue): \(count)명")
-                        }
-                    }
-
-                    Text("태스크는 해당 부서 직원에게 자동 할당됩니다")
+                .padding()
+                .background(Color(NSColor.textBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            } else {
+                // 스프린트 미선택 시
+                VStack(spacing: 8) {
+                    Image(systemName: "flag.slash")
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
+                    Text("스프린트를 선택하세요")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Text("또는 하단의 \"칸반에서 가져오기\"로 태스크를 직접 선택하세요")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(20)
+                .background(Color(NSColor.textBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
             }
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+    
+    // MARK: - 공통 컴포넌트
+    
+    private var sprintPicker: some View {
+        Menu {
+            Button("지정하지 않음") {
+                selectedSprintId = nil
+            }
+            if !sprints.isEmpty {
+                Divider()
+                ForEach(sprints) { sprint in
+                    Button {
+                        selectedSprintId = sprint.id
+                    } label: {
+                        HStack {
+                            Text(sprint.name)
+                            if sprint.isActive {
+                                Image(systemName: "bolt.fill")
+                            }
+                            if sprintTaskCount(for: sprint.id) > 0 {
+                                Text("(\(sprintTaskCount(for: sprint.id)))")
+                            }
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack {
+                if let sprintId = selectedSprintId,
+                   let sprint = sprints.first(where: { $0.id == sprintId }) {
+                    Text(sprint.name)
+                    if sprint.isActive {
+                        Image(systemName: "bolt.fill")
+                            .foregroundStyle(.orange)
+                    }
+                } else {
+                    Text("선택하세요")
+                        .foregroundStyle(.secondary)
+                }
+                Image(systemName: "chevron.down")
+                    .font(.caption)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color(NSColor.controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .disabled(isDisabled)
+    }
+    
+    private var departmentStatusView: some View {
+        HStack {
+            Label("투입 인력", systemImage: "person.3.fill")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            
+            Spacer()
+            
+            HStack(spacing: 12) {
+                ForEach([DepartmentType.planning, .design, .development, .qa, .marketing], id: \.self) { dept in
+                    let count = departmentEmployeeCounts[dept] ?? 0
+                    HStack(spacing: 4) {
+                        Image(systemName: dept.icon)
+                            .font(.caption)
+                            .foregroundStyle(count > 0 ? dept.color : .secondary)
+                        Text("\(count)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundColor(count > 0 ? .primary : .red)
+                    }
+                    .help("\(dept.rawValue): \(count)명")
+                }
+            }
+        }
+    }
+    
+    // 스프린트별 태스크 수 (실제로는 부모에서 계산해야 함, 여기선 현재 선택된 것만)
+    private func sprintTaskCount(for sprintId: UUID) -> Int {
+        if sprintId == selectedSprintId {
+            return sprintTaskCount
+        }
+        return 0  // 실제 구현 시 개선 필요
     }
 }
 

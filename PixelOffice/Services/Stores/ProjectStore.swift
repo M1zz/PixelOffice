@@ -26,6 +26,10 @@ final class ProjectStore {
 
     /// 프로젝트 제거
     func removeProject(_ projectId: UUID) {
+        // 삭제 전에 프로젝트 이름 저장
+        if let project = coordinator.company.projects.first(where: { $0.id == projectId }) {
+            ProjectRecoveryService.shared.markAsDeleted(projectName: project.name)
+        }
         coordinator.company.removeProject(projectId)
     }
 
