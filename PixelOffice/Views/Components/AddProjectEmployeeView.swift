@@ -88,8 +88,18 @@ struct AddProjectEmployeeView: View {
                     if sourceMode == .new {
                         // 새로 생성
                         Section {
-                            TextField("직원 이름", text: $name)
-                                .textFieldStyle(.roundedBorder)
+                            HStack {
+                                TextField("직원 이름", text: $name)
+                                    .textFieldStyle(.roundedBorder)
+                                
+                                Button {
+                                    name = RandomEmployeeNames.random()
+                                } label: {
+                                    Image(systemName: "dice.fill")
+                                }
+                                .buttonStyle(.bordered)
+                                .help("랜덤 이름 생성")
+                            }
 
                             Text("예: Claude-기획, GPT-디자인")
                                 .font(.callout)
@@ -578,6 +588,51 @@ private struct ProjectAppearancePicker: View {
             preview.expression = index
         }
         return preview
+    }
+}
+
+// MARK: - Random Employee Names
+
+enum RandomEmployeeNames {
+    static let names: [String] = [
+        // 한국 이름
+        "지민", "서연", "하준", "수빈", "민준", "예진", "도윤", "채원", "시우", "유나",
+        "현우", "소희", "준서", "다은", "우진", "지유", "건우", "서현", "지호", "은서",
+        "민서", "하린", "예준", "윤아", "시현", "수아", "재민", "나윤", "태민", "지원",
+        
+        // 영어 이름
+        "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Quinn", "Avery",
+        "Charlie", "Sam", "Jamie", "Drew", "Sage", "Rowan", "Finley", "Hayden",
+        "Parker", "Reese", "Skyler", "Dakota", "Robin", "Cameron", "Jessie", "Kai",
+        
+        // AI/테크 감성 이름
+        "Nova", "Luna", "Orion", "Atlas", "Phoenix", "Cleo", "Neo", "Echo",
+        "Pixel", "Byte", "Logic", "Syntax", "Vector", "Delta", "Sigma", "Alpha",
+        "Zenith", "Cosmo", "Astro", "Cipher", "Matrix", "Prism", "Quasar", "Nexus",
+        
+        // 귀여운 닉네임
+        "코코", "모모", "뽀뽀", "두부", "콩이", "망고", "초코", "라떼", "우유", "딸기",
+        "푸딩", "버블", "허니", "캔디", "쿠키", "머핀", "와플", "마카롱", "젤리", "팝콘",
+        
+        // 조합형 (AI + 역할)
+        "Claude-α", "GPT-β", "Gemini-γ", "Claude-X", "GPT-Z", "AI-01", "Bot-7",
+        "Agent-K", "Helper-J", "Assist-M", "Claude-Pro", "GPT-Max", "AI-Ace",
+        
+        // 유명 AI/로봇 이름에서 영감
+        "Jarvis", "Friday", "Karen", "Edith", "Samantha", "Ava", "Hal", "Data",
+        "Bishop", "Sonny", "Chappie", "Tars", "Case", "Gerty", "Marvin", "R2",
+        
+        // 자연에서 영감
+        "Willow", "River", "Storm", "Cloud", "Sunny", "Aurora", "Coral", "Ivy",
+        "Maple", "Jasper", "Sage", "Brook", "Cliff", "Glen", "Flora", "Stone"
+    ]
+    
+    static func random() -> String {
+        names.randomElement() ?? "AI-직원"
+    }
+    
+    static func random(count: Int) -> [String] {
+        Array(names.shuffled().prefix(count))
     }
 }
 
