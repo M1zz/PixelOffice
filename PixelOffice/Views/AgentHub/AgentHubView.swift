@@ -175,22 +175,11 @@ struct AgentHubView: View {
             }
             .frame(minWidth: 350, maxWidth: 500)
             
-            // 오른쪽: 스킬 상세
+            // 오른쪽: 스킬 상세 또는 가이드
             if let skill = selectedSkill {
                 SkillDetailView(skill: skill)
             } else {
-                VStack(spacing: 16) {
-                    Image(systemName: "cube.box")
-                        .font(.system(size: 64))
-                        .foregroundStyle(.secondary)
-                    Text("스킬을 선택하세요")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                    Text("왼쪽에서 스킬을 선택하면 상세 정보를 볼 수 있습니다")
-                        .font(.callout)
-                        .foregroundStyle(.tertiary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                SkillGuideView()
             }
         }
         .sheet(isPresented: $showingImportSheet) {
@@ -995,6 +984,163 @@ private struct EditSkillSheet: View {
         
         skillStore.updateSkill(updated)
         dismiss()
+    }
+}
+
+// MARK: - Skill Guide View
+
+private struct SkillGuideView: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // 헤더
+                VStack(spacing: 12) {
+                    Image(systemName: "lightbulb.fill")
+                        .font(.system(size: 48))
+                        .foregroundStyle(.yellow)
+                    
+                    Text("스킬 & 에이전트 활용 가이드")
+                        .font(.title2.bold())
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 8)
+                
+                // 개념 설명
+                GuideSection(
+                    icon: "cube.box.fill",
+                    color: .blue,
+                    title: "스킬이란?",
+                    content: """
+                    **스킬**은 재사용 가능한 AI 능력 모듈입니다.
+                    
+                    • 프롬프트 템플릿 + 입출력 스키마로 정의
+                    • 코드 분석, 테스트 생성, 리팩토링 같은 작업을 모듈화
+                    • 여러 직원(에이전트)이 공유해서 사용 가능
+                    """
+                )
+                
+                GuideSection(
+                    icon: "person.fill",
+                    color: .purple,
+                    title: "직원 = AI 에이전트",
+                    content: """
+                    **직원**은 스킬을 가진 AI 에이전트입니다.
+                    
+                    • 각 부서에 배치되어 업무 수행
+                    • 부서 기본 스킬 + 직무별 스킬 보유
+                    • 예: 개발부서 직원 = 코드분석 + 코드생성 + 테스트생성
+                    """
+                )
+                
+                // 흐름도
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("파이프라인 실행 흐름", systemImage: "arrow.right.circle.fill")
+                        .font(.headline)
+                        .foregroundStyle(.green)
+                    
+                    HStack(spacing: 8) {
+                        FlowStep(icon: "doc.text", label: "요구사항\n분해")
+                        Image(systemName: "arrow.right")
+                            .foregroundStyle(.secondary)
+                        FlowStep(icon: "list.bullet", label: "태스크\n생성")
+                        Image(systemName: "arrow.right")
+                            .foregroundStyle(.secondary)
+                        FlowStep(icon: "person.badge.plus", label: "직원\n배정")
+                        Image(systemName: "arrow.right")
+                            .foregroundStyle(.secondary)
+                        FlowStep(icon: "cube.box", label: "스킬\n실행")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .padding()
+                .background(Color.green.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                
+                // 활용 팁
+                GuideSection(
+                    icon: "star.fill",
+                    color: .orange,
+                    title: "활용 팁",
+                    content: """
+                    **1. 빌트인 스킬 활용**
+                    기본 제공되는 코드 분석, 테스트 생성, 문서화 스킬을 먼저 사용해보세요.
+                    
+                    **2. 커스텀 스킬 만들기**
+                    프로젝트에 특화된 스킬을 만들어보세요:
+                    • SwiftUI 컴포넌트 생성
+                    • 회사 코딩 컨벤션 적용
+                    • API 문서 자동화
+                    
+                    **3. 스킬 공유**
+                    JSON으로 내보내기/가져오기로 팀과 스킬을 공유할 수 있습니다.
+                    """
+                )
+                
+                // 예시
+                GuideSection(
+                    icon: "lightbulb.max.fill",
+                    color: .cyan,
+                    title: "예시: 커스텀 스킬 아이디어",
+                    content: """
+                    • **PR 리뷰 스킬**: 코드 변경사항을 분석하고 리뷰 코멘트 생성
+                    • **에러 분석 스킬**: 크래시 로그를 분석하고 해결책 제안
+                    • **번역 스킬**: UI 문자열을 다국어로 번역
+                    • **성능 분석 스킬**: 코드의 성능 병목점 분석
+                    • **접근성 검사 스킬**: UI의 접근성 이슈 검출
+                    """
+                )
+                
+                Spacer(minLength: 40)
+            }
+            .padding(24)
+        }
+    }
+}
+
+// MARK: - Guide Components
+
+private struct GuideSection: View {
+    let icon: String
+    let color: Color
+    let title: String
+    let content: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label(title, systemImage: icon)
+                .font(.headline)
+                .foregroundStyle(color)
+            
+            Text(LocalizedStringKey(content))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(color.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+private struct FlowStep: View {
+    let icon: String
+    let label: String
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.title2)
+                .frame(width: 44, height: 44)
+                .background(Color.green.opacity(0.2))
+                .clipShape(Circle())
+            
+            Text(label)
+                .font(.caption)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
