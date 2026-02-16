@@ -424,8 +424,250 @@ enum BuiltInSkills {
         tags: ["documentation", "api", "readme"]
     )
     
+    // MARK: - Claude Code 스킬
+    
+    /// Claude Code 프로젝트 분석
+    static let claudeCodeAnalyze = Skill(
+        id: "claude-code-analyze",
+        name: "Claude Code 분석",
+        description: "Claude Code CLI로 프로젝트 전체 구조와 코드를 심층 분석합니다.",
+        category: .analysis,
+        promptTemplate: """
+        프로젝트 분석 요청:
+        
+        {{input}}
+        
+        Claude Code가 프로젝트 컨텍스트를 이해하고 있으므로,
+        전체 구조, 의존성, 아키텍처 패턴을 종합적으로 분석합니다.
+        """,
+        systemPrompt: nil,
+        inputSchema: SkillSchema(
+            properties: [
+                "projectPath": SchemaProperty(type: "string", description: "프로젝트 경로"),
+                "focus": SchemaProperty(type: "string", description: "분석 초점 (architecture, dependencies, patterns, security)")
+            ],
+            required: ["projectPath"]
+        ),
+        outputSchema: SkillSchema(
+            properties: [
+                "analysis": SchemaProperty(type: "object", description: "분석 결과"),
+                "recommendations": SchemaProperty(type: "array", description: "개선 권장사항")
+            ]
+        ),
+        requiredTools: [
+            SkillTool(name: "claude", description: "Claude Code CLI", isRequired: true),
+            SkillTool(name: "read", description: "파일 읽기", isRequired: true)
+        ],
+        tags: ["claude-code", "cli", "analysis", "architecture"]
+    )
+    
+    /// Claude Code 코드 생성
+    static let claudeCodeGenerate = Skill(
+        id: "claude-code-generate",
+        name: "Claude Code 코드 생성",
+        description: "Claude Code CLI로 새로운 기능/파일을 생성합니다.",
+        category: .generation,
+        promptTemplate: """
+        코드 생성 요청:
+        
+        {{input}}
+        
+        프로젝트 컨벤션과 기존 패턴을 따라 코드를 생성합니다.
+        """,
+        systemPrompt: nil,
+        inputSchema: SkillSchema(
+            properties: [
+                "projectPath": SchemaProperty(type: "string", description: "프로젝트 경로"),
+                "requirement": SchemaProperty(type: "string", description: "생성할 기능/코드 설명"),
+                "targetPath": SchemaProperty(type: "string", description: "생성할 파일 경로 (선택)")
+            ],
+            required: ["projectPath", "requirement"]
+        ),
+        outputSchema: SkillSchema(
+            properties: [
+                "generatedFiles": SchemaProperty(type: "array", description: "생성된 파일 목록"),
+                "code": SchemaProperty(type: "string", description: "생성된 코드")
+            ]
+        ),
+        requiredTools: [
+            SkillTool(name: "claude", description: "Claude Code CLI", isRequired: true),
+            SkillTool(name: "write", description: "파일 쓰기", isRequired: true)
+        ],
+        tags: ["claude-code", "cli", "generation", "coding"]
+    )
+    
+    /// Claude Code 리팩토링
+    static let claudeCodeRefactor = Skill(
+        id: "claude-code-refactor",
+        name: "Claude Code 리팩토링",
+        description: "Claude Code CLI로 기존 코드를 리팩토링합니다.",
+        category: .optimization,
+        promptTemplate: """
+        리팩토링 요청:
+        
+        대상: {{targetFile}}
+        
+        {{input}}
+        
+        기존 기능을 유지하면서 코드 품질을 개선합니다.
+        """,
+        systemPrompt: nil,
+        inputSchema: SkillSchema(
+            properties: [
+                "projectPath": SchemaProperty(type: "string", description: "프로젝트 경로"),
+                "targetFile": SchemaProperty(type: "string", description: "리팩토링할 파일"),
+                "focus": SchemaProperty(type: "string", description: "초점 (performance, readability, solid, dry)")
+            ],
+            required: ["projectPath", "targetFile"]
+        ),
+        outputSchema: SkillSchema(
+            properties: [
+                "changes": SchemaProperty(type: "array", description: "변경 사항"),
+                "diff": SchemaProperty(type: "string", description: "변경 diff")
+            ]
+        ),
+        requiredTools: [
+            SkillTool(name: "claude", description: "Claude Code CLI", isRequired: true),
+            SkillTool(name: "edit", description: "파일 수정", isRequired: true)
+        ],
+        tags: ["claude-code", "cli", "refactoring", "optimization"]
+    )
+    
+    /// Claude Code 테스트 생성
+    static let claudeCodeTest = Skill(
+        id: "claude-code-test",
+        name: "Claude Code 테스트 생성",
+        description: "Claude Code CLI로 테스트 코드를 자동 생성합니다.",
+        category: .testing,
+        promptTemplate: """
+        테스트 생성 요청:
+        
+        대상: {{targetFile}}
+        
+        프로젝트의 테스트 프레임워크와 컨벤션을 따라
+        단위 테스트를 생성합니다.
+        
+        {{additionalRequirements}}
+        """,
+        systemPrompt: nil,
+        inputSchema: SkillSchema(
+            properties: [
+                "projectPath": SchemaProperty(type: "string", description: "프로젝트 경로"),
+                "targetFile": SchemaProperty(type: "string", description: "테스트할 파일"),
+                "framework": SchemaProperty(type: "string", description: "테스트 프레임워크 (XCTest, Jest, pytest 등)"),
+                "additionalRequirements": SchemaProperty(type: "string", description: "추가 요구사항")
+            ],
+            required: ["projectPath", "targetFile"]
+        ),
+        outputSchema: SkillSchema(
+            properties: [
+                "testFile": SchemaProperty(type: "string", description: "생성된 테스트 파일 경로"),
+                "testCode": SchemaProperty(type: "string", description: "테스트 코드"),
+                "coverage": SchemaProperty(type: "array", description: "커버되는 케이스")
+            ]
+        ),
+        requiredTools: [
+            SkillTool(name: "claude", description: "Claude Code CLI", isRequired: true),
+            SkillTool(name: "write", description: "파일 쓰기", isRequired: true)
+        ],
+        tags: ["claude-code", "cli", "testing", "automation"]
+    )
+    
+    /// Claude Code 버그 수정
+    static let claudeCodeFix = Skill(
+        id: "claude-code-fix",
+        name: "Claude Code 버그 수정",
+        description: "Claude Code CLI로 버그를 분석하고 수정합니다.",
+        category: .optimization,
+        promptTemplate: """
+        버그 수정 요청:
+        
+        증상: {{bugDescription}}
+        
+        관련 파일: {{relatedFiles}}
+        
+        버그 원인을 분석하고 수정합니다.
+        """,
+        systemPrompt: nil,
+        inputSchema: SkillSchema(
+            properties: [
+                "projectPath": SchemaProperty(type: "string", description: "프로젝트 경로"),
+                "bugDescription": SchemaProperty(type: "string", description: "버그 설명/에러 메시지"),
+                "relatedFiles": SchemaProperty(type: "string", description: "관련 파일들"),
+                "errorLog": SchemaProperty(type: "string", description: "에러 로그 (선택)")
+            ],
+            required: ["projectPath", "bugDescription"]
+        ),
+        outputSchema: SkillSchema(
+            properties: [
+                "rootCause": SchemaProperty(type: "string", description: "근본 원인"),
+                "fix": SchemaProperty(type: "string", description: "수정 내용"),
+                "modifiedFiles": SchemaProperty(type: "array", description: "수정된 파일들")
+            ]
+        ),
+        requiredTools: [
+            SkillTool(name: "claude", description: "Claude Code CLI", isRequired: true),
+            SkillTool(name: "edit", description: "파일 수정", isRequired: true)
+        ],
+        tags: ["claude-code", "cli", "debugging", "bugfix"]
+    )
+    
+    /// Claude Code PR 리뷰
+    static let claudeCodeReview = Skill(
+        id: "claude-code-review",
+        name: "Claude Code PR 리뷰",
+        description: "Claude Code CLI로 코드 변경사항을 리뷰합니다.",
+        category: .analysis,
+        promptTemplate: """
+        코드 리뷰 요청:
+        
+        {{input}}
+        
+        다음 관점에서 리뷰합니다:
+        - 코드 품질 및 가독성
+        - 잠재적 버그
+        - 성능 이슈
+        - 보안 취약점
+        - 베스트 프랙티스 준수
+        """,
+        systemPrompt: nil,
+        inputSchema: SkillSchema(
+            properties: [
+                "projectPath": SchemaProperty(type: "string", description: "프로젝트 경로"),
+                "diffOrBranch": SchemaProperty(type: "string", description: "리뷰할 diff 또는 브랜치"),
+                "focus": SchemaProperty(type: "string", description: "리뷰 초점 (security, performance, style)")
+            ],
+            required: ["projectPath"]
+        ),
+        outputSchema: SkillSchema(
+            properties: [
+                "summary": SchemaProperty(type: "string", description: "리뷰 요약"),
+                "issues": SchemaProperty(type: "array", description: "발견된 이슈"),
+                "suggestions": SchemaProperty(type: "array", description: "개선 제안"),
+                "approval": SchemaProperty(type: "boolean", description: "승인 여부")
+            ]
+        ),
+        requiredTools: [
+            SkillTool(name: "claude", description: "Claude Code CLI", isRequired: true),
+            SkillTool(name: "bash", description: "Git 명령어", isRequired: false)
+        ],
+        tags: ["claude-code", "cli", "review", "pr"]
+    )
+    
     /// 모든 기본 스킬
     static var all: [Skill] {
-        [codeAnalysis, designToHTML, testGeneration, refactoring, docGeneration]
+        [
+            // 일반 스킬
+            codeAnalysis, designToHTML, testGeneration, refactoring, docGeneration,
+            // Claude Code 스킬
+            claudeCodeAnalyze, claudeCodeGenerate, claudeCodeRefactor,
+            claudeCodeTest, claudeCodeFix, claudeCodeReview
+        ]
+    }
+    
+    /// Claude Code 스킬만
+    static var claudeCodeSkills: [Skill] {
+        [claudeCodeAnalyze, claudeCodeGenerate, claudeCodeRefactor,
+         claudeCodeTest, claudeCodeFix, claudeCodeReview]
     }
 }

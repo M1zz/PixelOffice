@@ -1,0 +1,187 @@
+[
+  {
+    "id": "claude-code-analyze",
+    "name": "Claude Code 분석",
+    "description": "Claude Code CLI로 프로젝트 전체 구조와 코드를 심층 분석합니다.",
+    "category": "분석",
+    "version": "1.0.0",
+    "promptTemplate": "프로젝트 분석 요청:\n\n{{input}}\n\nClaude Code가 프로젝트 컨텍스트를 이해하고 있으므로,\n전체 구조, 의존성, 아키텍처 패턴을 종합적으로 분석합니다.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectPath": { "type": "string", "description": "프로젝트 경로" },
+        "focus": { "type": "string", "description": "분석 초점 (architecture, dependencies, patterns, security)" }
+      },
+      "required": ["projectPath"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "analysis": { "type": "object", "description": "분석 결과" },
+        "recommendations": { "type": "array", "description": "개선 권장사항" }
+      }
+    },
+    "requiredTools": [
+      { "name": "claude", "description": "Claude Code CLI", "isRequired": true },
+      { "name": "read", "description": "파일 읽기", "isRequired": true }
+    ],
+    "tags": ["claude-code", "cli", "analysis", "architecture"],
+    "isCustom": false
+  },
+  {
+    "id": "claude-code-generate",
+    "name": "Claude Code 코드 생성",
+    "description": "Claude Code CLI로 새로운 기능/파일을 생성합니다.",
+    "category": "생성",
+    "version": "1.0.0",
+    "promptTemplate": "코드 생성 요청:\n\n{{input}}\n\n프로젝트 컨벤션과 기존 패턴을 따라 코드를 생성합니다.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectPath": { "type": "string", "description": "프로젝트 경로" },
+        "requirement": { "type": "string", "description": "생성할 기능/코드 설명" },
+        "targetPath": { "type": "string", "description": "생성할 파일 경로 (선택)" }
+      },
+      "required": ["projectPath", "requirement"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "generatedFiles": { "type": "array", "description": "생성된 파일 목록" },
+        "code": { "type": "string", "description": "생성된 코드" }
+      }
+    },
+    "requiredTools": [
+      { "name": "claude", "description": "Claude Code CLI", "isRequired": true },
+      { "name": "write", "description": "파일 쓰기", "isRequired": true }
+    ],
+    "tags": ["claude-code", "cli", "generation", "coding"],
+    "isCustom": false
+  },
+  {
+    "id": "claude-code-refactor",
+    "name": "Claude Code 리팩토링",
+    "description": "Claude Code CLI로 기존 코드를 리팩토링합니다.",
+    "category": "최적화",
+    "version": "1.0.0",
+    "promptTemplate": "리팩토링 요청:\n\n대상: {{targetFile}}\n\n{{input}}\n\n기존 기능을 유지하면서 코드 품질을 개선합니다.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectPath": { "type": "string", "description": "프로젝트 경로" },
+        "targetFile": { "type": "string", "description": "리팩토링할 파일" },
+        "focus": { "type": "string", "description": "초점 (performance, readability, solid, dry)" }
+      },
+      "required": ["projectPath", "targetFile"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "changes": { "type": "array", "description": "변경 사항" },
+        "diff": { "type": "string", "description": "변경 diff" }
+      }
+    },
+    "requiredTools": [
+      { "name": "claude", "description": "Claude Code CLI", "isRequired": true },
+      { "name": "edit", "description": "파일 수정", "isRequired": true }
+    ],
+    "tags": ["claude-code", "cli", "refactoring", "optimization"],
+    "isCustom": false
+  },
+  {
+    "id": "claude-code-test",
+    "name": "Claude Code 테스트 생성",
+    "description": "Claude Code CLI로 테스트 코드를 자동 생성합니다.",
+    "category": "테스팅",
+    "version": "1.0.0",
+    "promptTemplate": "테스트 생성 요청:\n\n대상: {{targetFile}}\n\n프로젝트의 테스트 프레임워크와 컨벤션을 따라\n단위 테스트를 생성합니다.\n\n{{additionalRequirements}}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectPath": { "type": "string", "description": "프로젝트 경로" },
+        "targetFile": { "type": "string", "description": "테스트할 파일" },
+        "framework": { "type": "string", "description": "테스트 프레임워크 (XCTest, Jest, pytest 등)" },
+        "additionalRequirements": { "type": "string", "description": "추가 요구사항" }
+      },
+      "required": ["projectPath", "targetFile"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "testFile": { "type": "string", "description": "생성된 테스트 파일 경로" },
+        "testCode": { "type": "string", "description": "테스트 코드" },
+        "coverage": { "type": "array", "description": "커버되는 케이스" }
+      }
+    },
+    "requiredTools": [
+      { "name": "claude", "description": "Claude Code CLI", "isRequired": true },
+      { "name": "write", "description": "파일 쓰기", "isRequired": true }
+    ],
+    "tags": ["claude-code", "cli", "testing", "automation"],
+    "isCustom": false
+  },
+  {
+    "id": "claude-code-fix",
+    "name": "Claude Code 버그 수정",
+    "description": "Claude Code CLI로 버그를 분석하고 수정합니다.",
+    "category": "최적화",
+    "version": "1.0.0",
+    "promptTemplate": "버그 수정 요청:\n\n증상: {{bugDescription}}\n\n관련 파일: {{relatedFiles}}\n\n버그 원인을 분석하고 수정합니다.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectPath": { "type": "string", "description": "프로젝트 경로" },
+        "bugDescription": { "type": "string", "description": "버그 설명/에러 메시지" },
+        "relatedFiles": { "type": "string", "description": "관련 파일들" },
+        "errorLog": { "type": "string", "description": "에러 로그 (선택)" }
+      },
+      "required": ["projectPath", "bugDescription"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "rootCause": { "type": "string", "description": "근본 원인" },
+        "fix": { "type": "string", "description": "수정 내용" },
+        "modifiedFiles": { "type": "array", "description": "수정된 파일들" }
+      }
+    },
+    "requiredTools": [
+      { "name": "claude", "description": "Claude Code CLI", "isRequired": true },
+      { "name": "edit", "description": "파일 수정", "isRequired": true }
+    ],
+    "tags": ["claude-code", "cli", "debugging", "bugfix"],
+    "isCustom": false
+  },
+  {
+    "id": "claude-code-review",
+    "name": "Claude Code PR 리뷰",
+    "description": "Claude Code CLI로 코드 변경사항을 리뷰합니다.",
+    "category": "분석",
+    "version": "1.0.0",
+    "promptTemplate": "코드 리뷰 요청:\n\n{{input}}\n\n다음 관점에서 리뷰합니다:\n- 코드 품질 및 가독성\n- 잠재적 버그\n- 성능 이슈\n- 보안 취약점\n- 베스트 프랙티스 준수",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "projectPath": { "type": "string", "description": "프로젝트 경로" },
+        "diffOrBranch": { "type": "string", "description": "리뷰할 diff 또는 브랜치" },
+        "focus": { "type": "string", "description": "리뷰 초점 (security, performance, style)" }
+      },
+      "required": ["projectPath"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "summary": { "type": "string", "description": "리뷰 요약" },
+        "issues": { "type": "array", "description": "발견된 이슈" },
+        "suggestions": { "type": "array", "description": "개선 제안" },
+        "approval": { "type": "boolean", "description": "승인 여부" }
+      }
+    },
+    "requiredTools": [
+      { "name": "claude", "description": "Claude Code CLI", "isRequired": true },
+      { "name": "bash", "description": "Git 명령어", "isRequired": false }
+    ],
+    "tags": ["claude-code", "cli", "review", "pr"],
+    "isCustom": false
+  }
+]
