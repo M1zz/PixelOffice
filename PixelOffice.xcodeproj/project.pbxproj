@@ -10,6 +10,7 @@
 		001534C844CD50A9E7E6CA8B /* RequirementAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC18A3A8BA345BC6BDD26BE /* RequirementAnalyzer.swift */; };
 		0065A64B88102789CA6B9D6B /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F30F23ABD8AD50705DBDFB /* Message.swift */; };
 		02515BA00F7D3019D07932D0 /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0989B97043D4D9B65446C072 /* DataManager.swift */; };
+		317B5995319D4BF9B381BAE5 /* ProjectAnalyzerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 883A60B14212414E99285F7B /* ProjectAnalyzerService.swift */; };
 		039FB5771CAB44AF472ABD19 /* ProjectPathSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500B13F05BE44BDA6373B13B /* ProjectPathSetupView.swift */; };
 		049BDE6760D270EA57D33BF5 /* CollaborationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 998D9A599169ABCC53770C8C /* CollaborationStore.swift */; };
 		04F808BE09E9297571094939 /* PipelineWikiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72371C9F793EA3624137D8D /* PipelineWikiService.swift */; };
@@ -110,6 +111,7 @@
 		B48FFB9D579B9D0557DD6C9F /* Department.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C484404A467617FB6A22ABC /* Department.swift */; };
 		B5D18B92F7E5AE8EC30AF210 /* PipelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66B1A2B428E01E3EE9B40397 /* PipelineView.swift */; };
 		B6E842784708842933F6D07F /* ProjectOfficeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FED6BC0E75B4DFC21B77D73D /* ProjectOfficeView.swift */; };
+		339853CDC78641DDB15D026D /* DepartmentManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 718D539279D24E9A9111FA1A /* DepartmentManagerView.swift */; };
 		B8EC71304109012CF6B4820A /* EmployeeChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53E5CAF7CDBA09EF8807235 /* EmployeeChatView.swift */; };
 		BA1C48CA0C4C0E03CF372ADC /* FeedbackLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10BE104302373083A3E23B8B /* FeedbackLoopView.swift */; };
 		BB112AF4E3F36912A1C4A6AB /* SkillEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6B14BD8C11C6E55888BE22D /* SkillEditorView.swift */; };
@@ -170,6 +172,7 @@
 		057BCE3E50B6351D2234CEF0 /* ProjectContextEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectContextEditorView.swift; sourceTree = "<group>"; };
 		060C805C5DAC23CC923898EE /* WalkingCharacter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkingCharacter.swift; sourceTree = "<group>"; };
 		0989B97043D4D9B65446C072 /* DataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
+		883A60B14212414E99285F7B /* ProjectAnalyzerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectAnalyzerService.swift; sourceTree = "<group>"; };
 		09E463FCCA9AC3702DCDC891 /* RequirementDecomposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RequirementDecomposer.swift; sourceTree = "<group>"; };
 		0A717086BD05C694FB413BB1 /* PixelOffice-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "PixelOffice-Info.plist"; sourceTree = "<group>"; };
 		0AC18A3A8BA345BC6BDD26BE /* RequirementAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RequirementAnalyzer.swift; sourceTree = "<group>"; };
@@ -304,6 +307,7 @@
 		F62E8C7D9D13EA8D4D44D0D4 /* AddEmployeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEmployeeView.swift; sourceTree = "<group>"; };
 		FC41F04EE419D424CB4912B4 /* CommunityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
 		FED6BC0E75B4DFC21B77D73D /* ProjectOfficeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectOfficeView.swift; sourceTree = "<group>"; };
+		718D539279D24E9A9111FA1A /* DepartmentManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartmentManagerView.swift; sourceTree = "<group>"; };
 		FED6DCD81E70C45C54DA0453 /* CompanyWiki.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanyWiki.swift; sourceTree = "<group>"; };
 		FF9CE50A680E70F00C053020 /* SubAgentCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubAgentCoordinator.swift; sourceTree = "<group>"; };
 		FFC619B0B26680399DE30A63 /* BuildService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildService.swift; sourceTree = "<group>"; };
@@ -359,6 +363,7 @@
 				0B33C3BEAD234726621167D0 /* OfficeView.swift */,
 				C286E5F6E71F6323519811A5 /* ProjectDepartmentView.swift */,
 				FED6BC0E75B4DFC21B77D73D /* ProjectOfficeView.swift */,
+				718D539279D24E9A9111FA1A /* DepartmentManagerView.swift */,
 				543818918AD8C6AACB739670 /* WalkingEmployeesLayer.swift */,
 			);
 			path = Office;
@@ -710,6 +715,7 @@
 				F43F97459CE34DA21DDECD7F /* CommunityService.swift */,
 				BA87F1D95AEE3005E7BFE7B3 /* CompanyStore.swift */,
 				0989B97043D4D9B65446C072 /* DataManager.swift */,
+				883A60B14212414E99285F7B /* ProjectAnalyzerService.swift */,
 				278DBFF64525307C7513CEAF /* DataPathService.swift */,
 				8E1FF4577CBC233335B25160 /* EmployeeWorkLogService.swift */,
 				9345F52621E594F9942FAED9 /* HandoffService.swift */,
@@ -865,6 +871,7 @@
 				855DBFDADEA2A4303A00DC17 /* CommunityService.swift in Sources */,
 				5E9B11B72F0703A54AC1046E /* CompanyStore.swift in Sources */,
 				02515BA00F7D3019D07932D0 /* DataManager.swift in Sources */,
+				317B5995319D4BF9B381BAE5 /* ProjectAnalyzerService.swift in Sources */,
 				C70E0F7C5B59DD681E2D3405 /* DataPathService.swift in Sources */,
 				08B35536085DD48C8CDFF90D /* EmployeeWorkLogService.swift in Sources */,
 				2E31DB99B0EE43DBCEECC886 /* HandoffService.swift in Sources */,
@@ -939,6 +946,7 @@
 				A863D7F27BB6761B199197D0 /* OfficeView.swift in Sources */,
 				BB1650770BE0B2A5C4F79092 /* ProjectDepartmentView.swift in Sources */,
 				B6E842784708842933F6D07F /* ProjectOfficeView.swift in Sources */,
+				339853CDC78641DDB15D026D /* DepartmentManagerView.swift in Sources */,
 				D65596A9A9B849DA41B13DE7 /* WalkingEmployeesLayer.swift in Sources */,
 				9C41C61F1C75C9A2101A5207 /* OnboardingView.swift in Sources */,
 				6D08F473F46B68CB5EDD1EBE /* AutoApprovalRulesView.swift in Sources */,

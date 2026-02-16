@@ -13,6 +13,7 @@ struct ProjectOfficeView: View {
     @State private var showingSourcePathEditor = false
     @State private var editingSourcePath = ""
     @State private var showingFeedback = false
+    @State private var showingDepartmentManager = false
 
     let columns = 2
 
@@ -66,6 +67,9 @@ struct ProjectOfficeView: View {
                                 onEditSourcePath: {
                                     editingSourcePath = project.sourcePath ?? ""
                                     showingSourcePathEditor = true
+                                },
+                                onManageDepartments: {
+                                    showingDepartmentManager = true
                                 }
                             )
 
@@ -194,6 +198,10 @@ struct ProjectOfficeView: View {
                 ProjectFeedbackView(projectId: projectId, isPresented: $showingFeedback)
                     .environmentObject(companyStore)
             }
+            .sheet(isPresented: $showingDepartmentManager) {
+                DepartmentManagerView(projectId: projectId)
+                    .environmentObject(companyStore)
+            }
         } else {
             Text("프로젝트를 찾을 수 없습니다")
         }
@@ -209,6 +217,7 @@ struct ProjectOfficeHeader: View {
     let onOpenPipeline: () -> Void
     let onOpenFeedback: () -> Void
     let onEditSourcePath: () -> Void
+    let onManageDepartments: () -> Void
 
     /// 현재 스프린트 태스크들
     var sprintTasks: [ProjectTask] {
@@ -295,6 +304,14 @@ struct ProjectOfficeHeader: View {
                 onOpenFeedback()
             } label: {
                 Label("피드백", systemImage: "text.bubble")
+            }
+            .buttonStyle(.bordered)
+            
+            // 부서 관리 버튼
+            Button {
+                onManageDepartments()
+            } label: {
+                Label("부서", systemImage: "person.3.sequence")
             }
             .buttonStyle(.bordered)
             .tint(.orange)

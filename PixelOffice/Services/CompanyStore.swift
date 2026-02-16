@@ -316,6 +316,24 @@ class CompanyStore: ObservableObject, StoreCoordinator {
         projectStore.departmentsByWorkflowOrder
     }
 
+    // MARK: - Project Department Operations (→ ProjectStore 위임)
+
+    func addDepartment(_ department: ProjectDepartment, toProject projectId: UUID) {
+        projectStore.addDepartment(department, toProject: projectId)
+    }
+
+    func removeDepartment(_ departmentType: DepartmentType, fromProject projectId: UUID) {
+        projectStore.removeDepartment(departmentType, fromProject: projectId)
+    }
+    
+    func removeDepartmentById(_ departmentId: UUID, fromProject projectId: UUID) {
+        projectStore.removeDepartmentById(departmentId, fromProject: projectId)
+    }
+
+    func updateDepartment(_ department: ProjectDepartment, inProject projectId: UUID) {
+        projectStore.updateDepartment(department, inProject: projectId)
+    }
+
     // MARK: - Project Employee Operations (→ ProjectStore 위임)
 
     func addProjectEmployee(_ employee: ProjectEmployee, toProject projectId: UUID, department: DepartmentType) {

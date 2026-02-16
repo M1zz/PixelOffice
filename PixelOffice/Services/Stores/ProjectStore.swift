@@ -177,6 +177,67 @@ final class ProjectStore {
         coordinator.company.departments.sorted { $0.type.workflowOrder < $1.type.workflowOrder }
     }
 
+    // MARK: - 프로젝트 부서 관리
+
+    /// 프로젝트에 부서 추가
+    func addDepartment(_ department: ProjectDepartment, toProject projectId: UUID) {
+        if let index = coordinator.company.projects.firstIndex(where: { $0.id == projectId }) {
+            // 커스텀 부서(general)가 아닌 경우에만 중복 체크
+            if department.type != .general {
+                guard !coordinator.company.projects[index].departments.contains(where: { $0.type == department.type }) else {
+                    print("⚠️ 이미 같은 유형의 부서가 존재합니다: \(department.type.rawValue)")
+                    return
+                }
+            }
+            coordinator.company.projects[index].departments.append(department)
+            coordinator.saveCompany()
+            print("✅ 부서 추가됨: \(department.name)")
+        }
+    }
+
+    /// 프로젝트에서 부서 제거 (직원 없는 부서만) - by type
+    func removeDepartment(_ departmentType: DepartmentType, fromProject projectId: UUID) {
+        if let index = coordinator.company.projects.firstIndex(where: { $0.id == projectId }) {
+            // 부서에 직원이 있으면 제거 불가
+            if let dept = coordinator.company.projects[index].departments.first(where: { $0.type == departmentType }),
+               !dept.employees.isEmpty {
+                print("⚠️ 직원이 있는 부서는 삭제할 수 없습니다: \(dept.name)")
+                return
+            }
+            
+            coordinator.company.projects[index].departments.removeAll { $0.type == departmentType }
+            coordinator.saveCompany()
+            print("✅ 부서 제거됨: \(departmentType.rawValue)")
+        }
+    }
+    
+    /// 프로젝트에서 부서 제거 (직원 없는 부서만) - by ID
+    func removeDepartmentById(_ departmentId: UUID, fromProject projectId: UUID) {
+        if let index = coordinator.company.projects.firstIndex(where: { $0.id == projectId }) {
+            // 부서에 직원이 있으면 제거 불가
+            if let dept = coordinator.company.projects[index].departments.first(where: { $0.id == departmentId }),
+               !dept.employees.isEmpty {
+                print("⚠️ 직원이 있는 부서는 삭제할 수 없습니다: \(dept.name)")
+                return
+            }
+            
+            let deptName = coordinator.company.projects[index].departments.first(where: { $0.id == departmentId })?.name ?? "Unknown"
+            coordinator.company.projects[index].departments.removeAll { $0.id == departmentId }
+            coordinator.saveCompany()
+            print("✅ 부서 제거됨: \(deptName)")
+        }
+    }
+
+    /// 프로젝트 부서 업데이트
+    func updateDepartment(_ department: ProjectDepartment, inProject projectId: UUID) {
+        if let projectIndex = coordinator.company.projects.firstIndex(where: { $0.id == projectId }),
+           let deptIndex = coordinator.company.projects[projectIndex].departments.firstIndex(where: { $0.id == department.id }) {
+            coordinator.company.projects[projectIndex].departments[deptIndex] = department
+            coordinator.saveCompany()
+            print("✅ 부서 업데이트됨: \(department.name)")
+        }
+    }
+
     // MARK: - 프로젝트 직원 관리
 
     /// 프로젝트에 직원 추가

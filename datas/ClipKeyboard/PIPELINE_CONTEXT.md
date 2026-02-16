@@ -1,4 +1,4 @@
-# 클립 키보드 - 파이프라인 컨텍스트
+# ClipKeyboard - 파이프라인 컨텍스트
 
 > **파이프라인 실행 전 필수 설정 정보**
 
@@ -66,7 +66,7 @@ xcodebuild -project [프로젝트명].xcodeproj -scheme [스킴명] -configurati
 ## 📚 참고 문서 (상대경로, 프로젝트 루트 기준)
 
 - **claude.md**: `./claude.md`
-- **PROJECT.md**: `./datas/클립-키보드/PROJECT.md`
+- **PROJECT.md**: `./datas/ClipKeyboard/PROJECT.md`
 
 ---
 

@@ -337,6 +337,11 @@ struct PipelineView: View {
                             progress: coordinator.progress,
                             currentPhaseDescription: coordinator.currentPhaseDescription
                         )
+                        
+                        // 🎉 완료 요약 카드 (완료/실패 시)
+                        if run.state == .completed || run.state == .failed {
+                            PipelineCompletionSummaryView(run: run)
+                        }
 
                         // 분해된 태스크 목록
                         if !run.decomposedTasks.isEmpty {
@@ -2572,6 +2577,205 @@ struct ProjectPathStatusCard: View {
                         .stroke(validation.isValid ? validation.color.opacity(0.3) : Color.secondary.opacity(0.2), lineWidth: 1)
                 }
         }
+    }
+}
+
+// MARK: - 파이프라인 완료 요약
+
+struct PipelineCompletionSummaryView: View {
+    let run: PipelineRun
+    
+    var completedTaskCount: Int {
+        run.decomposedTasks.filter { $0.status == .completed }.count
+    }
+    
+    var totalTaskCount: Int {
+        run.decomposedTasks.count
+    }
+    
+    var changedFileCount: Int {
+        guard let diff = run.gitDiff else { return 0 }
+        return diff.components(separatedBy: "diff --git").count - 1
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            summaryHeader
+            Divider()
+            summaryStats
+            completedTasksSection
+            decisionsSection
+        }
+        .padding()
+        .background(summaryBackground)
+    }
+    
+    private var summaryHeader: some View {
+        HStack {
+            Image(systemName: run.state == .completed ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                .font(.title2)
+                .foregroundStyle(run.state == .completed ? .green : .orange)
+            
+            Text(run.state == .completed ? "파이프라인 완료" : "파이프라인 종료")
+                .font(.title2.bold())
+            
+            Spacer()
+            
+            if let duration = run.duration {
+                Text(formatDuration(duration))
+                    .font(.callout.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+    
+    private var summaryStats: some View {
+        HStack(spacing: 12) {
+            SummaryStatCard(icon: "checkmark.circle.fill", iconColor: .green,
+                          title: "완료된 태스크", value: "\(completedTaskCount)/\(totalTaskCount)")
+            SummaryStatCard(icon: "doc.fill", iconColor: .blue,
+                          title: "변경된 파일", value: "\(changedFileCount)개")
+            SummaryStatCard(icon: "brain", iconColor: .purple,
+                          title: "결정 사항", value: "\(run.decisions.count)개")
+        }
+    }
+    
+    @ViewBuilder
+    private var completedTasksSection: some View {
+        let completedTasks = run.decomposedTasks.filter { $0.status == .completed }
+        if !completedTasks.isEmpty {
+            DisclosureGroup {
+                CompletedTasksList(tasks: Array(completedTasks.prefix(5)), totalCount: completedTaskCount)
+            } label: {
+                Label("완료된 작업", systemImage: "checklist")
+                    .font(.subheadline.bold())
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var decisionsSection: some View {
+        if !run.decisions.isEmpty {
+            DisclosureGroup {
+                DecisionsList(decisions: Array(run.decisions.prefix(3)))
+            } label: {
+                Label("주요 결정 사항", systemImage: "lightbulb")
+                    .font(.subheadline.bold())
+            }
+        }
+    }
+    
+    private var summaryBackground: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(run.state == .completed ? Color.green.opacity(0.05) : Color.orange.opacity(0.05))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(run.state == .completed ? Color.green.opacity(0.3) : Color.orange.opacity(0.3), lineWidth: 1)
+            )
+    }
+    
+    private func formatDuration(_ duration: TimeInterval) -> String {
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        return minutes > 0 ? "\(minutes)분 \(seconds)초" : "\(seconds)초"
+    }
+}
+
+struct CompletedTasksList: View {
+    let tasks: [DecomposedTask]
+    let totalCount: Int
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(tasks) { task in
+                CompletedTaskRow(task: task)
+            }
+            if totalCount > 5 {
+                Text("외 \(totalCount - 5)개 태스크...")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.top, 8)
+    }
+}
+
+struct CompletedTaskRow: View {
+    let task: DecomposedTask
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+                .font(.caption)
+            Text(task.title)
+                .font(.caption)
+                .lineLimit(1)
+            Spacer()
+            Text(task.department.rawValue)
+                .font(.caption2)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(task.department.color.opacity(0.2))
+                .foregroundStyle(task.department.color)
+                .clipShape(Capsule())
+        }
+    }
+}
+
+struct DecisionsList: View {
+    let decisions: [PipelineDecision]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(decisions) { decision in
+                DecisionRow(decision: decision)
+            }
+        }
+        .padding(.top, 8)
+    }
+}
+
+struct DecisionRow: View {
+    let decision: PipelineDecision
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(decision.decision)
+                .font(.caption.bold())
+            Text(decision.reason)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.secondary.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+}
+
+struct SummaryStatCard: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let value: String
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundStyle(iconColor)
+            Text(value)
+                .font(.title3.bold())
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 

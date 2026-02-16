@@ -26,7 +26,7 @@ struct ProjectListView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("프로젝트")
+                Text("입주사")
                     .font(.largeTitle.bold())
                 
                 Spacer()
@@ -34,7 +34,7 @@ struct ProjectListView: View {
                 Button {
                     showingAddProject = true
                 } label: {
-                    Label("새 프로젝트", systemImage: "plus")
+                    Label("새 입주사", systemImage: "plus")
                 }
                 .buttonStyle(.borderedProminent)
             }
@@ -232,16 +232,16 @@ struct ProjectCard: View {
             Button(role: .destructive) {
                 showingDeleteConfirmation = true
             } label: {
-                Label("프로젝트 삭제", systemImage: "trash")
+                Label("입주사 삭제", systemImage: "trash")
             }
         }
-        .alert("프로젝트 삭제", isPresented: $showingDeleteConfirmation) {
+        .alert("입주사 삭제", isPresented: $showingDeleteConfirmation) {
             Button("취소", role: .cancel) { }
             Button("삭제", role: .destructive) {
                 deleteProject()
             }
         } message: {
-            Text("'\(project.name)' 프로젝트를 삭제하시겠습니까?\n\n모든 태스크, 스프린트, 직원 대화 기록이 삭제됩니다. 이 작업은 되돌릴 수 없습니다.")
+            Text("'\(project.name)' 입주사를 삭제하시겠습니까?\n\n모든 태스크, 스프린트, 직원 대화 기록이 삭제됩니다. 이 작업은 되돌릴 수 없습니다.")
         }
     }
     
@@ -276,14 +276,14 @@ struct EmptyProjectsView: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "folder.badge.plus")
+            Image(systemName: "building.2.crop.circle.badge.plus")
                 .font(.system(size: 60))
                 .foregroundStyle(.secondary)
             
-            Text("프로젝트가 없습니다")
+            Text("입주사가 없습니다")
                 .font(.title2)
             
-            Text("새 프로젝트를 만들어 AI 직원들에게 일을 할당해보세요")
+            Text("새 입주사를 등록하고 AI 직원들에게 일을 할당해보세요")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -291,7 +291,7 @@ struct EmptyProjectsView: View {
             Button {
                 showingAddProject = true
             } label: {
-                Label("첫 프로젝트 만들기", systemImage: "plus")
+                Label("첫 입주사 등록하기", systemImage: "plus")
             }
             .buttonStyle(.borderedProminent)
             .padding(.top)
