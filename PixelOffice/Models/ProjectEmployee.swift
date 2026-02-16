@@ -23,7 +23,8 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
     var workStyle: String    // 업무 스타일
     
     // 🆕 스킬
-    var skills: [EmployeeSkill]  // 보유 스킬 목록
+    var skills: [EmployeeSkill]  // 보유 스킬 목록 (레거시)
+    var skillIds: [String]       // 선택된 스킬 ID들 (에이전트 허브 스킬 참조)
 
     // 활동 통계
     var statistics: EmployeeStatistics
@@ -46,6 +47,7 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
         strengths: [String]? = nil,
         workStyle: String? = nil,
         skills: [EmployeeSkill]? = nil,
+        skillIds: [String] = [],
         statistics: EmployeeStatistics? = nil
     ) {
         self.id = id
@@ -66,6 +68,7 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
         self.strengths = strengths ?? Employee.generateStrengths(from: id, jobRole: primaryRole)
         self.workStyle = workStyle ?? Employee.generateWorkStyle(from: id, jobRole: primaryRole)
         self.skills = skills ?? Self.generateDefaultSkills(for: departmentType)
+        self.skillIds = skillIds
         self.statistics = statistics ?? EmployeeStatistics()
     }
     
@@ -93,7 +96,7 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
     enum CodingKeys: String, CodingKey {
         case id, employeeNumber, sourceEmployeeId, name, aiType, jobRole, jobRoles, status, currentTaskId
         case conversationHistory, createdAt, totalTasksCompleted, characterAppearance, departmentType
-        case personality, strengths, workStyle, skills, statistics
+        case personality, strengths, workStyle, skills, skillIds, statistics
     }
 
     init(from decoder: Decoder) throws {
@@ -128,6 +131,8 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
         workStyle = try container.decodeIfPresent(String.self, forKey: .workStyle) ?? Employee.generateWorkStyle(from: id, jobRole: primaryRole)
         // 기존 데이터에 스킬이 없으면 기본 스킬 생성
         skills = try container.decodeIfPresent([EmployeeSkill].self, forKey: .skills) ?? Self.generateDefaultSkills(for: departmentType)
+        // 기존 데이터에 skillIds가 없으면 빈 배열
+        skillIds = try container.decodeIfPresent([String].self, forKey: .skillIds) ?? []
         // 기존 데이터에 통계 정보가 없으면 초기화
         statistics = try container.decodeIfPresent(EmployeeStatistics.self, forKey: .statistics) ?? EmployeeStatistics()
     }
@@ -151,6 +156,7 @@ struct ProjectEmployee: Codable, Identifiable, Hashable {
         try container.encode(strengths, forKey: .strengths)
         try container.encode(workStyle, forKey: .workStyle)
         try container.encode(skills, forKey: .skills)
+        try container.encode(skillIds, forKey: .skillIds)
         try container.encode(statistics, forKey: .statistics)
     }
 

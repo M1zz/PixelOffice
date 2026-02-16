@@ -13,6 +13,7 @@ struct AddProjectEmployeeView: View {
     @State private var aiType: AIType = .claude
     @State private var selectedDepartmentType: DepartmentType?
     @State private var selectedJobRoles: Set<JobRole> = []
+    @State private var selectedSkillIds: Set<String> = []  // 사용자가 직접 선택한 스킬
     @State private var appearance = CharacterAppearance.random()
     @State private var sourceMode: SourceMode = .new
     @State private var selectedSourceEmployee: Employee?
@@ -193,8 +194,14 @@ struct AddProjectEmployeeView: View {
                                     Button {
                                         if selectedJobRoles.contains(role) {
                                             selectedJobRoles.remove(role)
+                                            // 해당 직군의 추천 스킬 제거
+                                            let skillsToRemove = BuiltInSkills.recommendedSkillIds(for: role)
+                                            selectedSkillIds.subtract(skillsToRemove)
                                         } else {
                                             selectedJobRoles.insert(role)
+                                            // 해당 직군의 추천 스킬 자동 추가
+                                            let skillsToAdd = BuiltInSkills.recommendedSkillIds(for: role)
+                                            selectedSkillIds.formUnion(skillsToAdd)
                                         }
                                     } label: {
                                         HStack(spacing: 12) {
@@ -230,59 +237,104 @@ struct AddProjectEmployeeView: View {
                         }
                     }
                     
-                    // 적용되는 스킬 표시
-                    if !selectedJobRoles.isEmpty {
-                        Section("적용되는 스킬") {
-                            let recommendedSkillIds = getRecommendedSkillIds()
-                            let matchedSkills = skillStore.skills.filter { recommendedSkillIds.contains($0.id) }
+                    // 스킬 선택 섹션 (직군 선택과 별개로 자유롭게 선택 가능)
+                    if sourceMode == .new {
+                        Section {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("스킬 선택")
+                                    .font(.headline)
+                                Text("직군에 맞는 스킬이 자동 선택됩니다. 자유롭게 추가하거나 제거할 수 있습니다.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.bottom, 8)
                             
-                            if matchedSkills.isEmpty {
-                                Text("매칭되는 스킬이 없습니다")
+                            if skillStore.skills.isEmpty {
+                                Text("등록된 스킬이 없습니다. 에이전트 허브에서 스킬을 추가하세요.")
                                     .foregroundStyle(.secondary)
                             } else {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    ForEach(matchedSkills) { skill in
-                                        HStack(spacing: 10) {
-                                            Image(systemName: skill.category.icon)
-                                                .foregroundStyle(skill.category.color)
-                                                .frame(width: 20)
-                                            
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                HStack {
-                                                    Text(skill.name)
-                                                        .font(.callout.bold())
-                                                    
-                                                    if skill.isCustom {
-                                                        Text("커스텀")
-                                                            .font(.caption2)
-                                                            .padding(.horizontal, 4)
-                                                            .padding(.vertical, 1)
-                                                            .background(Color.orange.opacity(0.2))
-                                                            .foregroundStyle(.orange)
-                                                            .clipShape(Capsule())
+                                VStack(alignment: .leading, spacing: 6) {
+                                    ForEach(skillStore.skills) { skill in
+                                        let isSelected = selectedSkillIds.contains(skill.id)
+                                        let isRecommended = getRecommendedSkillIds().contains(skill.id)
+                                        
+                                        Button {
+                                            if isSelected {
+                                                selectedSkillIds.remove(skill.id)
+                                            } else {
+                                                selectedSkillIds.insert(skill.id)
+                                            }
+                                        } label: {
+                                            HStack(spacing: 10) {
+                                                Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                                                    .foregroundStyle(isSelected ? skill.category.color : .secondary)
+                                                    .font(.title3)
+                                                
+                                                Image(systemName: skill.category.icon)
+                                                    .foregroundStyle(skill.category.color)
+                                                    .frame(width: 18)
+                                                
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    HStack(spacing: 4) {
+                                                        Text(skill.name)
+                                                            .font(.callout)
+                                                            .foregroundStyle(.primary)
+                                                        
+                                                        if isRecommended && !selectedJobRoles.isEmpty {
+                                                            Text("추천")
+                                                                .font(.caption2)
+                                                                .padding(.horizontal, 4)
+                                                                .padding(.vertical, 1)
+                                                                .background(Color.blue.opacity(0.2))
+                                                                .foregroundStyle(.blue)
+                                                                .clipShape(Capsule())
+                                                        }
+                                                        
+                                                        if skill.isCustom {
+                                                            Text("커스텀")
+                                                                .font(.caption2)
+                                                                .padding(.horizontal, 4)
+                                                                .padding(.vertical, 1)
+                                                                .background(Color.orange.opacity(0.2))
+                                                                .foregroundStyle(.orange)
+                                                                .clipShape(Capsule())
+                                                        }
                                                     }
+                                                    
+                                                    Text(skill.description)
+                                                        .font(.caption)
+                                                        .foregroundStyle(.secondary)
+                                                        .lineLimit(1)
                                                 }
                                                 
-                                                Text(skill.description)
-                                                    .font(.caption)
-                                                    .foregroundStyle(.secondary)
-                                                    .lineLimit(1)
+                                                Spacer()
                                             }
-                                            
-                                            Spacer()
-                                            
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundStyle(.green)
+                                            .contentShape(Rectangle())
                                         }
-                                        .padding(.vertical, 2)
+                                        .buttonStyle(.plain)
+                                        .padding(.vertical, 3)
+                                        .padding(.horizontal, 8)
+                                        .background(isSelected ? skill.category.color.opacity(0.1) : Color.clear)
+                                        .clipShape(RoundedRectangle(cornerRadius: 6))
                                     }
                                 }
                                 
-                                Divider()
-                                
-                                Text("총 \(matchedSkills.count)개 스킬 적용")
-                                    .font(.callout)
-                                    .foregroundStyle(.blue)
+                                if !selectedSkillIds.isEmpty {
+                                    Divider()
+                                    HStack {
+                                        Text("선택된 스킬: \(selectedSkillIds.count)개")
+                                            .font(.callout)
+                                            .foregroundStyle(.blue)
+                                        
+                                        Spacer()
+                                        
+                                        Button("모두 해제") {
+                                            selectedSkillIds.removeAll()
+                                        }
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    }
+                                }
                             }
                         }
                     }
@@ -431,7 +483,8 @@ struct AddProjectEmployeeView: View {
                 jobRoles: Array(selectedJobRoles),
                 status: .idle,
                 characterAppearance: appearance,
-                departmentType: deptType
+                departmentType: deptType,
+                skillIds: Array(selectedSkillIds)
             )
         }
 
