@@ -11,9 +11,8 @@ class DataManager {
 
     /// iCloud 저장 경로 (datas 폴더 전체)
     private var iCloudDatasDirectory: URL? {
-        fileManager.url(forUbiquityContainerIdentifier: nil)?
+        fileManager.url(forUbiquityContainerIdentifier: "iCloud.com.leeo.PixelOffice")?
             .appendingPathComponent("Documents")
-            .appendingPathComponent("PixelOffice")
             .appendingPathComponent("datas")
     }
 
