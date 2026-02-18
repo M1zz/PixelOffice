@@ -557,6 +557,105 @@ class DataPathService {
         formatter.dateFormat = "yyyy-MM-dd-HHmm"
         return formatter.string(from: date)
     }
+
+    // MARK: - Xcode 버전 읽기
+
+    /// Xcode 프로젝트 경로에서 MARKETING_VERSION 읽기
+    /// xcconfig + project.pbxproj 전체에서 최대 버전 반환 (메인 타겟 보장)
+    func readXcodeVersion(from sourcePath: String) -> String? {
+        var candidates: [String] = []
+
+        let sourceURL = URL(fileURLWithPath: sourcePath)
+        let fm = FileManager.default
+
+        // 1. xcconfig 파일에서 수집
+        if let enumerator = fm.enumerator(at: sourceURL,
+                                          includingPropertiesForKeys: nil,
+                                          options: [.skipsHiddenFiles]) {
+            for case let fileURL as URL in enumerator {
+                guard fileURL.pathExtension == "xcconfig" else { continue }
+                if let content = try? String(contentsOf: fileURL, encoding: .utf8) {
+                    candidates += extractMarketingVersions(from: content, stripSemicolon: false)
+                }
+            }
+        }
+
+        // 2. project.pbxproj에서 수집
+        if let contents = try? fm.contentsOfDirectory(at: sourceURL, includingPropertiesForKeys: nil),
+           let xcodeprojURL = contents.first(where: { $0.pathExtension == "xcodeproj" }) {
+            let pbxprojURL = xcodeprojURL.appendingPathComponent("project.pbxproj")
+            if let content = try? String(contentsOf: pbxprojURL, encoding: .utf8) {
+                candidates += extractMarketingVersions(from: content, stripSemicolon: true)
+            }
+        }
+
+        return candidates.max(by: { compareVersions($0, $1) < 0 })
+    }
+
+    private func extractMarketingVersions(from content: String, stripSemicolon: Bool) -> [String] {
+        var result: [String] = []
+        for line in content.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.hasPrefix("//"),
+                  trimmed.contains("MARKETING_VERSION"),
+                  trimmed.contains("=") else { continue }
+            let parts = trimmed.components(separatedBy: "=")
+            guard parts.count >= 2 else { continue }
+            var v = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+            if stripSemicolon { v = v.replacingOccurrences(of: ";", with: "").trimmingCharacters(in: .whitespaces) }
+            if isValidVersion(v) { result.append(v) }
+        }
+        return result
+    }
+
+    private func isValidVersion(_ v: String) -> Bool {
+        let parts = v.split(separator: ".")
+        return !parts.isEmpty && parts.allSatisfy { Int($0) != nil }
+    }
+
+    private func compareVersions(_ a: String, _ b: String) -> Int {
+        let aParts = a.split(separator: ".").compactMap { Int($0) }
+        let bParts = b.split(separator: ".").compactMap { Int($0) }
+        let len = max(aParts.count, bParts.count)
+        for i in 0..<len {
+            let aVal = i < aParts.count ? aParts[i] : 0
+            let bVal = i < bParts.count ? bParts[i] : 0
+            if aVal != bVal { return aVal > bVal ? 1 : -1 }
+        }
+        return 0
+    }
+
+    // MARK: - 파이프라인 통계
+
+    struct PipelineStats {
+        var completed: Int = 0
+        var failed: Int = 0
+        var total: Int = 0
+        var running: Int = 0
+    }
+
+    /// 프로젝트별 파이프라인 실행 통계
+    func loadPipelineStats(for projectId: UUID) -> PipelineStats {
+        let historyPath = "\(basePath)/_shared/pipeline_history.json"
+        guard let data = FileManager.default.contents(atPath: historyPath),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            return PipelineStats()
+        }
+        var stats = PipelineStats()
+        for run in json {
+            guard let pid = run["projectId"] as? String,
+                  pid == projectId.uuidString else { continue }
+            stats.total += 1
+            let state = run["state"] as? String ?? ""
+            switch state {
+            case "완료": stats.completed += 1
+            case "실패": stats.failed += 1
+            case "대기", "분해중", "실행중", "빌드중", "수정중": stats.running += 1
+            default: break
+            }
+        }
+        return stats
+    }
 }
 
 // MARK: - DepartmentType 확장

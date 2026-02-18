@@ -106,59 +106,122 @@ struct ProjectCard: View {
     @State private var showingDeleteConfirmation = false
     @State private var showingRenameSheet = false
     @State private var newName = ""
+    @State private var xcodeVersion: String?
+    @State private var pipelineStats = DataPathService.PipelineStats()
+
+    var activeSprint: Sprint? { project.sprints.first { $0.isActive } }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
-            HStack {
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(project.name)
-                        .font(.headline)
-                        .lineLimit(1)
-                    
+                    HStack(spacing: 6) {
+                        Text(project.name)
+                            .font(.headline)
+                            .lineLimit(1)
+
+                        if let version = xcodeVersion {
+                            Text("v\(version)")
+                                .font(.callout.monospaced())
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.accentColor.opacity(0.15))
+                                .foregroundStyle(Color.accentColor)
+                                .clipShape(Capsule())
+                        }
+                    }
+
                     Text(project.description.isEmpty ? "설명 없음" : project.description)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
-                
+
                 Spacer()
-                
-                // Status badge
-                HStack(spacing: 4) {
-                    Image(systemName: project.status.icon)
-                    Text(project.status.rawValue)
+
+                // 스프린트 진행 중이면 스프린트 배지, 아니면 프로젝트 상태
+                if let sprint = activeSprint {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "bolt.fill")
+                            Text("스프린트 진행중")
+                        }
+                        .font(.callout.bold())
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.2))
+                        .foregroundStyle(Color.blue)
+                        .clipShape(Capsule())
+
+                        Text(sprint.remainingDays > 0 ? "D-\(sprint.remainingDays)" : "기간 초과")
+                            .font(.caption)
+                            .foregroundStyle(sprint.isOverdue ? .red : .secondary)
+                    }
+                } else {
+                    HStack(spacing: 4) {
+                        Image(systemName: project.status.icon)
+                        Text(project.status.rawValue)
+                    }
+                    .font(.callout)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(project.status.color.opacity(0.2))
+                    .foregroundStyle(project.status.color)
+                    .clipShape(Capsule())
                 }
-                .font(.callout)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(project.status.color.opacity(0.2))
-                .foregroundStyle(project.status.color)
-                .clipShape(Capsule())
             }
-            
+
+            // 스프린트 목표 (진행 중일 때)
+            if let sprint = activeSprint, !sprint.goal.isEmpty {
+                Text(sprint.goal)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.blue.opacity(0.07))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+
             // Progress
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text("진행률")
+                    Text("태스크 진행률")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                     Spacer()
                     Text("\(Int(project.progress * 100))%")
                         .font(.callout.bold())
                 }
-                
+
                 ProgressView(value: project.progress)
-                    .tint(project.status.color)
+                    .tint(activeSprint != nil ? .blue : project.status.color)
             }
-            
+
             Divider()
-            
-            // Stats
+
+            // Stats: 태스크 + 파이프라인
             HStack {
+                // 태스크 통계
                 StatBadge(icon: "checkmark.circle.fill", value: "\(project.completedTasksCount)", color: .green)
                 StatBadge(icon: "play.circle.fill", value: "\(project.inProgressTasksCount)", color: .blue)
                 StatBadge(icon: "circle", value: "\(project.pendingTasksCount)", color: .gray)
+
+                if pipelineStats.total > 0 {
+                    Divider().frame(height: 14)
+
+                    // 파이프라인 통계
+                    StatBadge(icon: "checkmark.circle.fill", value: "\(pipelineStats.completed)", color: .green)
+                        .help("파이프라인 성공")
+                    StatBadge(icon: "xmark.circle.fill", value: "\(pipelineStats.failed)", color: .red)
+                        .help("파이프라인 실패")
+                    if pipelineStats.running > 0 {
+                        StatBadge(icon: "gearshape.2.fill", value: "\(pipelineStats.running)", color: .orange)
+                            .help("파이프라인 실행 중")
+                    }
+                }
 
                 Spacer()
 
@@ -171,16 +234,8 @@ struct ProjectCard: View {
                 }
                 .buttonStyle(.bordered)
                 .help("칸반 보드 열기")
-
-                // Priority
-                HStack(spacing: 2) {
-                    Image(systemName: project.priority.icon)
-                    Text(project.priority.rawValue)
-                }
-                .font(.callout)
-                .foregroundStyle(project.priority.color)
             }
-            
+
             // Tags
             if !project.tags.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -208,6 +263,19 @@ struct ProjectCard: View {
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovering = hovering
+            }
+        }
+        .onAppear {
+            if let path = project.sourcePath, !path.isEmpty {
+                xcodeVersion = DataPathService.shared.readXcodeVersion(from: path)
+            }
+            pipelineStats = DataPathService.shared.loadPipelineStats(for: project.id)
+        }
+        .onChange(of: project.sourcePath) { _, newPath in
+            if let path = newPath, !path.isEmpty {
+                xcodeVersion = DataPathService.shared.readXcodeVersion(from: path)
+            } else {
+                xcodeVersion = nil
             }
         }
         .contextMenu {

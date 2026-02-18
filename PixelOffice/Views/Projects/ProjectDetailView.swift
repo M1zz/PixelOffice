@@ -67,13 +67,26 @@ struct ProjectHeader: View {
     @State private var showingProjectInfo = false
     @State private var showingSourcePathEditor = false
     @State private var editingSourcePath = ""
+    @State private var xcodeVersion: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(project.name)
-                        .font(.title.bold())
+                    HStack(spacing: 8) {
+                        Text(project.name)
+                            .font(.title.bold())
+
+                        if let version = xcodeVersion {
+                            Text("v\(version)")
+                                .font(.callout.monospaced())
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Color.accentColor.opacity(0.15))
+                                .foregroundStyle(Color.accentColor)
+                                .clipShape(Capsule())
+                        }
+                    }
 
                     if !project.description.isEmpty {
                         Text(project.description)
@@ -205,6 +218,18 @@ struct ProjectHeader: View {
         }
         .padding()
         .background(.ultraThinMaterial)
+        .onAppear {
+            if let path = project.sourcePath, !path.isEmpty {
+                xcodeVersion = DataPathService.shared.readXcodeVersion(from: path)
+            }
+        }
+        .onChange(of: project.sourcePath) { _, newPath in
+            if let path = newPath, !path.isEmpty {
+                xcodeVersion = DataPathService.shared.readXcodeVersion(from: path)
+            } else {
+                xcodeVersion = nil
+            }
+        }
         .sheet(isPresented: $showingProjectInfo) {
             ProjectInfoEditorView(projectName: project.name, isPresented: $showingProjectInfo)
         }
